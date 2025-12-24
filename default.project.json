@@ -1,0 +1,28 @@
+{
+  "name": "Dungeon-Run",
+  "globIgnorePaths": [ "**/.package-lock.json" ],
+  "tree": {
+    "$className": "DataModel",
+    "ServerScriptService": {
+      "Game": {
+        "$className": "Folder",
+        "Modules": {
+          "$path": "src/modules"
+        },
+        "Packages": {
+          "$path": "node_modules"
+        }
+      },
+      "Scripts": {
+        "$path": "src/scripts/Server"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Scripts": {
+          "$path": "src/scripts/Client"
+        }
+      }
+    }
+  }
+}

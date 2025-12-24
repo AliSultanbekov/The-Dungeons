@@ -1,0 +1,24 @@
+{
+  "name": "codebase",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [
+    "Roblox",
+    "Nevermore",
+    "Lua"
+  ],
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@quenty/attributeutils": "^14.20.1",
+    "@quenty/binder": "^14.25.2",
+    "@quenty/clienttranslator": "^14.23.2",
+    "@quenty/cmdrservice": "^13.29.3",
+    "@quenty/counter": "^7.21.3",
+    "@quenty/inputkeymaputils": "^14.28.3",
+    "@quenty/loader": "^10.9.0",
+    "@quenty/servicebag": "^11.13.1"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  }
+}

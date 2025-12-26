@@ -1,5 +1,5 @@
 --[=[
-    @class CoreUIConstants
+    @class UIConstants
 ]=]
 
 -- [ Roblox Services ] --
@@ -14,14 +14,13 @@ local _require = require(script.Parent.loader).load(script)
 -- [ Variables ] --
 
 -- [ Module Table ] --
-local CoreUIConstants = {
+local UIConstants = {
     Screens = {
-        "Main",
-        "HUD",
+        "UIs",
     }
 }
 
 -- [ Types ] --
-export type Module = typeof(CoreUIConstants)
+export type Module = typeof(UIConstants)
 
-return CoreUIConstants :: Module
+return UIConstants :: Module

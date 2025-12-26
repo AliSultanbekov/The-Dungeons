@@ -5,7 +5,7 @@
 -- [ Roblox Services ] --
 
 -- [ Require ] --
-local _require = require(script.Parent.loader).load(script)
+local _require = require(script.Parent.Parent.loader).load(script)
 
 -- [ Constants ] --
 

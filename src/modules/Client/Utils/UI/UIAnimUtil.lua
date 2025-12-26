@@ -1,14 +1,14 @@
-local TweenService = game:GetService("TweenService")
 --[=[
     @class UIAnimUtil
 ]=]
 
 -- [ Roblox Services ] --
+local TweenService = game:GetService("TweenService")
 
 -- [ Imports ] --
 
 -- [ Require ] --
-local require = require(script.Parent.loader).load(script)
+local _require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] -- 
 

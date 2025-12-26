@@ -61,7 +61,7 @@ function ProcessPath(initialSegment: any, path: string, hardSet: boolean?): (boo
     return true, CurrentSegment, ParentSegment, LastSegment
 end
 
-function _SetupPlayerProfile(self: Module, player: Player)
+function DataService._SetupPlayerProfile(self: Module, player: Player)
     local Profile = self._PlayerStore:StartSessionAsync(`{player.UserId}`, {
         Cancel = function()
             return player.Parent ~= Players
@@ -181,7 +181,7 @@ function DataService.GetProfile(self: Module, player: Player): Profile
 end
 
 function DataService.OnPlayerAdded(self: Module, Maid: Maid.Maid, player: Player)
-    _SetupPlayerProfile(self, player)
+    self:_SetupPlayerProfile(player)
 end
 
 function DataService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)

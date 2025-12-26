@@ -13,9 +13,14 @@ export type RawWeaponData = {
     Name: string,
 }
 
+export type RawMaterialData = {
+    Type: "Materials" | string,
+    Name: string,
+    Amount: number,
+}
+
 export type WeaponData = {
     ID: string,
-    
 } & RawWeaponData
 
 export type RawItemData = RawWeaponData

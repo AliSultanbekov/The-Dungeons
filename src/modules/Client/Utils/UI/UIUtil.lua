@@ -8,7 +8,7 @@ local TweenService = game:GetService("TweenService")
 -- [ Imports ] --
 
 -- [ Require ] --
-local require = require(script.Parent.loader).load(script)
+local _require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] -- 
 
@@ -16,8 +16,6 @@ local require = require(script.Parent.loader).load(script)
 local DEFAULT_TWEEN = TweenInfo.new(0.1)
 
 -- [ Variables ] --
-local x = script.Parent.Parent.test
-
 
 -- [ Module Table ] --
 local UIUtil = {

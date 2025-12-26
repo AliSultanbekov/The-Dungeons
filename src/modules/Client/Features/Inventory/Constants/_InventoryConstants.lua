@@ -5,7 +5,7 @@
 -- [ Roblox Services ] --
 
 -- [ Require ] --
-local require = require(script.Parent.loader).load(script)
+local _require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 
@@ -15,23 +15,23 @@ local require = require(script.Parent.loader).load(script)
 
 -- [ Module Table ] --
 local InventoryConstants = {
-    Tabs = {
-        ["Equipment"] = {"Weapons"}    
+    Pages = {
+        ["Items"] = {"Materials"}    
     },
 
     Sections = {
-        ["Weapons"] = {"Weapons"}
+        ["Materials"] = {"Materials"}
     },
 
-    SectionToTab = {
-        ["Weapons"] = "Equipment"
+    SectionToPage = {
+        ["Materials"] = "Items"
     },
 
     ItemTypeToSections = {
-        ["Weapons"] = "Weapons"
+        ["Materials"] = "Materials"
     }
 } :: { 
-    Tabs: {
+    Pages: {
         [string]: { string }
     },
 
@@ -39,7 +39,7 @@ local InventoryConstants = {
         [string]: { string }
     },
 
-    SectionToTab: {
+    SectionToPage: {
         [string]: string
     },
 

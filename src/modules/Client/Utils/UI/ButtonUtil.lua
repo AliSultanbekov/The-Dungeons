@@ -13,10 +13,10 @@ local require = require(script.Parent.loader).load(script)
 local UIAnimUtil = require("UIAnimUtil")
 
 -- [ Constants ] --
-local MOVE_TWEENINFO = TweenInfo.new(0.1)
+local _MOVE_TWEENINFO = TweenInfo.new(0.1)
 local PRESS_TWEENINFO = TweenInfo.new(0.1)
 
-local DEFAULT_TOP_POS = UDim2.new(0.5, 0, 0.42, 0)
+local _DEFAULT_TOP_POS = UDim2.new(0.5, 0, 0.42, 0)
 
 -- [ Variables ] --
 
@@ -32,7 +32,7 @@ export type Module = typeof(ButtonUtil)
 
 -- [ Public Functions ] --
 function ButtonUtil.Hook(self: Module, button: GuiButton, onInteract: () -> ()?)
-    local Top = button:FindFirstChild("Top")
+    --[[local Top = button:FindFirstChild("Top")
 
     if not Top or not Top:IsA("ImageLabel") then
         warn("[ButtonUtil] Top ImageLabel not found for button: " .. button.Name)
@@ -46,14 +46,14 @@ function ButtonUtil.Hook(self: Module, button: GuiButton, onInteract: () -> ()?)
         return
     end
 
-    Top.Position = DEFAULT_TOP_POS
+    Top.Position = DEFAULT_TOP_POS]]
 
     button.MouseEnter:Connect(function()
-        UIAnimUtil:AnimateToPosition(Top, UDim2.new(0.5, 0, 0.5, 0), MOVE_TWEENINFO)
+        --UIAnimUtil:AnimateToPosition(Top, UDim2.new(0.5, 0, 0.5, 0), MOVE_TWEENINFO)
     end)
 
     button.MouseLeave:Connect(function()
-        UIAnimUtil:AnimateToPosition(Top, DEFAULT_TOP_POS, MOVE_TWEENINFO)
+        --UIAnimUtil:AnimateToPosition(Top, DEFAULT_TOP_POS, MOVE_TWEENINFO)
         UIAnimUtil:AnimateUIScale(button, 1, PRESS_TWEENINFO)
     end)
 

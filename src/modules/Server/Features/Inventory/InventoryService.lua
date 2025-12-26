@@ -35,7 +35,7 @@ type ModuleData = {
 export type Module = typeof(InventoryService) & ModuleData
 
 -- [ Private Functions ] --
-function _GenerateID(self: Module, player: Player)
+function InventoryService._GenerateID(self: Module, player: Player)
     local Success, PlayerInventoryData = self._DataService:GetData(player, "Inventory")
 
     if not Success then
@@ -62,9 +62,9 @@ function _GenerateID(self: Module, player: Player)
     return ID
 end
 
-function _ProcessItemData(self: Module, player: Player, rawItemData: RawItemData): ItemData
+function InventoryService._ProcessItemData(self: Module, player: Player, rawItemData: RawItemData): ItemData
     local StorageType = ItemConstants.ItemTypeToStorageType[rawItemData.Type]
-    local ID = StorageType == "Unqiue" and _GenerateID(self, player) or rawItemData.Name
+    local ID = StorageType == "Unqiue" and self:_GenerateID(player) or rawItemData.Name
     
     if rawItemData.Type == "Weapons" then
         local ItemData: ItemData = {
@@ -87,7 +87,7 @@ end
 function InventoryService.AddItem(self: Module, player: Player, rawItemDataArray: { RawItemData })
     self._DataService:UpdateData(player, function(data)
         for _, rawItemData in rawItemDataArray do
-            local ItemData = _ProcessItemData(self, player, rawItemData)
+            local ItemData = self:_ProcessItemData(player, rawItemData)
             local StorageType = ItemConstants.ItemTypeToStorageType[ItemData.Type]
 
             if StorageType == "Unqiue" then
@@ -116,7 +116,7 @@ function InventoryService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
 end
 
 function InventoryService.Start(self: Module)
-    --self._DataService.
+
 end
 
 

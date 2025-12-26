@@ -1,5 +1,5 @@
 --[=[
-    @class SoundServiceClient
+    @class SoundController
 ]=]
 
 -- [ Roblox Services ] --
@@ -13,33 +13,32 @@ local require = require(script.Parent.loader).load(script)
 local ServiceBag = require("ServiceBag")
 local ObjectPool = require("ObjectPool")
 local AssetProvider = require("AssetProvider")
-local WorkspaceFactory = require("WorkspaceFactory")
 
 -- [ Constants ] --
 
 -- [ Variables ] --
+local World = workspace.World
 
 -- [ Module Table ] --
-local SoundServiceClient = {}
+local SoundController = {}
 
 -- [ Types ] --
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
     _ObjectPool: ObjectPool.Object<Sound>,
-    _WorkspaceRefs: WorkspaceFactory.Refs,
 }
 
-export type Module = typeof(SoundServiceClient) & ModuleData
+export type Module = typeof(SoundController) & ModuleData
 
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function SoundServiceClient.PlaySound(self: Module, soundName: string)
+function SoundController.PlaySound(self: Module, soundName: string)
     if not self._ObjectPool:KeyExists(soundName) then
         self._ObjectPool:AddKey(
             soundName,
             function()
-                return AssetProvider:Get({"Sounds", soundName})
+                return AssetProvider:Get(string.format("Sounds/%s", soundName))
             end,
             function(obj: Sound)
                 obj:Stop()
@@ -50,7 +49,7 @@ function SoundServiceClient.PlaySound(self: Module, soundName: string)
     
     local Sound = self._ObjectPool:Get(soundName)
 
-    Sound.Parent = self._WorkspaceRefs.Sounds
+    Sound.Parent = World.Sounds
 
     Sound:Play()
 
@@ -63,18 +62,17 @@ function SoundServiceClient.PlaySound(self: Module, soundName: string)
     end)
 end
 
-function SoundServiceClient.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
+function SoundController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     if self._ServiceBag ~= nil then
         error("Service already initialized")
     end
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
     self._ObjectPool = ObjectPool.new()
-    self._WorkspaceRefs = WorkspaceFactory:ProduceRefs()
 end
 
-function SoundServiceClient.Start(self: Module)
+function SoundController.Start(self: Module)
     
 end
 
-return SoundServiceClient :: Module
+return SoundController :: Module

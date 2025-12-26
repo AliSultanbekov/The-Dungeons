@@ -16,7 +16,8 @@ local require = require(script.Parent.loader).load(script)
 -- [ Module Table ] --
 local ItemConstants = {
     ItemTypeToStorageType = {
-        ["Weapons"] = "Unqiue"
+        ["Materials"] = "Stackable",
+        ["Weapons"] = "Unqiue",
     }
 }
 

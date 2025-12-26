@@ -3,9 +3,9 @@
 ]=]
 
 -- [ Roblox Services ] --
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- [ Imports ] --
-local SectionUIFactory = require("./Factories/_SectionUIFactory")
 
 -- [ Require ] --
 local require = require(script.Parent.loader).load(script)
@@ -46,15 +46,12 @@ UIGridClass.__index = UIGridClass
 
 -- [ Types ] --
 type ElementUI = GuiObject
-type BackingUI = GuiObject
-type SectionUI = GuiObject
+type BackingUI = typeof(ReplicatedStorage.Assets.UIs.Inventory.BackingUI)
+type SectionUI = typeof(ReplicatedStorage.Assets.UIs.Inventory.SectionUI)
 
 export type SectionsData = {
     [string]: {
-        SectionUI: {
-            Instance: SectionUI,
-            Refs: SectionUIFactory.Refs
-        },
+        SectionUI: SectionUI,
         ElementCount: number,
         --ElementUIs: { ElementUI },
         BackingUIs: { [ElementUI]: BackingUI },
@@ -77,12 +74,12 @@ function _UpdateTitleVisibility(self: Object, sectionName: string)
         return
     end
 
-    local SectionUIRefs = SectionData.SectionUI.Refs
+    local SectionUI = SectionData.SectionUI
 
     if SectionData.ElementCount == 0 then
-        SectionUIRefs.Title.Visible = false
+        SectionUI.Title.Visible = false
     else
-        SectionUIRefs.Title.Visible = true
+        SectionUI.Title.Visible = true
     end
 end
 
@@ -102,15 +99,12 @@ function UIGridClass.CreateSection(self: Object, sectionName: string)
         return
     end
 
-    local SectionUI = UIPool:Get("SectionUI")
+    local SectionUI = UIPool:Get("SectionUI") :: SectionUI
 
     SectionUI.Parent = self._ScrollingFrame
 
     local SectionData = {
-        SectionUI = {
-            Instance = SectionUI,
-            Refs = SectionUIFactory:ProduceRefs(SectionUI)
-        },
+        SectionUI = SectionUI,
         ElementCount = 0,
         BackingUIs = {},
     }
@@ -130,8 +124,8 @@ function UIGridClass.AddElement(self: Object, sectionName: string, elementUI: El
         return
     end
 
-    local BackingUI = UIPool:Get("BackingUI")
-    BackingUI.Parent = SectionData.SectionUI.Refs.Elements
+    local BackingUI = UIPool:Get("BackingUI") :: BackingUI
+    BackingUI.Parent = SectionData.SectionUI.Elements
     elementUI.Parent = BackingUI
     
     SectionData.BackingUIs[elementUI] = BackingUI

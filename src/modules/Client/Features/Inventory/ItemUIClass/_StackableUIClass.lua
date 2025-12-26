@@ -3,36 +3,63 @@
 ]=]
 
 -- [ Roblox Services ] --
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- [ Imports ] --
+local ItemUIClass = require("./_ItemUIClass")
 
 -- [ Require ] --
 local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] -- 
+local ItemTypes = require("ItemTypes")
+local UpdateTextWithShadow = require("UpdateTextWithShadow")
 
 -- [ Constants ] --
 
 -- [ Variables ] --
 
 -- [ Module Table ] --
-local StackableUIClass = {}
+local StackableUIClass = setmetatable({}, ItemUIClass)
 StackableUIClass.__index = StackableUIClass
 
 -- [ Types ] --
-export type ObjectData = {
+type ItemUI = typeof(ReplicatedStorage.Assets.UIs.ItemUI)
+type ItemData = ItemTypes.ItemData
+type ItemID = ItemTypes.ItemID
 
+export type ObjectData = {
+    _ItemData: ItemData
 }
-export type Object = ObjectData & Module
+export type Object = ObjectData & Module & ItemUIClass.Object
 export type Module = typeof(StackableUIClass)
 
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function StackableUIClass.new(): Object
-    local self = setmetatable({} :: any, StackableUIClass) :: Object
+function StackableUIClass.new(ui: ItemUI, itemData: ItemData): Object
+    local self = setmetatable(ItemUIClass.new(ui), StackableUIClass) :: Object
+
+    self._ItemData = itemData
+
+    UpdateTextWithShadow(self._ItemUI.ItemName, self._ItemData.Name)
+
+    self._ItemCounter:Add(itemData.Amount)
 
     return self
 end
 
-return StackableUIClass :: Module
+function StackableUIClass.AddItemData(self: Object, itemData: ItemData)
+    self._ItemData.Amount += itemData.Amount
+
+    self._ItemCounter:Add(itemData.Amount)
+end
+
+function StackableUIClass.RemoveItemData(self: Object, itemData: ItemData)
+    self._ItemData.Amount -= itemData.Amount
+
+    self._ItemCounter:Add(-itemData.Amount)
+end
+
+
+return StackableUIClass :: Module   

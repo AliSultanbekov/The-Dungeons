@@ -36,10 +36,10 @@ export type Module = typeof(UnqiueUIClass)
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function UnqiueUIClass.new(ui: ItemUI): Object
+function UnqiueUIClass.new(ui: ItemUI, itemData: ItemData): Object
     local self = setmetatable(ItemUIClass.new(ui), UnqiueUIClass) :: Object
     
-    self._ItemsData = {}
+    self._ItemsData = { [itemData.ID] = itemData }
 
     return self
 end
@@ -62,10 +62,6 @@ function UnqiueUIClass.RemoveItemData(self: Object, itemData: ItemData)
 
     self._ItemsData[itemData.ID] = nil
     self._ItemCounter:Add(-1)
-end
-
-function UnqiueUIClass.GetUI(self: Module)
-    return self:GetUI()
 end
 
 return UnqiueUIClass :: Module

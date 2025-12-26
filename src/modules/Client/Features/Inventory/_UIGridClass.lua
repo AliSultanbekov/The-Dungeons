@@ -13,6 +13,7 @@ local require = require(script.Parent.loader).load(script)
 -- [ Imports ] --
 local ObjectPool = require("ObjectPool")
 local AssetProvider = require("AssetProvider")
+local UpdateTextWithShadow = require("UpdateTextWithShadow")
 
 -- [ Constants ] --
 
@@ -101,7 +102,9 @@ function UIGridClass.CreateSection(self: Object, sectionName: string)
 
     local SectionUI = UIPool:Get("SectionUI") :: SectionUI
 
+    
     SectionUI.Parent = self._ScrollingFrame
+    UpdateTextWithShadow(SectionUI.Title, string.format("- %s -", sectionName))
 
     local SectionData = {
         SectionUI = SectionUI,

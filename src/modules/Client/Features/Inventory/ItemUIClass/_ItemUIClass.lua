@@ -13,6 +13,8 @@ local require = require(script.Parent.loader).load(script)
 -- [ Imports ] --
 local Maid = require("Maid")
 local Counter = require("Counter")
+local ItemTypes = require("ItemTypes")
+local UpdateTextWithShadow = require("UpdateTextWithShadow")
 
 -- [ Constants ] --
 
@@ -24,6 +26,8 @@ ItemUIClass.__index = ItemUIClass
 
 -- [ Types ] --
 type ItemUI = typeof(ReplicatedStorage.Assets.UIs.Inventory.ItemUI)
+type ItemType = ItemTypes.ItemType
+type ItemData = ItemTypes.ItemData
 
 export type ObjectData = {
     _Maid: Maid.Maid,
@@ -34,8 +38,14 @@ export type Object = ObjectData & Module
 export type Module = typeof(ItemUIClass)
 
 -- [ Private Functions ] --
-function ItemUIClass._ItemCountChanged(newCount: number)
+function ItemUIClass._ItemCountChanged(self: Object, newCount: number)
+    if newCount <= 1 then
+        self._ItemUI.ItemAmount.Visible = false
+    else
+        self._ItemUI.ItemAmount.Visible = true
+    end
     
+    UpdateTextWithShadow(self._ItemUI.ItemAmount, string.format("x%d", newCount))
 end
 
 -- [ Public Functions ] --
@@ -46,10 +56,22 @@ function ItemUIClass.new(ui: ItemUI): Object
     self._ItemUI = ui
 
     self._ItemCounter = Counter.new(); self._ItemCounter.Changed:Connect(function(newCount: number)
-        self._ItemCountChanged(newCount)
+        self:_ItemCountChanged(newCount)
     end)
 
     return self
+end
+
+function ItemUIClass.AddItemData(self: Object, itemData: ItemData)
+    -- no default functionality
+end
+
+function ItemUIClass.RemoveItemData(self: Object, itemData: ItemData)
+    -- no default functionality
+end
+
+function ItemUIClass.GetUI(self: Object)
+    return self._ItemUI
 end
 
 return ItemUIClass :: Module

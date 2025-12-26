@@ -10,6 +10,7 @@ local InventoryConstants = require("./Constants/_InventoryConstants")
 local ItemUIClass = require("./ItemUIClass/_UniqueUIClass")
 local UIGridClass = require("./_UIGridClass")
 local _KeyMap = require("@self/_KeyMap")
+local CreateItemUIObject = require("./ItemUIClass/_CreateItemUIObject")
 
 -- [ Require ] --
 local require = require(script.Parent.loader).load(script)
@@ -42,6 +43,7 @@ UIPool:ForceConstruct("ItemUI", 10)
 local InventoryUIController = {}                                                                                                                                                                                          
 
 -- [ Types ] --
+type ItemUIObject = CreateItemUIObject.ItemUIObject
 type ItemUI = typeof(ReplicatedStorage.Assets.UIs.Inventory.ItemUI)
 type ItemData = ItemTypes.ItemData
 type GroupKey = string
@@ -54,7 +56,7 @@ type ModuleData = {
 
     -- after runtime
     _GridObjects: {[string]: UIGridClass.Object},
-    _ItemUIObjects: { [GroupKey]: any }
+    _ItemUIObjects: { [GroupKey]: ItemUIObject }
 }
 
 export type Module = typeof(InventoryUIController) & ModuleData
@@ -72,15 +74,15 @@ function InventoryUIController.AddItem(self: Module, itemData: ItemData)
     local UIGridObject = self._GridObjects[PageName]
     local ItemUIObject = self._ItemUIObjects[GroupKey]
 
-    if ItemUIObject == nil then
+    if not ItemUIObject then
         local ItemUI = UIPool:Get("ItemUI")
         UIGridObject:AddElement(SectionName, ItemUI)
-        ItemUIObject = ItemUIClass.new(ItemUI)
-    else
-        
-    end
+        ItemUIObject = CreateItemUIObject(ItemUI, itemData)
 
-    ItemUIObject:AddItemData(itemData)
+        self._ItemUIObjects[GroupKey] = ItemUIObject
+    elseif self._ItemUIObjects[GroupKey] then
+        ItemUIObject:AddItemData(itemData)
+    end
 end
 
 function InventoryUIController.RemoveItem(self: Module, itemData: ItemData)
@@ -143,11 +145,17 @@ function InventoryUIController.Start(self: Module)
             print("Closed")
         end)
 
-        self:AddItem({
-            ID = "1",
-            Type = "Weapons",
-            Name = "Hello",  
-        })
+        task.spawn(function()
+            while true do
+                task.wait(0.5)
+                self:AddItem({
+                    ID = "1",
+                    Type = "Materials",
+                    Name = "Sam's Foot",
+                    Amount = 10
+                })
+            end
+        end)
     end)
 
     --[[self._UIController:Ready():Then(function(refs)

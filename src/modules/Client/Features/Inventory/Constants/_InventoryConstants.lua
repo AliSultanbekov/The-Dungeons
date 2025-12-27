@@ -16,19 +16,23 @@ local _require = require(script.Parent.loader).load(script)
 -- [ Module Table ] --
 local InventoryConstants = {
     Pages = {
-        ["Items"] = {"Materials"}    
+        ["Items"] = {"Materials"},
+        ["Equipment"] = {"Weapons"},
     },
 
     Sections = {
-        ["Materials"] = {"Materials"}
+        ["Materials"] = {"Materials"},
+        ["Weapons"] = {"Weapons"}
     },
 
     SectionToPage = {
-        ["Materials"] = "Items"
+        ["Materials"] = "Items",
+        ["Weapons"] = "Equipment"
     },
 
     ItemTypeToSections = {
-        ["Materials"] = "Materials"
+        ["Materials"] = "Materials",
+        ["Weapons"] = "Weapons"
     }
 } :: { 
     Pages: {

@@ -16,11 +16,16 @@ local _require = require(script.Parent.loader).load(script)
 -- [ Module Table ] --
 local WeaponConfig = {
     ["Wooden Sword"] = {
+        Image = "rbxassetid://...",
+        Rarity = "Common",
         Combo = 3,
-        Primary = {
+        NormalAttack = {
             [1] = { Anim = "rbxassetid://...", Damage = 2, Recovery = 0.25 },
             [2] = { Anim = "rbxassetid://...", Damage = 2, Recovery = 0.25 },
             [3] = { Anim = "rbxassetid://...", Damage = 3, Recovery = 0.35 },
+        },
+        SpecialAttack = {
+            [1] = { Anim = "rbxassetid://...", Damage = 2, Recovery = 0.25 },
         }
     }
 }

@@ -1,5 +1,5 @@
 --[=[
-    @class ItemConstants
+    @class MaterialConfig
 ]=]
 
 -- [ Roblox Services ] --
@@ -14,14 +14,14 @@ local _require = require(script.Parent.loader).load(script)
 -- [ Variables ] --
 
 -- [ Module Table ] --
-local ItemConstants = {
-    ItemTypeToStorageType = {
-        ["Materials"] = "Stackable",
-        ["Weapons"] = "Unqiue",
+local MaterialConfig = {
+    ["Sam's Foot"] = {
+        Image = "rbxassetid://...",
+        Rarity = "Common"
     }
 }
 
 -- [ Types ] --
-export type Module = typeof(ItemConstants)
+export type Module = typeof(MaterialConfig)
 
-return ItemConstants :: Module
+return MaterialConfig :: Module

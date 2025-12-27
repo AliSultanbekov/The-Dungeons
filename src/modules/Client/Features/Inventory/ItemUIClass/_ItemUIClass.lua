@@ -55,6 +55,11 @@ function ItemUIClass.new(ui: ItemUI): Object
     self._Maid = Maid.new()
     self._ItemUI = ui
 
+
+    self._Maid:Add(function()
+        setmetatable(self, nil)
+    end)
+
     self._ItemCounter = Counter.new(); self._ItemCounter.Changed:Connect(function(newCount: number)
         self:_ItemCountChanged(newCount)
     end)
@@ -72,6 +77,14 @@ end
 
 function ItemUIClass.GetUI(self: Object)
     return self._ItemUI
+end
+
+function ItemUIClass.IsEmpty(self: Object)
+    return self._ItemCounter:GetValue() == 0
+end
+
+function ItemUIClass.Destory(self: Object)
+    self._Maid:DoCleaning()
 end
 
 return ItemUIClass :: Module

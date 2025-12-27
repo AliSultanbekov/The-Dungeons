@@ -70,6 +70,8 @@ function UIController._SetupUIs(self: Module)
             self._UIs[instance.Name] = instance
             self._UIComponents[instance.Name] = {}
 
+            self:RegisterUI(instance.Name)
+
             for _, instance_2 in instance:GetDescendants() do
                 local Tags = instance_2:GetTags()
                 

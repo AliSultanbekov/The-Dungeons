@@ -7,35 +7,47 @@ local _require = require(script.Parent.loader).load(script)
 
 -- [ Types ] --
 export type ItemType = "Weapons" | "Materials" | string
-
 export type ItemID = string
 
-export type RawMaterialData = {
-    Type: "Materials" | string,
+export type RawMaterialItemData = {
     Name: string,
+    Type: "Materials",
     Amount: number,
 }
 
-export type RawWeaponData = {
-    Type: "Weapons" | string,
+export type RawWeaponItemData = {
     Name: string,
+    Type: "Weapons",
 }
 
-export type MaterialData = {
-    ID: string,
-    Type: "Weapons" | string,
-    Name: string,
-}
+export type RawItemData = RawMaterialItemData | RawWeaponItemData
 
-export type WeaponData = {
-    ID: string,
-    Type: "Materials" | string,
+export type MaterialItemData = {
+    ID: ItemID,
     Name: string,
+    Type: "Materials",
     Amount: number,
 }
 
-export type RawItemData = RawWeaponData & RawMaterialData
+export type WeaponItemData = {
+    ID: ItemID,
+    Name: string,
+    Type: "Weapons",
+}
 
-export type ItemData = WeaponData & MaterialData
+export type ItemData = MaterialItemData | WeaponItemData
+
+export type StackableItemData = {
+	ID: ItemID,
+	Name: string,
+	Type: "Materials",
+	Amount: number,
+}
+
+export type UniqueItemData = {
+	ID: ItemID,
+	Name: string,
+	Type: "Weapons",
+}
 
 return {}

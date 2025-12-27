@@ -24,6 +24,8 @@ local ItemTypes = require("ItemTypes")
 local CreateItemUIObject = function(ui: ItemUI, itemData: ItemData): ItemUIObject
     if itemData.Type == "Materials" then
         return StackableUIClass.new(ui, itemData)
+    elseif itemData.Type == "Weapons" then
+        return UniqueUIClass.new(ui, itemData)
     else
         error(`[GetItemUIObject] Unknown itemType: {itemData.Type}`)
     end

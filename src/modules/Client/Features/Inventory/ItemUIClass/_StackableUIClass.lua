@@ -25,7 +25,7 @@ StackableUIClass.__index = StackableUIClass
 
 -- [ Types ] --
 type ItemUI = typeof(ReplicatedStorage.Assets.UIs.ItemUI)
-type ItemData = ItemTypes.ItemData
+type ItemData = ItemTypes.StackableItemData
 type ItemID = ItemTypes.ItemID
 
 export type ObjectData = {
@@ -42,9 +42,9 @@ function StackableUIClass.new(ui: ItemUI, itemData: ItemData): Object
 
     self._ItemData = itemData
 
-    UpdateTextWithShadow(self._ItemUI.ItemName, self._ItemData.Name)
-
     self._ItemCounter:Add(itemData.Amount)
+
+    UpdateTextWithShadow(self._ItemUI.ItemName, self._ItemData.Name)
 
     return self
 end

@@ -4,8 +4,10 @@
 
 -- [ Roblox Services ] --
 local ContextActionService = game:GetService("ContextActionService")
+local Players = game:GetService("Players")
 
 -- [ Imports ] --
+local Controls = require(Players.LocalPlayer.PlayerScripts.PlayerModule):GetControls() :: any
 
 -- [ Require ] --
 local require = require(script.Parent.loader).load(script)
@@ -52,62 +54,70 @@ local function _CheckAction(self: Module, actionName: string)
         error(string.format("[UserInputController] Action with name '%s' already exists!", actionName))
     end
 end
-
-function UserInputController.RegisterKeymapAction(
-        self: Module, 
-        actionName: string, 
-        keyMapList: InputKeyMapList.InputKeyMapList, 
-        cb: (KeymapActionPacket) -> (),
-        priority: number?
-    )
-
-    _CheckAction(self, actionName)
-
-    local ActionMaidObj = Maid.new()
-    local Priority = priority or Enum.ContextActionPriority.Medium.Value
-
-    ActionMaidObj:GiveTask(
-        Rx.combineLatest({
-            IsTouchButton = keyMapList:ObserveIsRobloxTouchButton(),
-            InputEnumsList = keyMapList:ObserveInputEnumsList()
-        }):Subscribe(function(data)
-            ContextActionService:BindActionAtPriority(
-                actionName,
-                function(actionName: string, inputState: Enum.UserInputState, inputObject: InputObject)
-                    cb({InputObject = inputObject, InputState = inputState, ActionName = actionName})
-                end,
-                data.IsTouchButton,
-                Priority,
-                table.unpack(data.InputEnumsList)
-            )
-        end)
-    )
-
-    ActionMaidObj:GiveTask(function()
-        ContextActionService:UnbindAction(actionName)
-    end)
-
-    self._Actions[actionName] = {
-        Maid = ActionMaidObj,
-        Priority = Priority,
-        Cb = cb
-    }
-
-    self._Maid:GiveTask(ActionMaidObj)
-
-    return function()
-        local Data = self._Actions[actionName]
-
-        if not Data then
-            return
-        end
-
-        Data.Maid:DoCleaning()
-        self._Actions[actionName] = nil
+-- [ Public Functions ] --
+function UserInputController.ToggleControls(self: Module, toggle: boolean)
+    if toggle == true then
+        Controls:Enable()
+    elseif toggle == false then
+        Controls:Disable()
     end
 end
 
--- [ Public Functions ] --
+function UserInputController.RegisterKeymapAction(
+    self: Module, 
+    actionName: string, 
+    keyMapList: InputKeyMapList.InputKeyMapList, 
+    cb: (KeymapActionPacket) -> (),
+    priority: number?
+)
+
+_CheckAction(self, actionName)
+
+local ActionMaidObj = Maid.new()
+local Priority = priority or Enum.ContextActionPriority.Medium.Value
+
+ActionMaidObj:GiveTask(
+    Rx.combineLatest({
+        IsTouchButton = keyMapList:ObserveIsRobloxTouchButton(),
+        InputEnumsList = keyMapList:ObserveInputEnumsList()
+    }):Subscribe(function(data)
+        ContextActionService:BindActionAtPriority(
+            actionName,
+            function(actionName: string, inputState: Enum.UserInputState, inputObject: InputObject)
+                cb({InputObject = inputObject, InputState = inputState, ActionName = actionName})
+            end,
+            data.IsTouchButton,
+            Priority,
+            table.unpack(data.InputEnumsList)
+        )
+    end)
+)
+
+ActionMaidObj:GiveTask(function()
+    ContextActionService:UnbindAction(actionName)
+end)
+
+self._Actions[actionName] = {
+    Maid = ActionMaidObj,
+    Priority = Priority,
+    Cb = cb
+}
+
+self._Maid:GiveTask(ActionMaidObj)
+
+return function()
+    local Data = self._Actions[actionName]
+
+    if not Data then
+        return
+    end
+
+    Data.Maid:DoCleaning()
+    self._Actions[actionName] = nil
+end
+end
+
+
 function UserInputController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     if self._ServiceBag ~= nil then
         error("Service already initialized")

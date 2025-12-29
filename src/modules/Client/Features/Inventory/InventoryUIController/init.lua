@@ -53,6 +53,7 @@ type ModuleData = {
     _UIController: typeof(require("UIController")),
     _UserInputController: typeof(require("UserInputController")),
     _EventBusClient: typeof(require("EventBusClient")),
+    _CameraController: typeof(require("CameraController")),
 
     _GridObjects: {[string]: UIGridClass.Object},
     _ItemUIObjects: { [GroupKey]: ItemUIObject },
@@ -71,26 +72,52 @@ function InventoryUIController._ShiftUIToMiddle(self: Module)
     UIAnimUtil:AnimateToPosition(self._UIController:GetUI("InventoryUI"), UDim2.new(0.5, 0, 0.5, 0), TweenInfo.new(0.1))
 end
 
+function InventoryUIController._OnPageSwitch(self: Module, newPageName: string)
+    if newPageName == "Equipment" then
+        self:_ShiftUIToRight()
+        self._CameraController:RunPreset("InventoryEquipment")
+        self._UserInputController:ToggleControls(false)
+    else
+        self:_ShiftUIToMiddle()
+        self._CameraController:RunPreset("Reset")
+        self._UserInputController:ToggleControls(true)
+    end
+end
+
+function InventoryUIController._TrySwitchingToItemsPage(self: Module): boolean
+    if self._CurrentPage ~= "Items" then
+        local SwitchComplete = self:SwitchPage("Items")
+
+        if not SwitchComplete then
+            return false
+        end
+    end
+
+    return true
+end
+
 -- [ Public Functions ] --
-function InventoryUIController.SwitchPage(self: Module, pageName: string)
+function InventoryUIController.SwitchPage(self: Module, pageName: string): boolean
     if self._CurrentPage == pageName then
-        return
+        return false
     end
 
     local Pages = self._UIController:GetUIComponent("InventoryUI", "Pages")
     local CurrentPage = Pages:FindFirstChild(self._CurrentPage) :: Frame
     local NextPage = Pages:FindFirstChild(pageName) :: Frame
 
-    if self._CurrentPage == "Equipment" then
-        self:_ShiftUIToMiddle()
-    elseif pageName == "Equipment" then
-        self:_ShiftUIToRight()
+    if self._CameraController:GetState() == "Busy" then
+        return false
     end
+
+    self:_OnPageSwitch(pageName)
 
     CurrentPage.Visible = false
     NextPage.Visible = true
 
     self._CurrentPage = pageName
+
+    return true
 end
 
 function InventoryUIController.AddItem(self: Module, itemData: ItemData)
@@ -133,7 +160,19 @@ function InventoryUIController.RemoveItem(self: Module, itemData: ItemData)
 end
 
 function InventoryUIController.Close(self: Module)
+    if not self:_TrySwitchingToItemsPage() then
+        return
+    end
+    
     self._EventBusClient:Publish(TopicConstants.UI.Close("InventoryUI"))
+end
+
+function InventoryUIController.Toggle(self: Module)
+    if not self:_TrySwitchingToItemsPage() then
+        return
+    end
+
+    self._EventBusClient:Publish(TopicConstants.UI.Toggle("InventoryUI"))
 end
 
 function InventoryUIController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
@@ -145,6 +184,7 @@ function InventoryUIController.Init(self: Module, serviceBag: ServiceBag.Service
     self._UIController = self._ServiceBag:GetService(require("UIController"))
     self._UserInputController = self._ServiceBag:GetService(require("UserInputController"))
     self._EventBusClient = self._ServiceBag:GetService(require("EventBusClient"))
+    self._CameraController = self._ServiceBag:GetService(require("CameraController"))
 
     self._GridObjects = {}
     self._ItemUIObjects = {}
@@ -177,7 +217,7 @@ function InventoryUIController.Start(self: Module)
 
         local function hookUIs()
             ButtonUtil:Hook(CloseButton, function()
-                self._EventBusClient:Publish(TopicConstants.UI.Close("InventoryUI"))
+                self:Close()
             end)
     
             self._UserInputController:RegisterKeymapAction(
@@ -188,7 +228,7 @@ function InventoryUIController.Start(self: Module)
                         return
                     end
     
-                    self._EventBusClient:Publish(TopicConstants.UI.Toggle("InventoryUI"))
+                    self:Toggle()
                 end
             )
 

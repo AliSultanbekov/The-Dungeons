@@ -34,6 +34,12 @@ type ModuleData = {
 
 export type Module = typeof(PlayerService) & ModuleData
 
+-- [ Private Functions ] --
+function PlayerService.RegisterService(self: Module, service: ServiceTemplate)
+    table.insert(self._Services, service)
+end
+
+-- [ Public Functions ] --
 function PlayerService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     if self._ServiceBag ~= nil then
         error("Service already initialized")
@@ -54,10 +60,6 @@ function PlayerService.Start(self: Module)
 			end
 		end
     end))
-end
-
-function PlayerService.RegisterService(self: Module, service: ServiceTemplate)
-    table.insert(self._Services, service)
 end
 
 return PlayerService :: Module

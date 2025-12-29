@@ -49,9 +49,9 @@ function CombatController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
 end
 
 function CombatController.Start(self: Module)
-    local Actions = CombatKeyMap.Actions
+    --local Actions = CombatKeyMap.Actions
 
-    self._Maid:GiveTask(self._UserInputController:RegisterKeymapAction(
+    --[[self._Maid:GiveTask(self._UserInputController:RegisterKeymapAction(
         Actions.WEAPON_PRIMARY,
         CombatKeyMap.KeyMaps[Actions.WEAPON_PRIMARY],
         function(packet)
@@ -65,7 +65,7 @@ function CombatController.Start(self: Module)
 
             self._WeaponController:Attack(Tool.Name)
         end
-    ))
+    ))]]
 end
 
 return CombatController :: Module

@@ -18,13 +18,12 @@ local WeaponConfig = {
     ["Wooden Sword"] = {
         Image = "rbxassetid://...",
         Rarity = "Common",
-        Combo = 3,
-        NormalAttack = {
+        Primary = {
             [1] = { Anim = "rbxassetid://...", Damage = 2, Recovery = 0.25 },
             [2] = { Anim = "rbxassetid://...", Damage = 2, Recovery = 0.25 },
             [3] = { Anim = "rbxassetid://...", Damage = 3, Recovery = 0.35 },
         },
-        SpecialAttack = {
+        Secondary = {
             [1] = { Anim = "rbxassetid://...", Damage = 2, Recovery = 0.25 },
         }
     }

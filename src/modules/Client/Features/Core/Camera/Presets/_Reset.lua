@@ -51,15 +51,15 @@ end
 
 -- [ Public Functions ] --
 function Reset.Start(self: Module, cameraController: CameraController)
-    cameraController:TakeOwnership()
-    
-    local Camera = cameraController:GetCamera()
-    local SavePoint = cameraController:GetSavePoint()
     local Character, HumanoidRootPart, Head = _CheckIfLoaded(Player)
     
     if not Character or not HumanoidRootPart or not Head then 
         return 
     end
+
+    cameraController:TakeOwnership()
+    local Camera = cameraController:GetCamera()
+    local SavePoint = Head:GetPivot() * cameraController:GetRelativeSavePoint()
     
     local Duration = 0.5
     local Elapsed = 0

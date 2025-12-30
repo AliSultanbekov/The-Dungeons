@@ -42,7 +42,8 @@ type ModuleData = {
     _Update: Update?,
     _Presets: { [string]: PresetModule },
     _CurrentPreset: Preset?,
-    _SavePoint: CFrame
+    _SavePoint: CFrame,
+    _RelativeSavePoint: CFrame,
 }
 
 export type Module = typeof(CameraController) & ModuleData
@@ -96,6 +97,14 @@ function CameraController.SetState(self: Module, state: State)
     self._State = state
 end
 
+function CameraController.GetRelativeSavePoint(self: Module)
+    return self._RelativeSavePoint
+end
+
+function CameraController.CaptureRelativeSavePoint(self: Module, instance: BasePart)
+    self._RelativeSavePoint = instance:GetPivot():ToObjectSpace(self:GetCamera():GetPivot())
+end
+
 function CameraController.GetSavePoint(self: Module)
     return self._SavePoint
 end
@@ -141,6 +150,7 @@ function CameraController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     self._Presets = {}
     self._CurrentPreset = nil
     self._SavePoint = CFrame.new()
+    self._RelativeSavePoint = CFrame.new()
 
     for _, inst in PresetsFolder:GetChildren() do
         if not inst:IsA("ModuleScript") or inst.Name == "loader" then

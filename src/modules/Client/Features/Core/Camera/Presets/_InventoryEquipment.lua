@@ -27,7 +27,7 @@ type CameraController = typeof(require("CameraController"))
 export type Module = typeof(InventoryEquipment)
 
 -- [ Private Functions ] --
-function _CheckIfLoaded(player: Player): (Model?, BasePart?)
+function _CheckIfLoaded(player: Player): (Model?, BasePart?, BasePart?)
     local Character = player.Character
     
 
@@ -41,20 +41,26 @@ function _CheckIfLoaded(player: Player): (Model?, BasePart?)
         return nil, nil
     end
 
-    return Character, HumanoidRootPart
+    local Head = Character:FindFirstChild("Head") :: BasePart
+
+    if not Head then
+        return
+    end
+
+    return Character, HumanoidRootPart, Head
 end
 
 -- [ Public Functions ] --
 function InventoryEquipment.Start(self, cameraController: CameraController)
-    cameraController:CaptureSavePoint()
-    cameraController:TakeOwnership()
-
     local Camera = cameraController:GetCamera()
-    local Character, HumanoidRootPart = _CheckIfLoaded(Player)
+    local Character, HumanoidRootPart, Head = _CheckIfLoaded(Player)
 
-    if not Character or not HumanoidRootPart then
+    if not Character or not HumanoidRootPart or not Head then
         return
     end
+
+    cameraController:CaptureRelativeSavePoint(Head)
+    cameraController:TakeOwnership()
 
     local Duration = 0.5
     local Elapsed = 0

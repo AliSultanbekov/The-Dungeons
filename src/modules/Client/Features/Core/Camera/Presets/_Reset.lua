@@ -61,7 +61,7 @@ function Reset.Start(self: Module, cameraController: CameraController)
     local Camera = cameraController:GetCamera()
     local SavePoint = Head:GetPivot() * cameraController:GetRelativeSavePoint()
     
-    local Duration = 0.5
+    local Duration = 1
     local Elapsed = 0
 
     local CameraOffset = Camera:GetPivot().Position - Head:GetPivot().Position
@@ -82,7 +82,7 @@ function Reset.Start(self: Module, cameraController: CameraController)
 
         Elapsed += dt
         local Alpha = math.clamp(Elapsed/Duration, 0, 1)
-        local EasedAlpha = Easings:OutQuad(Alpha)
+        local EasedAlpha = Easings:OutQuint(Alpha)
 
         local PosLerp = StartPos:Lerp(GoalPos, EasedAlpha)
         local RotLerp = CameraRotation:Lerp(SavePointRotation, EasedAlpha)

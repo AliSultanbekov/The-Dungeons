@@ -6,15 +6,17 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- [ Imports ] --
-local UniqueUIClass = require("_UniqueUIClass")
+local UniqueUIClass = require("../_UniqueUIClass")
 
 -- [ Require ] --
-local _require = require(script.Parent.loader).load(script)
+local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] -- 
 
 -- [ Constants ] --
 local ItemTypes = require("ItemTypes")
+local WeaponConfig = require("WeaponConfig")
+local ItemUIUtil = require("ItemUIUtil")
 
 -- [ Variables ] --
 
@@ -30,14 +32,26 @@ type ItemData = ItemTypes.WeaponItemData
 export type ObjectData = {
 
 }
-export type Object = ObjectData & Module
+export type Object = ObjectData & Module & UniqueUIClass.Object
 export type Module = typeof(WeaponUIClass)
 
 -- [ Private Functions ] --
+function WeaponUIClass._UpdateUI(self: Object)
+    local ItemName = self:GetItemData().Name
+    local ItemRarity = WeaponConfig[ItemName].Rarity
+    local ItemImage = WeaponConfig[ItemName].Image
+
+    local UI = self:GetUI()
+    
+    UI.ItemImage.Image = ItemImage
+    ItemUIUtil:SetupForRarity(UI, ItemRarity)
+end
 
 -- [ Public Functions ] --
 function WeaponUIClass.new(ui: ItemUI, itemData: ItemData): Object
     local self = setmetatable(UniqueUIClass.new(ui, itemData) :: any, WeaponUIClass) :: Object
+
+    self:_UpdateUI()
     
     return self
 end

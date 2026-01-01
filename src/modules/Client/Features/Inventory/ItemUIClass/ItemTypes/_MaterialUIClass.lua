@@ -13,6 +13,8 @@ local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 local ItemTypes = require("ItemTypes")
+local MaterialConfig = require("MaterialConfig")
+local ItemUIUtil = require("ItemUIUtil")
 
 -- [ Constants ] --
 
@@ -34,6 +36,16 @@ export type Object = ObjectData & Module & StackableUIClass.Object
 export type Module = typeof(MaterialUIclass)
 
 -- [ Private Functions ] --
+function MaterialUIclass._UpdateUI(self: Object)
+    local ItemName = self:GetItemData().Name
+    local ItemRarity = MaterialConfig[ItemName].Rarity
+    local ItemImage = MaterialConfig[ItemName].Image
+    
+    local UI = self:GetUI()
+    
+    UI.ItemImage.Image = ItemImage
+    ItemUIUtil:SetupForRarity(UI, ItemRarity)
+end
 
 -- [ Public Functions ] --
 function MaterialUIclass.new(ui: ItemUI, itemData: ItemData): Object

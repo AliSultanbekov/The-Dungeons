@@ -13,7 +13,6 @@ local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] -- 
 local ItemTypes = require("ItemTypes")
-local UpdateTextWithShadow = require("UpdateTextWithShadow")
 
 -- [ Constants ] --
 
@@ -35,6 +34,9 @@ export type Object = ObjectData & Module & ItemUIClass.Object
 export type Module = typeof(StackableUIClass)
 
 -- [ Private Functions ] --
+function StackableUIClass._UpdateUI(self: Object)
+    self._ItemUI.ItemName.Text = self:GetItemData().Name
+end
 
 -- [ Public Functions ] --
 function StackableUIClass.new(ui: ItemUI, itemData: ItemData): Object
@@ -44,7 +46,7 @@ function StackableUIClass.new(ui: ItemUI, itemData: ItemData): Object
 
     self._ItemCounter:Add(itemData.Amount)
 
-    UpdateTextWithShadow(self._ItemUI.ItemName, self._ItemData.Name)
+    self:_UpdateUI()
 
     return self
 end
@@ -59,6 +61,10 @@ function StackableUIClass.RemoveItemData(self: Object, itemData: ItemData)
     self._ItemData.Amount -= itemData.Amount
 
     self._ItemCounter:Add(-itemData.Amount)
+end
+
+function StackableUIClass.GetItemData(self: Object): ItemData
+    return self._ItemData
 end
 
 

@@ -14,7 +14,6 @@ local require = require(script.Parent.loader).load(script)
 local Maid = require("Maid")
 local Counter = require("Counter")
 local ItemTypes = require("ItemTypes")
-local UpdateTextWithShadow = require("UpdateTextWithShadow")
 
 -- [ Constants ] --
 
@@ -44,8 +43,8 @@ function ItemUIClass._ItemCountChanged(self: Object, newCount: number)
     else
         self._ItemUI.ItemAmount.Visible = true
     end
-    
-    UpdateTextWithShadow(self._ItemUI.ItemAmount, string.format("x%d", newCount))
+
+    self._ItemUI.ItemAmount.Text = string.format("x%d", newCount)
 end
 
 -- [ Public Functions ] --

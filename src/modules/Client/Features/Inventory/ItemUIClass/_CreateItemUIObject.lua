@@ -6,9 +6,9 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- [ Imports ] --
-local UniqueUIClass = require("./_UniqueUIClass")
-local StackableUIClass = require("./_StackableUIClass")
 local ItemUIClass = require("./_ItemUIClass")
+local WeaponUIClass = require("./ItemTypes/_WeaponUIClass")
+local MaterialUIClass = require("./ItemTypes/_MaterialUIClass")
 
 -- [ Require ] --
 local require = require(script.Parent.loader).load(script)
@@ -23,9 +23,9 @@ local ItemTypes = require("ItemTypes")
 -- [ Module Table ] --
 local CreateItemUIObject = function(ui: ItemUI, itemData: ItemData): ItemUIObject
     if itemData.Type == "Materials" then
-        return StackableUIClass.new(ui, itemData)
+        return MaterialUIClass.new(ui, itemData)
     elseif itemData.Type == "Weapons" then
-        return UniqueUIClass.new(ui, itemData)
+        return WeaponUIClass.new(ui, itemData)
     else
         error(`[GetItemUIObject] Unknown itemType: {itemData.Type}`)
     end

@@ -20,34 +20,16 @@ local InventoryConstants = {
         ["Equipment"] = {"Weapons"},
     },
 
-    Sections = {
-        ["Materials"] = {"Materials"},
-        ["Weapons"] = {"Weapons"}
-    },
-
-    SectionToPage = {
+    ItemTypeToPage = {
         ["Materials"] = "Items",
         ["Weapons"] = "Equipment"
-    },
-
-    ItemTypeToSections = {
-        ["Materials"] = "Materials",
-        ["Weapons"] = "Weapons"
     }
 } :: { 
     Pages: {
         [string]: { string }
     },
 
-    Sections: {
-        [string]: { string }
-    },
-
-    SectionToPage: {
-        [string]: string
-    },
-
-    ItemTypeToSections: {
+    ItemTypeToPage: {
         [string]: string
     }
 }

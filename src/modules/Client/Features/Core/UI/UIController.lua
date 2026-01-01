@@ -4,7 +4,6 @@
 
 -- [ Roblox Services ] --
 local Players = game:GetService("Players")
-local StarterGui = game:GetService("StarterGui")
 
 -- [ Imports ] --
 local UIConstants = require("./Constants/_UIConstants")
@@ -15,8 +14,8 @@ local require = require(script.Parent.loader).load(script)
 -- [ Imports ] --
 local ServiceBag = require("ServiceBag")
 local Promise = require("Promise")
+local Signal = require("Signal")
 local TopicConstants = require("TopicConstants")
-local Singal = require("Signal")
 local UIUtil = require("UIUtil")
 
 -- [ Constants ] --
@@ -25,106 +24,28 @@ local CLOSE_TWEENINFO = TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDi
 
 -- [ Variables ] --
 local Player = Players.LocalPlayer
+local PlayerGui = Player.PlayerGui
 
 -- [ Module Table ] --
 local UIController = {}
 
 -- [ Types ] --
-type UIs = typeof(StarterGui.UIs)
-
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
     _EventBusClient: typeof(require("EventBusClient")),
 
-    _Screens: { [string]: UIs },
-    _UIs: { [string]: Instance },
-    _UIComponents: { [string]: { [string]: Instance } },
-
+    _Screens: {[string]: ScreenGui },
+    _UIs: { [string]: Frame },
+    _UIComponents: { [string]: { [string]: GuiObject }},
     _OpenUIs: { [string]: boolean },
-    _Conns: { Singal.Connection<any> },
-    _UIReady: Promise.Promise<nil>
+    _UIReady: Promise.Promise<nil>,
+    _Conns: { Signal.Connection<any> }
 }
 
 export type Module = typeof(UIController) & ModuleData
 
 -- [ Private Functions ] --
-function UIController._PublishOnOpened(self: Module, uiName: string)
-    self._EventBusClient:Publish(TopicConstants.UI.OpenedAny)
-end
-
-function UIController._PublishOnClosed(self: Module, uiName: string)
-    self._EventBusClient:Publish(TopicConstants.UI.ClosedAny)
-end
-
-function UIController._SetupUIs(self: Module)
-    for _, screenName in UIConstants.Screens do
-        local Screen = Player.PlayerGui:WaitForChild(screenName)
-
-        self._Screens[screenName] = Screen
-
-        for _, instance in Screen:GetChildren() do
-            if not instance:IsA("Frame") then
-                return
-            end
-
-            self._UIs[instance.Name] = instance
-            self._UIComponents[instance.Name] = {}
-
-            self:RegisterUI(instance.Name)
-
-            for _, instance_2 in instance:GetDescendants() do
-                local Tags = instance_2:GetTags()
-                
-                for _, tag: string in Tags do
-                    if tag:find("UIComponent") then
-                        self._UIComponents[instance.Name][tag:split("UIComponent_")[2]] = instance_2
-                    end
-                end
-            end
-        end
-    end
-
-    self._UIReady:Resolve()
-end
-
-function UIController._CloseAllOpenUIs(self: Module)
-    for uiName, _ in self._OpenUIs do
-        self:Close(uiName)
-    end
-end
-
--- [ Public Functions ] --
-function UIController.Open(self: Module, uiName: string)
-    local UI = self:GetUI(uiName)
-
-    self:_CloseAllOpenUIs()
-
-    self._OpenUIs[uiName] = true
-
-    self:_PublishOnOpened(uiName)
-
-    UIUtil:OpenUI(UI, OPEN_TWEENINFO, true)
-end
-
-function UIController.Close(self: Module, uiName: string)
-    local UI = self:GetUI(uiName)
-
-    self._OpenUIs[uiName] = nil
-    
-    self:_PublishOnClosed(uiName)
-
-    UIUtil:CloseUI(UI, CLOSE_TWEENINFO, true)
-end
-
-function UIController.Toggle(self: Module, uiName: string)
-    if self._OpenUIs[uiName] then
-        self:Close(uiName)
-    else
-        self:Open(uiName)
-    end
-end
-
-function UIController.RegisterUI(self: Module, uiName: string)
+function UIController._RegisterUI(self: Module, uiName: string)
     table.insert(self._Conns, self._EventBusClient:Subscribe(TopicConstants.UI.Open(uiName), function()
         self:Open(uiName)
     end))
@@ -138,12 +59,89 @@ function UIController.RegisterUI(self: Module, uiName: string)
     end))
 end
 
+function UIController._SetupUIs(self: Module)
+    for _, screenName in UIConstants.Screens do
+        local ScreenInstance = PlayerGui:WaitForChild(screenName)
+
+        self._Screens[screenName] = ScreenInstance
+
+        for _, uiInstance in ScreenInstance:GetChildren() do
+            if not uiInstance:IsA("Frame") then
+                continue
+            end
+
+            self._UIs[uiInstance.Name] = uiInstance
+            self._UIComponents[uiInstance.Name] = {}
+
+            for _, instance_2 in uiInstance:GetDescendants() do
+                local Tags = instance_2:GetTags()
+                
+                for _, tag: string in Tags do
+                    if tag:find("UIComponent") then
+                        self._UIComponents[uiInstance.Name][tag:split("UIComponent_")[2]] = instance_2
+                    end
+                end
+            end
+
+            self:_RegisterUI(uiInstance.Name)
+            UIUtil:ForceUIClose(uiInstance)
+        end
+    end
+
+    self._UIReady:Resolve()
+end
+
+-- [ Public Functions ] --
+function UIController.CloseAllExclusive(self: Module)
+    for uiName, _ in self._OpenUIs do
+        local UIGroup = UIConstants.UINameToGroup[uiName]
+
+        if UIGroup == "Exclusive" then
+            self:Close(uiName)
+        end
+    end
+end
+
+function UIController.Toggle(self: Module, uiName: string)
+    if self._OpenUIs[uiName] then
+        self:Close(uiName)
+    else
+        self:Open(uiName)
+    end
+end
+
+function UIController.Open(self: Module, uiName: string)
+    local UIGroup = UIConstants.UINameToGroup[uiName]
+
+    if UIGroup == "Exclusive" then
+        self:CloseAllExclusive()
+    end
+
+    self._OpenUIs[uiName] = true
+
+    local UI = self:GetUI(uiName)
+
+    UIUtil:OpenUI(UI, OPEN_TWEENINFO, true)
+
+    self._EventBusClient:Publish(TopicConstants.UI.OpenedAny)
+end
+
+function UIController.Close(self: Module, uiName: string)
+    self._OpenUIs[uiName] = nil
+
+    local UI = self:GetUI(uiName)
+
+    UIUtil:CloseUI(UI, CLOSE_TWEENINFO, true)
+
+    self._EventBusClient:Publish(TopicConstants.UI.ClosedAny)
+end
+
 function UIController.GetUIComponent(self: Module, uiName: string, uiComponentName: string)
     return self._UIComponents[uiName][uiComponentName]
 end
 
 function UIController.GetUI(self: Module, uiName: string)
-    return self._Screens["UIs"][uiName]
+    return self._UIs[uiName]
 end
 
 function UIController.GetScreen(self: Module, screenName: string)
@@ -162,13 +160,12 @@ function UIController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     self._ServiceBag = assert(serviceBag, "No serviceBag")
     self._EventBusClient = self._ServiceBag:GetService(require("EventBusClient"))
 
-    self._Screens = {} -- Key: ScreenName Value: Instance
-    self._UIs = {} -- Key: UIName Value: Instance
-    self._UIComponents = {} --Key: UIName Value: { Key: ComponentName Value: Instance }
-
+    self._Screens = {}
+    self._UIs = {}
+    self._UIComponents = {}
     self._OpenUIs = {}
-    self._Conns = {}
     self._UIReady = Promise.new()
+    self._Conns = {}
 end
 
 function UIController.Start(self: Module)

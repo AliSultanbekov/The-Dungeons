@@ -62,7 +62,7 @@ function InventoryEquipment.Start(self, cameraController: CameraController)
     cameraController:CaptureRelativeSavePoint(Head)
     cameraController:TakeOwnership()
 
-    local Duration = 0.5
+    local Duration = 1
     local Elapsed = 0
 
     local Relativity = HumanoidRootPart:GetPivot():ToObjectSpace(Camera:GetPivot())
@@ -81,7 +81,7 @@ function InventoryEquipment.Start(self, cameraController: CameraController)
 
         Elapsed += dt
         local Alpha = math.clamp(Elapsed/Duration, 0, 1)
-        local EasedAlpha = Easings:OutQuad(Alpha)
+        local EasedAlpha = Easings:OutQuint(Alpha)
 
         Camera:PivotTo(Start:Lerp(Goal, EasedAlpha))
 

@@ -27,6 +27,13 @@ local WeaponConfig = {
             [1] = { Anim = "rbxassetid://...", Damage = 2, Recovery = 0.25 },
         }
     }
+} :: {
+    [string]: {
+        Image: string,
+        Rarity: string,
+        Primary: {},
+        Secondary: {},
+    }
 }
 
 -- [ Types ] --

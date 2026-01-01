@@ -8,8 +8,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 -- [ Imports ] --
 local CreateItemUIObject = require("./ItemUIClass/_CreateItemUIObject")
 local InventoryConstants = require("./Constants/_InventoryConstants")
+local EquipmentDisplayClass = require("@self/_EquipmentDisplayClass")
 local GetGroupKey = require("@self/_GetGroupKey")
-local UIGridClass = require("./_UIGridClass")
+local UIGridClass = require("@self/_UIGridClass")
 local KeyMap = require("@self/_KeyMap")
 
 -- [ Require ] --
@@ -57,6 +58,7 @@ type ModuleData = {
 
     _GridObjects: {[string]: UIGridClass.Object},
     _ItemUIObjects: { [GroupKey]: ItemUIObject },
+    _EquipmentDisplayObject: EquipmentDisplayClass.Object,
 
     _CurrentPage: string
 }
@@ -77,10 +79,14 @@ function InventoryUIController._OnPageSwitch(self: Module, newPageName: string)
         self:_ShiftUIToRight()
         self._CameraController:RunPreset("InventoryEquipment")
         self._UserInputController:ToggleControls(false)
+        self._EquipmentDisplayObject:Show()
     else
         self:_ShiftUIToMiddle()
-        self._CameraController:RunPreset("Reset")
-        self._UserInputController:ToggleControls(true)
+        if self._CameraController:GetCurrentPreset() == "InventoryEquipment" then
+            self._CameraController:RunPreset("Reset")
+            self._UserInputController:ToggleControls(true)
+            self._EquipmentDisplayObject:Hide()
+        end
     end
 end
 
@@ -122,18 +128,16 @@ end
 
 function InventoryUIController.AddItem(self: Module, itemData: ItemData)
     local GroupKey = GetGroupKey(itemData)
-
-    local SectionName = InventoryConstants.ItemTypeToSections[itemData.Type]
-    local PageName = InventoryConstants.SectionToPage[SectionName]
+    local PageName = InventoryConstants.ItemTypeToPage[itemData.Type]
     local GridObject = self._GridObjects[PageName]
     local ItemUIObject = self._ItemUIObjects[GroupKey]
 
     if not ItemUIObject then
         local ItemUI = UIPool:Get("ItemUI")
-        GridObject:AddElement(SectionName, ItemUI)
-        ItemUIObject = CreateItemUIObject(ItemUI, itemData)
+        local NewItemUIObject = CreateItemUIObject(ItemUI, itemData)
+        self._ItemUIObjects[GroupKey] = NewItemUIObject
 
-        self._ItemUIObjects[GroupKey] = ItemUIObject
+        GridObject:AddElement(NewItemUIObject:GetUI())
     else
         ItemUIObject:AddItemData(itemData)
     end
@@ -141,9 +145,7 @@ end
 
 function InventoryUIController.RemoveItem(self: Module, itemData: ItemData)
     local GroupKey = GetGroupKey(itemData)
-
-    local SectionName = InventoryConstants.ItemTypeToSections[itemData.Type]
-    local PageName = InventoryConstants.SectionToPage[SectionName]
+    local PageName = InventoryConstants.ItemTypeToPage[itemData.Type]
     local GridObject = self._GridObjects[PageName]
     local ItemUIObject = self._ItemUIObjects[GroupKey]
 
@@ -152,10 +154,10 @@ function InventoryUIController.RemoveItem(self: Module, itemData: ItemData)
     end
 
     ItemUIObject:RemoveItemData(itemData)
-    GridObject:RemoveElement(SectionName, ItemUIObject:GetUI())
 
     if ItemUIObject:IsEmpty() then
         self._ItemUIObjects[GroupKey] = nil
+        GridObject:RemoveElement(ItemUIObject:GetUI())
     end
 end
 
@@ -194,6 +196,8 @@ end
 
 function InventoryUIController.Start(self: Module)
     self._UIController:UIReady():Then(function()
+        self._EquipmentDisplayObject = EquipmentDisplayClass.new()
+
         local Actions = KeyMap.Actions
         local KeyMaps = KeyMap.KeyMaps
         local CloseButton = self._UIController:GetUIComponent("InventoryUI", "Close") :: GuiButton
@@ -201,16 +205,8 @@ function InventoryUIController.Start(self: Module)
 
         local function setupGrids()
             for pageName, sectionsData in InventoryConstants.Pages do
-
                 local GridUI = self._UIController:GetUIComponent("InventoryUI", string.format("%sGrid", pageName)) :: ScrollingFrame
-                print(self._UIController)
-
                 local UIGridObject = UIGridClass.new(GridUI)
-
-                for _, sectionName in sectionsData do
-                    UIGridObject:CreateSection(sectionName)
-                end
-
                 self._GridObjects[pageName] = UIGridObject
             end
         end
@@ -249,7 +245,14 @@ function InventoryUIController.Start(self: Module)
         self:AddItem({
             ID = "3",
             Type = "Weapons",
-            Name = "Sword",
+            Name = "Wooden Sword",
+        })
+
+        self:AddItem({
+            ID = "Wooden Plank",
+            Type = "Materials",
+            Name = "Wooden Plank",
+            Amount = 3
         })
     end)
 end

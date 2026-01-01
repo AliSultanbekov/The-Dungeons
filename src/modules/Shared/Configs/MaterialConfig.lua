@@ -15,9 +15,14 @@ local _require = require(script.Parent.loader).load(script)
 
 -- [ Module Table ] --
 local MaterialConfig = {
-    ["Sam's Foot"] = {
-        Image = "rbxassetid://...",
+    ["Wooden Plank"] = {
+        Image = "rbxassetid://91411232784138",
         Rarity = "Common"
+    }
+} :: {
+    [string]: {
+        Image: string,
+        Rarity: string
     }
 }
 

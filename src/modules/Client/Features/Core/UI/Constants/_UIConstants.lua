@@ -16,7 +16,13 @@ local _require = require(script.Parent.loader).load(script)
 -- [ Module Table ] --
 local UIConstants = {
     Screens = {
-        "UIs",
+        "Primary",
+        "Tooltips"
+    },
+    UINameToGroup = {
+        InventoryUI = "Exclusive",
+        
+        ItemTooltipUI = "Persistent"
     }
 }
 

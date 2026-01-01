@@ -13,7 +13,6 @@ local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 local ItemTypes = require("ItemTypes")
-local UpdateTextWithShadow = require("UpdateTextWithShadow")
 
 -- [ Constants ] --
 
@@ -35,6 +34,9 @@ export type Object = ObjectData & Module & ItemUIClass.Object
 export type Module = typeof(UnqiueUIClass)
 
 -- [ Private Functions ] --
+function UnqiueUIClass._UpdateUI(self: Object)
+    self._ItemUI.ItemName.Text = self:GetItemData().Name
+end
 
 -- [ Public Functions ] --
 function UnqiueUIClass.new(ui: ItemUI, itemData: ItemData): Object
@@ -44,7 +46,7 @@ function UnqiueUIClass.new(ui: ItemUI, itemData: ItemData): Object
     
     self._ItemCounter:Add(1)
 
-    UpdateTextWithShadow(self._ItemUI.ItemName, self:GetItemData().Name)
+    self:_UpdateUI()
 
     return self
 end

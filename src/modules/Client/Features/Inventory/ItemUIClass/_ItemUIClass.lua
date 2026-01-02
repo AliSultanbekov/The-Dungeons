@@ -66,6 +66,10 @@ function ItemUIClass.new(ui: ItemUI): Object
     return self
 end
 
+function ItemUIClass.GetItemData(self: Object)
+    -- no default functionality
+end
+
 function ItemUIClass.AddItemData(self: Object, itemData: ItemData)
     -- no default functionality
 end

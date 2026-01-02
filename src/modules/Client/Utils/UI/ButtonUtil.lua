@@ -31,29 +31,18 @@ export type Module = typeof(ButtonUtil)
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function ButtonUtil.Hook(self: Module, button: GuiButton, onInteract: () -> ()?)
-    --[[local Top = button:FindFirstChild("Top")
-
-    if not Top or not Top:IsA("ImageLabel") then
-        warn("[ButtonUtil] Top ImageLabel not found for button: " .. button.Name)
-        return
-    end
-
-    local Bottom = button:FindFirstChild("Bottom")
-
-    if not Bottom or not Bottom:IsA("ImageLabel") then
-        warn("[ButtonUtil] Bottom ImageLabel not found for button: " .. button.Name)
-        return
-    end
-
-    Top.Position = DEFAULT_TOP_POS]]
-
+function ButtonUtil.Hook(self: Module, button: GuiButton, onHoverIn: () -> ()?, onHoverOut: () -> ()?, onInteract: () -> ()?)
     button.MouseEnter:Connect(function()
-        --UIAnimUtil:AnimateToPosition(Top, UDim2.new(0.5, 0, 0.5, 0), MOVE_TWEENINFO)
+        if onHoverIn then
+            onHoverIn()
+        end
     end)
 
     button.MouseLeave:Connect(function()
-        --UIAnimUtil:AnimateToPosition(Top, DEFAULT_TOP_POS, MOVE_TWEENINFO)
+        if onHoverOut then
+            onHoverOut()
+        end
+        
         UIAnimUtil:AnimateUIScale(button, 1, PRESS_TWEENINFO)
     end)
 

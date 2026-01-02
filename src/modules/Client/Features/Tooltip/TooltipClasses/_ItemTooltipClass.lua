@@ -12,7 +12,9 @@ local TooltipClass = require("./_TooltipClass")
 local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
-local TopicConstants = require("TopicConstants")
+local ItemTypes = require("ItemTypes")
+local WeaponConfig = require("WeaponConfig")
+local MaterialConfig = require("MaterialConfig")
 
 -- [ Constants ] --
 
@@ -23,41 +25,46 @@ local ItemTooltipClass = setmetatable({}, TooltipClass)
 ItemTooltipClass.__index = ItemTooltipClass
 
 -- [ Types ] --
-type EventBusClient = typeof(require("EventBusClient"))
-type ItemTooltipUI = typeof(StarterGui.Tooltips.ItemTooltip)
+type ItemData = ItemTypes.ItemData
+type ItemTooltipUI = typeof(StarterGui.Tooltips.ItemTooltipUI)
 export type ObjectData = {
-
+    _UI: ItemTooltipUI
 }
 export type Object = ObjectData & Module & TooltipClass.Object
 export type Module = typeof(ItemTooltipClass)
 
 -- [ Private Functions ] --
+function ItemTooltipClass._UpdateWeaponInfo(self: Object, info: ItemData)
+    local Config = WeaponConfig
+    local ItemName = info.Name
+    local Rarity = Config[ItemName].Rarity
+
+    self._UI.Container.Header.Container.ItemName.Text = ItemName
+    self._UI.Container.Header.Container.Rarity.Text = Rarity
+end
+
+function ItemTooltipClass._UpdateMaterialInfo(self: Object, info: ItemData)
+    local Config = MaterialConfig
+    local ItemName = info.Name
+    local Rarity = Config[ItemName].Rarity
+
+    self._UI.Container.Header.Container.ItemName.Text = ItemName
+    self._UI.Container.Header.Container.Rarity.Text = Rarity
+end
 
 -- [ Public Functions ] --
-function ItemTooltipClass.new(ui: ItemTooltipUI, eventBusClient: EventBusClient): Object
-    local self = setmetatable(TooltipClass.new(ui, eventBusClient), ItemTooltipClass) :: Object
-
-    task.defer(function()
-        while true do
-            task.wait(2)
-
-            self:Show()
-
-            task.wait(2)
-
-            self:Hide()
-        end
-    end)
+function ItemTooltipClass.new(ui: ItemTooltipUI): Object
+    local self = setmetatable(TooltipClass.new(ui), ItemTooltipClass) :: Object
 
     return self
 end
 
-function ItemTooltipClass.Show(self: Object)
-    self._EventBusClient:Publish(TopicConstants.UI.Open("ItemTooltipUI"))
-end
-
-function ItemTooltipClass.Hide(self: Object)
-    self._EventBusClient:Publish(TopicConstants.UI.Close("ItemTooltipUI"))
+function ItemTooltipClass.UpdateInfo(self: Object, info: ItemData)
+    if info.Type == "Weapons" then
+        self:_UpdateWeaponInfo(info)
+    elseif info.Type == "Materials" then
+        self:_UpdateMaterialInfo(info)
+    end
 end
 
 return ItemTooltipClass :: Module

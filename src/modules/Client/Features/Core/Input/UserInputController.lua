@@ -70,53 +70,51 @@ function UserInputController.RegisterKeymapAction(
     cb: (KeymapActionPacket) -> (),
     priority: number?
 )
+    _CheckAction(self, actionName)
 
-_CheckAction(self, actionName)
+    local ActionMaidObj = Maid.new()
+    local Priority = priority or Enum.ContextActionPriority.Medium.Value
 
-local ActionMaidObj = Maid.new()
-local Priority = priority or Enum.ContextActionPriority.Medium.Value
+    ActionMaidObj:GiveTask(
+        Rx.combineLatest({
+            IsTouchButton = keyMapList:ObserveIsRobloxTouchButton(),
+            InputEnumsList = keyMapList:ObserveInputEnumsList()
+        }):Subscribe(function(data)
+            ContextActionService:BindActionAtPriority(
+                actionName,
+                function(actionName: string, inputState: Enum.UserInputState, inputObject: InputObject)
+                    cb({InputObject = inputObject, InputState = inputState, ActionName = actionName})
+                end,
+                data.IsTouchButton,
+                Priority,
+                table.unpack(data.InputEnumsList)
+            )
+        end)
+    )
 
-ActionMaidObj:GiveTask(
-    Rx.combineLatest({
-        IsTouchButton = keyMapList:ObserveIsRobloxTouchButton(),
-        InputEnumsList = keyMapList:ObserveInputEnumsList()
-    }):Subscribe(function(data)
-        ContextActionService:BindActionAtPriority(
-            actionName,
-            function(actionName: string, inputState: Enum.UserInputState, inputObject: InputObject)
-                cb({InputObject = inputObject, InputState = inputState, ActionName = actionName})
-            end,
-            data.IsTouchButton,
-            Priority,
-            table.unpack(data.InputEnumsList)
-        )
+    ActionMaidObj:GiveTask(function()
+        ContextActionService:UnbindAction(actionName)
     end)
-)
 
-ActionMaidObj:GiveTask(function()
-    ContextActionService:UnbindAction(actionName)
-end)
+    self._Actions[actionName] = {
+        Maid = ActionMaidObj,
+        Priority = Priority,
+        Cb = cb
+    }
 
-self._Actions[actionName] = {
-    Maid = ActionMaidObj,
-    Priority = Priority,
-    Cb = cb
-}
+    self._Maid:GiveTask(ActionMaidObj)
 
-self._Maid:GiveTask(ActionMaidObj)
+    return function()
+        local Data = self._Actions[actionName]
 
-return function()
-    local Data = self._Actions[actionName]
+        if not Data then
+            return
+        end
 
-    if not Data then
-        return
+        Data.Maid:DoCleaning()
+        self._Actions[actionName] = nil
     end
-
-    Data.Maid:DoCleaning()
-    self._Actions[actionName] = nil
 end
-end
-
 
 function UserInputController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     if self._ServiceBag ~= nil then

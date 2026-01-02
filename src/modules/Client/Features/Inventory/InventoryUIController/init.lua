@@ -28,17 +28,6 @@ local UIAnimUtil = require("UIAnimUtil")
 -- [ Constants ] --
 
 -- [ Variables ] --
-local UIPool = ObjectPool.new()
-UIPool:AddKey(
-    "ItemUI",
-    function()
-        return AssetProvider:Get("UIs/Inventory/ItemUI")
-    end,
-    function(obj: any)
-        obj.Parent = nil
-    end
-)
-UIPool:ForceConstruct("ItemUI", 10)
 
 -- [ Module Table ] --
 local InventoryUIController = {}                                                                                                                                                                                          
@@ -55,12 +44,16 @@ type ModuleData = {
     _UserInputController: typeof(require("UserInputController")),
     _EventBusClient: typeof(require("EventBusClient")),
     _CameraController: typeof(require("CameraController")),
+    _TooltipController: typeof(require("TooltipController")),
+
+    _UIPool: ObjectPool.Object<GuiObject>,
 
     _GridObjects: {[string]: UIGridClass.Object},
     _ItemUIObjects: { [GroupKey]: ItemUIObject },
-    _EquipmentDisplayObject: EquipmentDisplayClass.Object,
+    _ItemUIToGroupKey: { [GuiObject]: GroupKey },
+    _CurrentPage: string,
 
-    _CurrentPage: string
+    _EquipmentDisplayObject: EquipmentDisplayClass.Object,
 }
 
 export type Module = typeof(InventoryUIController) & ModuleData
@@ -133,9 +126,10 @@ function InventoryUIController.AddItem(self: Module, itemData: ItemData)
     local ItemUIObject = self._ItemUIObjects[GroupKey]
 
     if not ItemUIObject then
-        local ItemUI = UIPool:Get("ItemUI")
+        local ItemUI = self._UIPool:Get("ItemUI")
         local NewItemUIObject = CreateItemUIObject(ItemUI, itemData)
         self._ItemUIObjects[GroupKey] = NewItemUIObject
+        self._ItemUIToGroupKey[ItemUI] = GroupKey
 
         GridObject:AddElement(NewItemUIObject:GetUI())
     else
@@ -156,8 +150,11 @@ function InventoryUIController.RemoveItem(self: Module, itemData: ItemData)
     ItemUIObject:RemoveItemData(itemData)
 
     if ItemUIObject:IsEmpty() then
+        local ItemUI = ItemUIObject:GetUI()
         self._ItemUIObjects[GroupKey] = nil
-        GridObject:RemoveElement(ItemUIObject:GetUI())
+        self._ItemUIToGroupKey[ItemUI] = nil
+        
+        GridObject:RemoveElement(ItemUI)
     end
 end
 
@@ -187,10 +184,13 @@ function InventoryUIController.Init(self: Module, serviceBag: ServiceBag.Service
     self._UserInputController = self._ServiceBag:GetService(require("UserInputController"))
     self._EventBusClient = self._ServiceBag:GetService(require("EventBusClient"))
     self._CameraController = self._ServiceBag:GetService(require("CameraController"))
+    self._TooltipController = self._ServiceBag:GetService(require("TooltipController"))
+
+    self._UIPool = ObjectPool.new()
 
     self._GridObjects = {}
     self._ItemUIObjects = {}
-
+    self._ItemUIToGroupKey = {}
     self._CurrentPage = "Items"
 end
 
@@ -203,6 +203,35 @@ function InventoryUIController.Start(self: Module)
         local CloseButton = self._UIController:GetUIComponent("InventoryUI", "Close") :: GuiButton
         local PageButtons = self._UIController:GetUIComponent("InventoryUI", "PageButtons")
 
+        local function setupUIPool()
+            self._UIPool:AddKey(
+                "ItemUI",
+                function()
+                    local UI = AssetProvider:Get("UIs/Inventory/ItemUI")
+
+                    ButtonUtil:Hook(UI,
+                        function()
+                            local GroupKey = self._ItemUIToGroupKey[UI]
+                            local ItemUIObject = self._ItemUIObjects[GroupKey]
+                            
+                            self._TooltipController:UpdateInfo("ItemTooltip", ItemUIObject:GetItemData())
+                            self._TooltipController:Show("ItemTooltip", true)
+                        end,
+
+                        function()
+                            self._TooltipController:Hide("ItemTooltip")
+                        end
+                    )
+
+                    return UI
+                end,
+                function(obj: any)
+                    obj.Parent = nil
+                end
+            )
+            self._UIPool:ForceConstruct("ItemUI", 10)
+        end
+
         local function setupGrids()
             for pageName, sectionsData in InventoryConstants.Pages do
                 local GridUI = self._UIController:GetUIComponent("InventoryUI", string.format("%sGrid", pageName)) :: ScrollingFrame
@@ -212,7 +241,7 @@ function InventoryUIController.Start(self: Module)
         end
 
         local function hookUIs()
-            ButtonUtil:Hook(CloseButton, function()
+            ButtonUtil:Hook(CloseButton, nil, nil, function()
                 self:Close()
             end)
     
@@ -233,12 +262,13 @@ function InventoryUIController.Start(self: Module)
                     continue
                 end
 
-                ButtonUtil:Hook(instance, function()
+                ButtonUtil:Hook(instance, nil, nil, function()
                     self:SwitchPage(instance.Name)
                 end)
             end
         end
 
+        setupUIPool()
         setupGrids()
         hookUIs()
 

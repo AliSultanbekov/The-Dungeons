@@ -11,12 +11,8 @@ local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 local UIUtil = require("UIUtil")
-local UIAnimUtil = require("UIAnimUtil")
-local TopicConstants = require("TopicConstants")
 
 -- [ Constants ] --
-local SHOW_TWEENINFO = TweenInfo.new(0.1)
-local HIDE_TWEENINFO = TweenInfo.new(0.1)
 
 -- [ Variables ] --
 
@@ -32,7 +28,7 @@ type TooltipUI = {
 
 export type ObjectData = {
     _UI: TooltipUI,
-    _EventBusClient: EventBusClient
+    _HookedToCursor: boolean
 }
 export type Object = ObjectData & Module
 export type Module = typeof(TooltipClass)
@@ -40,21 +36,39 @@ export type Module = typeof(TooltipClass)
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function TooltipClass.new(ui: TooltipUI, eventBusClient: EventBusClient): Object
+function TooltipClass.new(ui: TooltipUI): Object
     local self = setmetatable({} :: any, TooltipClass) :: Object
 
     self._UI = ui
-    self._EventBusClient = eventBusClient
+    self._HookedToCursor = false
 
     return self
 end
 
 function TooltipClass.Show(self: Object)
-
+    UIUtil:ForceUIOpen(self._UI, true)
 end
 
 function TooltipClass.Hide(self: Object)
+    UIUtil:ForceUIClose(self._UI)
+end
 
+function TooltipClass.GetUI(self: Object)
+    return self._UI
+end
+
+function TooltipClass.SetHookToCursor(self: Object, value: boolean)
+    self._HookedToCursor = value
+end
+
+function TooltipClass.IsHookedToCursor(self: Object)
+    return self._HookedToCursor == true
+end
+
+function TooltipClass.UpdatePosition(self: Object, position: UDim2)
+    local UI = self:GetUI()
+
+    UI.Position = position
 end
 
 return TooltipClass :: Module

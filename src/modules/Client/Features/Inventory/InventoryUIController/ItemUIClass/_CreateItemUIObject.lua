@@ -11,7 +11,7 @@ local WeaponUIClass = require("./ItemTypes/_WeaponUIClass")
 local MaterialUIClass = require("./ItemTypes/_MaterialUIClass")
 
 -- [ Require ] --
-local require = require(script.Parent.loader).load(script)
+local require = require(script.Parent.Parent.Parent.loader).load(script)
 
 -- [ Imports ] -- 
 local ItemTypes = require("ItemTypes")

@@ -6,7 +6,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- [ Imports ] --
-local CreateItemUIObject = require("./ItemUIClass/_CreateItemUIObject")
+local CreateItemUIObject = require("@self/ItemUIClass/_CreateItemUIObject")
 local InventoryConstants = require("./Constants/_InventoryConstants")
 local EquipmentDisplayClass = require("@self/_EquipmentDisplayClass")
 local GetGroupKey = require("@self/_GetGroupKey")
@@ -67,6 +67,11 @@ function InventoryUIController._ShiftUIToMiddle(self: Module)
     UIAnimUtil:AnimateToPosition(self._UIController:GetUI("InventoryUI"), UDim2.new(0.5, 0, 0.5, 0), TweenInfo.new(0.1))
 end
 
+function InventoryUIController._HideTooltips(self: Module)
+    self._TooltipController:Hide("ItemTooltip")
+    self._TooltipController:Hide("ItemActionTooltip")
+end
+
 function InventoryUIController._OnPageSwitch(self: Module, newPageName: string)
     if newPageName == "Equipment" then
         self:_ShiftUIToRight()
@@ -109,6 +114,7 @@ function InventoryUIController.SwitchPage(self: Module, pageName: string): boole
         return false
     end
 
+    self:_HideTooltips()
     self:_OnPageSwitch(pageName)
 
     CurrentPage.Visible = false
@@ -163,6 +169,7 @@ function InventoryUIController.Close(self: Module)
         return
     end
     
+    self:_HideTooltips()
     self._EventBusClient:Publish(TopicConstants.UI.Close("InventoryUI"))
 end
 
@@ -170,7 +177,8 @@ function InventoryUIController.Toggle(self: Module)
     if not self:_TrySwitchingToItemsPage() then
         return
     end
-
+    
+    self:_HideTooltips()
     self._EventBusClient:Publish(TopicConstants.UI.Toggle("InventoryUI"))
 end
 
@@ -213,13 +221,34 @@ function InventoryUIController.Start(self: Module)
                         function()
                             local GroupKey = self._ItemUIToGroupKey[UI]
                             local ItemUIObject = self._ItemUIObjects[GroupKey]
+                            local ItemData = ItemUIObject:GetItemData()
                             
-                            self._TooltipController:UpdateInfo("ItemTooltip", ItemUIObject:GetItemData())
-                            self._TooltipController:Show("ItemTooltip", true)
+                            if self._TooltipController:GetActive() ~= "ItemActionTooltip" then
+                                self._TooltipController:UpdateInfo("ItemTooltip", ItemData)
+                                self._TooltipController:Show("ItemTooltip", true)
+                            end
                         end,
 
                         function()
-                            self._TooltipController:Hide("ItemTooltip")
+                            if self._TooltipController:GetActive() ~= "ItemActionTooltip" then
+                                self._TooltipController:Hide("ItemTooltip")
+                            end
+                        end,
+
+                        function()
+                            local GroupKey = self._ItemUIToGroupKey[UI]
+                            local ItemUIObject = self._ItemUIObjects[GroupKey]
+                            local ItemData = ItemUIObject:GetItemData()
+                            local UIPosition = UI.AbsolutePosition + Vector2.new(UI.AbsoluteSize.X + 15 --[[ little offset ]], 0)
+
+                            self._TooltipController:SetCallBacks("ItemActionTooltip", {
+                                ["Close"] = function()
+                                    self._TooltipController:Hide("ItemActionTooltip")
+                                end
+                            })
+                            self._TooltipController:UpdateInfo("ItemActionTooltip", ItemData)
+                            self._TooltipController:UpdatePosition("ItemActionTooltip", UDim2.new(0, UIPosition.X, 0, UIPosition.Y))
+                            self._TooltipController:Show("ItemActionTooltip")
                         end
                     )
 

@@ -9,7 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UniqueUIClass = require("../_UniqueUIClass")
 
 -- [ Require ] --
-local require = require(script.Parent.loader).load(script)
+local require = require(script.Parent.Parent.Parent.Parent.loader).load(script)
 
 -- [ Imports ] -- 
 

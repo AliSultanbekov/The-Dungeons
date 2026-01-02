@@ -8,7 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 -- [ Imports ] --
 
 -- [ Require ] --
-local require = require(script.Parent.loader).load(script)
+local require = require(script.Parent.Parent.Parent.loader).load(script)
 
 -- [ Imports ] --
 local Maid = require("Maid")
@@ -51,13 +51,7 @@ end
 function ItemUIClass.new(ui: ItemUI): Object
     local self = setmetatable({} :: any, ItemUIClass) :: Object
 
-    self._Maid = Maid.new()
     self._ItemUI = ui
-
-
-    self._Maid:Add(function()
-        setmetatable(self, nil)
-    end)
 
     self._ItemCounter = Counter.new(); self._ItemCounter.Changed:Connect(function(newCount: number)
         self:_ItemCountChanged(newCount)
@@ -66,16 +60,14 @@ function ItemUIClass.new(ui: ItemUI): Object
     return self
 end
 
-function ItemUIClass.GetItemData(self: Object)
-    -- no default functionality
+function ItemUIClass.GetItemData(self: Object): ItemData
+    error("this shouldnt be called")
 end
 
 function ItemUIClass.AddItemData(self: Object, itemData: ItemData)
-    -- no default functionality
 end
 
 function ItemUIClass.RemoveItemData(self: Object, itemData: ItemData)
-    -- no default functionality
 end
 
 function ItemUIClass.GetUI(self: Object)
@@ -84,10 +76,6 @@ end
 
 function ItemUIClass.IsEmpty(self: Object)
     return self._ItemCounter:GetValue() == 0
-end
-
-function ItemUIClass.Destory(self: Object)
-    self._Maid:DoCleaning()
 end
 
 return ItemUIClass :: Module

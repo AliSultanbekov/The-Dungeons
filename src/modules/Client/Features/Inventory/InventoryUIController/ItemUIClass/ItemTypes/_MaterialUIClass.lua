@@ -9,7 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local StackableUIClass = require("../_StackableUIClass")
 
 -- [ Require ] --
-local require = require(script.Parent.loader).load(script)
+local require = require(script.Parent.Parent.Parent.Parent.loader).load(script)
 
 -- [ Imports ] --
 local ItemTypes = require("ItemTypes")

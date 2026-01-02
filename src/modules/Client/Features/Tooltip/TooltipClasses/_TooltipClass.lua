@@ -21,6 +21,7 @@ local TooltipClass = {}
 TooltipClass.__index = TooltipClass
 
 -- [ Types ] --
+type Callbacks = { [string]: (...any) -> (...any) }
 type EventBusClient = typeof(require("EventBusClient"))
 type TooltipUI = {
     UIScale: UIScale
@@ -28,7 +29,8 @@ type TooltipUI = {
 
 export type ObjectData = {
     _UI: TooltipUI,
-    _HookedToCursor: boolean
+    _HookedToCursor: boolean,
+    _Callbacks: Callbacks
 }
 export type Object = ObjectData & Module
 export type Module = typeof(TooltipClass)
@@ -40,9 +42,14 @@ function TooltipClass.new(ui: TooltipUI): Object
     local self = setmetatable({} :: any, TooltipClass) :: Object
 
     self._UI = ui
+    self._Callbacks = {}
     self._HookedToCursor = false
 
     return self
+end
+
+function TooltipClass.SetCallBacks(self: Object, cbs: Callbacks)
+    self._Callbacks = cbs
 end
 
 function TooltipClass.Show(self: Object)
@@ -69,6 +76,10 @@ function TooltipClass.UpdatePosition(self: Object, position: UDim2)
     local UI = self:GetUI()
 
     UI.Position = position
+end
+
+function TooltipClass.UpdateInfo(self: Object, info: { any })
+    
 end
 
 return TooltipClass :: Module

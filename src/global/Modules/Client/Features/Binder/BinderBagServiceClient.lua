@@ -17,7 +17,7 @@ local Binder = require("Binder")
 -- [ Constants ] --
 
 -- [ Variables ] --
-local Features = script.Parent.Parent.Features
+local Features = script.Parent.Parent.Parent.Features
 
 -- [ Module Table ] --
 local BinderBagServiceClient = {}

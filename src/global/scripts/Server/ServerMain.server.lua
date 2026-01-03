@@ -10,3 +10,5 @@ local serviceBag = require("ServiceBag").new()
 serviceBag:GetService(require("InitService"))
 serviceBag:Init()
 serviceBag:Start()
+
+print(serviceBag)

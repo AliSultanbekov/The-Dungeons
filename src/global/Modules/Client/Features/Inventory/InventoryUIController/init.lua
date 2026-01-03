@@ -35,6 +35,7 @@ local InventoryUIController = {}
 -- [ Types ] --
 type ItemUIObject = CreateItemUIObject.ItemUIObject
 type ItemUI = typeof(ReplicatedStorage.Assets.UIs.Inventory.ItemUI)
+
 type ItemData = ItemTypes.ItemData
 type GroupKey = string
 
@@ -52,6 +53,8 @@ type ModuleData = {
     _ItemUIObjects: { [GroupKey]: ItemUIObject },
     _ItemUIToGroupKey: { [GuiObject]: GroupKey },
     _CurrentPage: string,
+    _DeleteMode: boolean,
+    _ItemsDataToDelete: { [string]: ItemData },
 
     _EquipmentDisplayObject: EquipmentDisplayClass.Object,
 }
@@ -200,6 +203,8 @@ function InventoryUIController.Init(self: Module, serviceBag: ServiceBag.Service
     self._ItemUIObjects = {}
     self._ItemUIToGroupKey = {}
     self._CurrentPage = "Items"
+    self._DeleteMode = false
+    self._ItemsDataToDelete = {}
 end
 
 function InventoryUIController.Start(self: Module)
@@ -210,6 +215,7 @@ function InventoryUIController.Start(self: Module)
         local KeyMaps = KeyMap.KeyMaps
         local CloseButton = self._UIController:GetUIComponent("InventoryUI", "Close") :: GuiButton
         local PageButtons = self._UIController:GetUIComponent("InventoryUI", "PageButtons")
+        local ActionButtons = self._UIController:GetUIComponent("InventoryUI", "ActionButtons")
 
         local function setupUIPool()
             self._UIPool:AddKey(
@@ -239,16 +245,21 @@ function InventoryUIController.Start(self: Module)
                             local GroupKey = self._ItemUIToGroupKey[UI]
                             local ItemUIObject = self._ItemUIObjects[GroupKey]
                             local ItemData = ItemUIObject:GetItemData()
-                            local UIPosition = UI.AbsolutePosition + Vector2.new(UI.AbsoluteSize.X + 15 --[[ little offset ]], 0)
 
-                            self._TooltipController:SetCallBacks("ItemActionTooltip", {
-                                ["Close"] = function()
-                                    self._TooltipController:Hide("ItemActionTooltip")
-                                end
-                            })
-                            self._TooltipController:UpdateInfo("ItemActionTooltip", ItemData)
-                            self._TooltipController:UpdatePosition("ItemActionTooltip", UDim2.new(0, UIPosition.X, 0, UIPosition.Y))
-                            self._TooltipController:Show("ItemActionTooltip")
+                            if self._DeleteMode then
+                                
+                            else
+                                local UIPosition = UI.AbsolutePosition + Vector2.new(UI.AbsoluteSize.X + 15 --[[ little offset ]], 0)
+
+                                self._TooltipController:SetCallBacks("ItemActionTooltip", {
+                                    ["Close"] = function()
+                                        self._TooltipController:Hide("ItemActionTooltip")
+                                    end
+                                })
+                                self._TooltipController:UpdateInfo("ItemActionTooltip", ItemData)
+                                self._TooltipController:UpdatePosition("ItemActionTooltip", UDim2.new(0, UIPosition.X, 0, UIPosition.Y))
+                                self._TooltipController:Show("ItemActionTooltip")
+                            end
                         end
                     )
 

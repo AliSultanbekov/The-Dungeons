@@ -1,5 +1,6 @@
 {
   "name": "Hub",
+  "servePort": 34872,
   "globIgnorePaths": ["**/.package-lock.json"],
   "tree": {
     "$className": "DataModel",

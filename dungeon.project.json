@@ -1,5 +1,6 @@
 {
-  "name": "Hub",
+  "name": "Dungeon",
+  "servePort": 34873,
   "globIgnorePaths": ["**/.package-lock.json"],
   "tree": {
     "$className": "DataModel",

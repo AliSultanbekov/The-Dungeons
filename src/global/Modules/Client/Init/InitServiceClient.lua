@@ -11,16 +11,19 @@ local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 local ServiceBag = require("ServiceBag")
+local PlaceConstants = require("PlaceConstants")
+local InitUtils = require("InitUtils")
 
 -- [ Constants ] --
+local ModulesFolder = script.Parent.Parent.Parent.Parent
 
 -- [ Variables ] --
-local Features = script.Parent.Parent.Features
 
 -- [ Module Table ] --
 local InitServiceClient = {}
 
 -- [ Types ] --
+type ModulesFolder = typeof(ModulesFolder)
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag
 }
@@ -37,19 +40,15 @@ function InitServiceClient.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
 
-    self._ServiceBag:GetService(require("CmdrServiceClient"))
+    local Modules = InitUtils:GetContextModules(ModulesFolder, PlaceConstants.PlaceIDToPlaceName[game.PlaceId], "Client")
 
-    for _, instance in Features:GetDescendants() do
-        if instance:IsA("ModuleScript") and (instance.Name:lower():find("service") or instance.Name:lower():find("controller") or instance.Name:lower():find("eventbus")) then
-            self._ServiceBag:GetService(instance)
-        end
+    for _, module in Modules do
+        self._ServiceBag:GetService(module)
     end
-
-    print("[Framework] Initialized")
 end
 
 function InitServiceClient.Start(self: Module)
-    
+
 end
 
 return InitServiceClient :: Module

@@ -6,12 +6,12 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- [ Imports ] --
-local CreateItemUIObject = require("@self/ItemUIClass/_CreateItemUIObject")
 local InventoryConstants = require("./Constants/_InventoryConstants")
 local EquipmentDisplayClass = require("@self/_EquipmentDisplayClass")
 local GetGroupKey = require("@self/_GetGroupKey")
 local UIGridClass = require("@self/_UIGridClass")
 local KeyMap = require("@self/_KeyMap")
+local ItemUIClassBuilder = require("./ItemUIClass/_ItemUIClassBuilder")
 
 -- [ Require ] --
 local require = require(script.Parent.loader).load(script)
@@ -26,6 +26,8 @@ local ItemTypes = require("ItemTypes")
 local UIAnimUtil = require("UIAnimUtil")
 
 -- [ Constants ] --
+local DELETE_MODE_OFF_COLOR = Color3.fromRGB(255, 255, 255)
+local DELETE_MODE_ON_COLOR = Color3.fromRGB(255, 56, 56)
 
 -- [ Variables ] --
 
@@ -33,9 +35,8 @@ local UIAnimUtil = require("UIAnimUtil")
 local InventoryUIController = {}                                                                                                                                                                                          
 
 -- [ Types ] --
-type ItemUIObject = CreateItemUIObject.ItemUIObject
+type ItemUIObject = ItemUIClassBuilder.ItemUIObject
 type ItemUI = typeof(ReplicatedStorage.Assets.UIs.Inventory.ItemUI)
-
 type ItemData = ItemTypes.ItemData
 type GroupKey = string
 
@@ -46,6 +47,7 @@ type ModuleData = {
     _EventBusClient: typeof(require("EventBusClient")),
     _CameraController: typeof(require("CameraController")),
     _TooltipController: typeof(require("TooltipController")),
+    _NotificationController: typeof(require("NotificationController")),
 
     _UIPool: ObjectPool.Object<GuiObject>,
 
@@ -55,6 +57,7 @@ type ModuleData = {
     _CurrentPage: string,
     _DeleteMode: boolean,
     _ItemsDataToDelete: { [string]: ItemData },
+    _MarkedItemUIObjects: { [GroupKey]: ItemUIObject },
 
     _EquipmentDisplayObject: EquipmentDisplayClass.Object,
 }
@@ -103,7 +106,48 @@ function InventoryUIController._TrySwitchingToItemsPage(self: Module): boolean
     return true
 end
 
+function InventoryUIController._ClearMarkedItemUIObjects(self: Module)
+    for _, itemUIObject in self._MarkedItemUIObjects do
+        itemUIObject:ClearMarked()
+    end
+
+    self._MarkedItemUIObjects = {}
+end
+
 -- [ Public Functions ] --
+function InventoryUIController.ToggleDeleteMode(self: Module)
+    local DeleteModeButton = self._UIController:GetUIComponent("InventoryUI", "DeleteMode")
+    local Icon = DeleteModeButton:FindFirstChild("Icon") :: ImageLabel
+
+    self:_HideTooltips()
+
+    if self._DeleteMode == false then
+        self._DeleteMode = true
+        Icon.ImageColor3 = DELETE_MODE_ON_COLOR
+    elseif self._DeleteMode == true then
+        self._DeleteMode = false
+        self:_ClearMarkedItemUIObjects()
+
+        if next(self._ItemsDataToDelete) ~= nil then
+            self._NotificationController:Notify("ChoiceNotification", { 
+                InfoText = "Are you sure you want to delete selected items?", 
+                Button1Text = "No", 
+                Button2Text = "Yes",
+                Button1Cb = function()
+                    self._ItemsDataToDelete = {}
+                end,
+                Button2Cb = function()
+                    local _ItemsDataToDelete = self._ItemsDataToDelete
+                    self._ItemsDataToDelete = {}
+                    -- do something with it
+                end
+            })
+        end
+
+        Icon.ImageColor3 = DELETE_MODE_OFF_COLOR
+    end
+end
+
 function InventoryUIController.SwitchPage(self: Module, pageName: string): boolean
     if self._CurrentPage == pageName then
         return false
@@ -136,11 +180,11 @@ function InventoryUIController.AddItem(self: Module, itemData: ItemData)
 
     if not ItemUIObject then
         local ItemUI = self._UIPool:Get("ItemUI")
-        local NewItemUIObject = CreateItemUIObject(ItemUI, itemData)
+        local NewItemUIObject = ItemUIClassBuilder:Build(ItemUI, itemData)
         self._ItemUIObjects[GroupKey] = NewItemUIObject
         self._ItemUIToGroupKey[ItemUI] = GroupKey
 
-        GridObject:AddElement(NewItemUIObject:GetUI())
+        GridObject:AddElement(ItemUI)
     else
         ItemUIObject:AddItemData(itemData)
     end
@@ -153,6 +197,12 @@ function InventoryUIController.RemoveItem(self: Module, itemData: ItemData)
     local ItemUIObject = self._ItemUIObjects[GroupKey]
 
     if not ItemUIObject then
+        warn("[InventoryUIController] Tried to remove item that does not exist in UI: " .. tostring(itemData.Name))
+        return
+    end
+
+    if ItemUIObject:IsEmpty() then
+        warn("[InventoryUIController] Tried to remove item that is already empty: " .. tostring(itemData.Name))
         return
     end
 
@@ -162,7 +212,7 @@ function InventoryUIController.RemoveItem(self: Module, itemData: ItemData)
         local ItemUI = ItemUIObject:GetUI()
         self._ItemUIObjects[GroupKey] = nil
         self._ItemUIToGroupKey[ItemUI] = nil
-        
+
         GridObject:RemoveElement(ItemUI)
     end
 end
@@ -196,6 +246,7 @@ function InventoryUIController.Init(self: Module, serviceBag: ServiceBag.Service
     self._EventBusClient = self._ServiceBag:GetService(require("EventBusClient"))
     self._CameraController = self._ServiceBag:GetService(require("CameraController"))
     self._TooltipController = self._ServiceBag:GetService(require("TooltipController"))
+    self._NotificationController = self._ServiceBag:GetService(require("NotificationController"))
 
     self._UIPool = ObjectPool.new()
 
@@ -205,6 +256,7 @@ function InventoryUIController.Init(self: Module, serviceBag: ServiceBag.Service
     self._CurrentPage = "Items"
     self._DeleteMode = false
     self._ItemsDataToDelete = {}
+    self._MarkedItemUIObjects = {}
 end
 
 function InventoryUIController.Start(self: Module)
@@ -221,45 +273,76 @@ function InventoryUIController.Start(self: Module)
             self._UIPool:AddKey(
                 "ItemUI",
                 function()
-                    local UI = AssetProvider:Get("UIs/Inventory/ItemUI")
+                    local UI = AssetProvider:Get("UIs/Inventory/ItemUI") :: ItemUI
+
+                    local function onHover()
+                        if self._DeleteMode then
+                            return
+                        end
+
+                        local GroupKey = self._ItemUIToGroupKey[UI]
+                        local ItemUIObject = self._ItemUIObjects[GroupKey]
+                        local ItemData = ItemUIObject:GetItemData()
+                        
+                        if self._TooltipController:GetActive() ~= "ItemActionTooltip" then
+                            self._TooltipController:UpdateInfo("ItemTooltip", ItemData)
+                            self._TooltipController:Show("ItemTooltip", true)
+                        end
+                    end
+
+                    local function onUnhover()
+                        if self._DeleteMode then
+                            return
+                        end
+
+                        if self._TooltipController:GetActive() ~= "ItemActionTooltip" then
+                            self._TooltipController:Hide("ItemTooltip")
+                        end
+                    end
+
+                    local function onClick()
+                        local GroupKey = self._ItemUIToGroupKey[UI]
+                        local ItemUIObject = self._ItemUIObjects[GroupKey]
+
+                        if ItemUIObject:MaxMarked() then
+                            return
+                        end
+
+                        if self._DeleteMode then
+                            local ItemData = ItemUIObject:GetItemData(true)
+                            ItemUIObject:Mark(ItemData)
+                            
+                            self._ItemsDataToDelete[ItemData.ID] = ItemData
+
+                            if not self._MarkedItemUIObjects[GroupKey] then
+                                self._MarkedItemUIObjects[GroupKey] = ItemUIObject
+                            end
+                        else
+                            local ItemData = ItemUIObject:GetItemData()
+                            local UIPosition = UI.AbsolutePosition + Vector2.new(UI.AbsoluteSize.X + 15, 0)
+
+                            self._TooltipController:SetCallBacks("ItemActionTooltip", {
+                                ["Close"] = function()
+                                    self._TooltipController:Hide("ItemActionTooltip")
+                                end
+                            })
+                            self._TooltipController:UpdateInfo("ItemActionTooltip", ItemData)
+                            self._TooltipController:UpdatePosition("ItemActionTooltip", UDim2.new(0, UIPosition.X, 0, UIPosition.Y))
+                            self._TooltipController:Show("ItemActionTooltip")
+                        end
+                    end
 
                     ButtonUtil:Hook(UI,
                         function()
-                            local GroupKey = self._ItemUIToGroupKey[UI]
-                            local ItemUIObject = self._ItemUIObjects[GroupKey]
-                            local ItemData = ItemUIObject:GetItemData()
-                            
-                            if self._TooltipController:GetActive() ~= "ItemActionTooltip" then
-                                self._TooltipController:UpdateInfo("ItemTooltip", ItemData)
-                                self._TooltipController:Show("ItemTooltip", true)
-                            end
+                            onHover()
                         end,
 
                         function()
-                            if self._TooltipController:GetActive() ~= "ItemActionTooltip" then
-                                self._TooltipController:Hide("ItemTooltip")
-                            end
+                            onUnhover()
                         end,
 
                         function()
-                            local GroupKey = self._ItemUIToGroupKey[UI]
-                            local ItemUIObject = self._ItemUIObjects[GroupKey]
-                            local ItemData = ItemUIObject:GetItemData()
-
-                            if self._DeleteMode then
-                                
-                            else
-                                local UIPosition = UI.AbsolutePosition + Vector2.new(UI.AbsoluteSize.X + 15 --[[ little offset ]], 0)
-
-                                self._TooltipController:SetCallBacks("ItemActionTooltip", {
-                                    ["Close"] = function()
-                                        self._TooltipController:Hide("ItemActionTooltip")
-                                    end
-                                })
-                                self._TooltipController:UpdateInfo("ItemActionTooltip", ItemData)
-                                self._TooltipController:UpdatePosition("ItemActionTooltip", UDim2.new(0, UIPosition.X, 0, UIPosition.Y))
-                                self._TooltipController:Show("ItemActionTooltip")
-                            end
+                            onClick()
                         end
                     )
 
@@ -306,11 +389,28 @@ function InventoryUIController.Start(self: Module)
                     self:SwitchPage(instance.Name)
                 end)
             end
+
+            for _, instance in ActionButtons:GetChildren() do
+                if not instance:IsA("GuiButton") then
+                    continue
+                end
+
+                ButtonUtil:Hook(instance, nil, nil, function()
+                    if instance.Name == "DeleteMode" then
+                        self:ToggleDeleteMode()
+                    end
+                end)
+            end
         end
 
         setupUIPool()
         setupGrids()
         hookUIs()
+
+        task.spawn(function()
+            task.wait(3)
+            --self._NotificationController:Notify("ChoiceNotification", { InfoText = "Hello", Button1Text = "No", Button2Text = "Yes" })
+        end)
 
         self:AddItem({
             ID = "3",

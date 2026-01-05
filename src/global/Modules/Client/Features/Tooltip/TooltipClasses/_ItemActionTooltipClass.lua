@@ -66,13 +66,6 @@ function _ItemActionTooltipClass.new(ui: ItemActionTooltipUI): Object
         end
     end)
 
-    task.spawn(function()
-        while true do
-            task.wait(1)
-            print(self._Callbacks)
-        end
-    end)
-
     return self
 end
 

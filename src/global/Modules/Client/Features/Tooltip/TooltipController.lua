@@ -102,7 +102,6 @@ end
 
 function TooltipController.Hide(self: Module, tooltipType: string)
     if self._ActiveTooltip ~= tooltipType then
-        print("Returned")
         return
     end
 

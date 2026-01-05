@@ -44,7 +44,7 @@ function StackableUIClass.new(ui: ItemUI, itemData: ItemData): Object
 
     self._ItemData = itemData
 
-    self._ItemCounter:Add(itemData.Amount)
+    self._ItemCount:Add(itemData.Amount)
 
     self:_UpdateUI()
 
@@ -54,13 +54,13 @@ end
 function StackableUIClass.AddItemData(self: Object, itemData: ItemData)
     self._ItemData.Amount += itemData.Amount
 
-    self._ItemCounter:Add(itemData.Amount)
+    self._ItemCount:Add(itemData.Amount)
 end
 
 function StackableUIClass.RemoveItemData(self: Object, itemData: ItemData)
     self._ItemData.Amount -= itemData.Amount
 
-    self._ItemCounter:Add(-itemData.Amount)
+    self._ItemCount:Add(-itemData.Amount)
 end
 
 function StackableUIClass.GetItemData(self: Object): ItemData

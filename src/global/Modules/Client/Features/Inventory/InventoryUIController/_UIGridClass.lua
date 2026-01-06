@@ -69,7 +69,6 @@ function UIGridClass._AddBacking(self: Object)
     local BackingUI = UIPool:Get("BackingUI") :: BackingUI
     BackingUI.Parent = self._ScrollingFrame
     BackingUI.LayoutOrder = self:_GetBackingCount()
-    print(self._ScrollingFrame)
 
     table.insert(self._BackingUIs, BackingUI)
 end

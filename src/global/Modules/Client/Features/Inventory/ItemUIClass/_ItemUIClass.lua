@@ -66,11 +66,11 @@ function ItemUIClass._UpdateItemAmount(self: Object)
         if MarkedCount == ItemCount then
             UI.ItemAmount.Text = "-Max"
         else
-            UI.ItemAmount.Text = string.format("x%d", MarkedCount)
+            UI.ItemAmount.Text = string.format("-%d", MarkedCount)
         end
     else
         UI.ItemAmount.TextColor3 = DEFAULT_TEXT_COLOR
-        if ItemCount > 1 then
+        if ItemCount <= 1 then
             UI.ItemAmount.Visible = false
         else
             UI.ItemAmount.Visible = true
@@ -101,8 +101,7 @@ function ItemUIClass.new(context: Context): Object
         self:_UpdateItemAmount()
     end)
 
-    self._ItemCount:Add(1)
-
+    self:_UpdateItemAmount()
     self:_UpdateUI()
 
     return self
@@ -120,8 +119,8 @@ function ItemUIClass.MaxMarked(self: Object): boolean
     return self._MarkedCount:GetValue() >= self._ItemCount:GetValue()
 end
 
-function ItemUIClass.GetItemData(self: Object): ItemData
-    return self._Behaviors.ItemData:GetItemData()
+function ItemUIClass.GetItemData(self: Object, ignoreMarked: boolean?): ItemData
+    return self._Behaviors.ItemData:GetItemData(ignoreMarked)
 end
 
 function ItemUIClass.ClearMarked(self: Object)

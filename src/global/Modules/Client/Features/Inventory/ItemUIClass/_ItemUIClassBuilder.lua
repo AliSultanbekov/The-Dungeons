@@ -8,8 +8,8 @@
 local GenericTypes = require("./_Types")
 local ItemUIClass = require("./_ItemUIClass")
 
-local StackableBehavior = require("./Behaviors/ItemData/StackableBehavior")
-local UniqueBehavior = require("./Behaviors/ItemData/UniqueBehavior")
+local StackableBehavior = require("./Behaviors/ItemData/_StackableBehavior")
+local UniqueBehavior = require("./Behaviors/ItemData/_UniqueBehavior")
 
 local DefaultUIBehavior = require("./Behaviors/UI/_DefaultUIBehavior")
 

@@ -48,6 +48,7 @@ type ModuleData = {
     _CameraController: typeof(require("CameraController")),
     _TooltipController: typeof(require("TooltipController")),
     _NotificationController: typeof(require("NotificationController")),
+    _InventoryServiceClient: typeof(require("InventoryServiceClient")),
 
     _UIPool: ObjectPool.Object<GuiObject>,
 
@@ -137,9 +138,9 @@ function InventoryUIController.ToggleDeleteMode(self: Module)
                     self._ItemsDataToDelete = {}
                 end,
                 Button2Cb = function()
-                    local _ItemsDataToDelete = self._ItemsDataToDelete
+                    local ItemsDataToDelete = self._ItemsDataToDelete
                     self._ItemsDataToDelete = {}
-                    -- do something with it
+                    self._InventoryServiceClient:RemoveItems(ItemsDataToDelete)
                 end
             })
         end
@@ -247,6 +248,7 @@ function InventoryUIController.Init(self: Module, serviceBag: ServiceBag.Service
     self._CameraController = self._ServiceBag:GetService(require("CameraController"))
     self._TooltipController = self._ServiceBag:GetService(require("TooltipController"))
     self._NotificationController = self._ServiceBag:GetService(require("NotificationController"))
+    self._InventoryServiceClient = self._ServiceBag:GetService(require("InventoryServiceClient"))
 
     self._UIPool = ObjectPool.new()
 
@@ -403,27 +405,29 @@ function InventoryUIController.Start(self: Module)
             end
         end
 
+        local function processData()
+            for _, itemData: ItemData in self._InventoryServiceClient:GetItemDatas() do
+                self:AddItem(itemData)
+            end
+        end
+
         setupUIPool()
         setupGrids()
         hookUIs()
+        processData()
 
-        task.spawn(function()
-            task.wait(3)
-            --self._NotificationController:Notify("ChoiceNotification", { InfoText = "Hello", Button1Text = "No", Button2Text = "Yes" })
+        self._InventoryServiceClient.PublicSignals.ItemsAdded:Connect(function(packet)
+            for _, itemData in packet do
+                self:AddItem(itemData)
+            end
         end)
 
-        self:AddItem({
-            ID = "3",
-            Type = "Weapons",
-            Name = "Wooden Sword",
-        })
-
-        self:AddItem({
-            ID = "Wooden Plank",
-            Type = "Materials",
-            Name = "Wooden Plank",
-            Amount = 3
-        })
+        self._InventoryServiceClient.PublicSignals.ItemsRemoved:Connect(function(packet)
+            for _, itemData in packet do
+                print(itemData)
+                self:RemoveItem(itemData)
+            end
+        end)
     end)
 end
 

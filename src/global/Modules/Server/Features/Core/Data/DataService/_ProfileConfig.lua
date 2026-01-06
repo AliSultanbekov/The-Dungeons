@@ -15,7 +15,8 @@ local _require = require(script.Parent.Parent.loader).load(script)
 local ProfileConfig = {
     Template = {
         Inventory = {
-            Weapons = {}
+            Weapons = {},
+            Materials = {}
         },
         
         Currencys = {
@@ -29,7 +30,8 @@ local ProfileConfig = {
 
 export type ProfileTemplate = {
     Inventory: {
-        Weapons: {}
+        Weapons: {},
+        Materials: {},
     },
 
     Currencys: {

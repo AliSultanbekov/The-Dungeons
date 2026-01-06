@@ -51,6 +51,8 @@ function StackableBehavior.new(context: Context): Object
     self._ItemData = context.ItemData
     self._ItemCount = context.ItemCount
     self._MarkedCount = context.MarkedCount
+
+    self._ItemCount:Add(self._ItemData.Amount)
     
     return self
 end
@@ -95,18 +97,18 @@ function StackableBehavior.Unmark(self: Object, itemData: ItemData)
     self._MarkedCount:Add(-itemData.Amount)
 end
 
-function StackableBehavior.AddItemData(self: Object, itemData: ItemData, itemCount: Counter.Counter)
+function StackableBehavior.AddItemData(self: Object, itemData: ItemData)
     self._ItemData.Amount += itemData.Amount
-    itemCount:Add(itemData.Amount)
+    self._ItemCount:Add(itemData.Amount)
 end
 
-function StackableBehavior.RemoveItemData(self: Object, itemData: ItemData, itemCount: Counter.Counter)
+function StackableBehavior.RemoveItemData(self: Object, itemData: ItemData)
     if self._ItemData.Amount < itemData.Amount then
         error("[StackableBehavior] Not enough items to remove!")
     end
     
     self._ItemData.Amount -= itemData.Amount
-    itemCount:Add(-itemData.Amount)
+    self._ItemCount:Add(-itemData.Amount)
 end
 
 return StackableBehavior :: Module

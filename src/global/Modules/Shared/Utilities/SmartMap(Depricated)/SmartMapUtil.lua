@@ -1,5 +1,5 @@
 --[=[
-    @class SmartMap
+    @class SmartMapUtil
 ]=]
 
 -- [ Roblox Services ] --
@@ -16,7 +16,7 @@ local _require = require(script.Parent.loader).load(script)
 -- [ Variables ] --
 
 -- [ Module Table ] --
-local SmartMap = {}
+local SmartMapUtil = {}
 
 -- [ Types ] --
 export type MapData<T> = {
@@ -25,12 +25,12 @@ export type MapData<T> = {
     Removed: { [string]: T },
 }
 
-export type Module = typeof(SmartMap)
+export type Module = typeof(SmartMapUtil)
 
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function SmartMap.Transform(self: Module, added: {}?, updated: {}?, removed: {}?)
+function SmartMapUtil.Transform(self: Module, added: {}?, updated: {}?, removed: {}?)
     local MapData = {}
     local Added = added or {}
     local Updated = updated or {}
@@ -43,4 +43,4 @@ function SmartMap.Transform(self: Module, added: {}?, updated: {}?, removed: {}?
     return MapData
 end
 
-return SmartMap :: Module
+return SmartMapUtil :: Module

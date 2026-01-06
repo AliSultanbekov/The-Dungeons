@@ -17,7 +17,12 @@ local _require = require(script.Parent.loader).load(script)
 local ItemConstants = {
     ItemTypeToStorageType = {
         ["Materials"] = "Stackable",
-        ["Weapons"] = "Unqiue",
+        ["Weapons"] = "Unique",
+    }
+} :: {
+    ItemTypeToStorageType: {
+        ["Materials"]: "Stackable",
+        ["Weapons"]: "Unique"
     }
 }
 

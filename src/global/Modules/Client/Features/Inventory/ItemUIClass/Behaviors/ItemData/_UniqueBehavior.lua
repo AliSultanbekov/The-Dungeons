@@ -55,6 +55,8 @@ function UniqueBehavior.new(context: Context): Object
     self._ItemBag = { [context.ItemData.ID] = context.ItemData }
     self._NonMarkedBag = { [context.ItemData.ID] = context.ItemData }
     self._MarkedBag = {}
+
+    self._ItemCount:Add(1)
     
     return self
 end
@@ -63,14 +65,16 @@ function UniqueBehavior.GetItemData(self: Object, ignoreMarked: boolean?): ItemD
     local ItemData
 
     if ignoreMarked then
+        print("Went for the ignored")
         local Key = next(self._NonMarkedBag)
 
         if not Key then
             error("[UnqiueUIClass] No ItemData found in _NonMarkedBag")
         end
 
-        ItemData = self._ItemBag[Key]
+        ItemData = self._NonMarkedBag[Key]
     else
+        print("Went for the ..")
         local Key = next(self._ItemBag)
 
         if not Key then
@@ -133,22 +137,28 @@ function UniqueBehavior.Unmark(self: Object, itemData: ItemData)
     end
 end
 
-function UniqueBehavior.AddItemData(self: Object, itemData: ItemData, itemCount: Counter.Counter)
+function UniqueBehavior.AddItemData(self: Object, itemData: ItemData)
     if self._ItemBag[itemData.ID] then
         warn("[UnqiueUIClass] Attempted to add duplicate itemData with ID: " .. tostring(itemData.ID))
         return
     end
 
-    self._ItemBag[itemData.ID] = itemData
+	self._ItemBag[itemData.ID] = itemData
+	self._NonMarkedBag[itemData.ID] = itemData
+    self._ItemCount:Add(1)
 end
 
-function UniqueBehavior.RemoveItemData(self: Object, itemData: ItemData, itemCount: Counter.Counter)
+function UniqueBehavior.RemoveItemData(self: Object, itemData: ItemData)
     if not self._ItemBag[itemData.ID] then
         warn("[UnqiueUIClass] Attempted to delete non-existent itemData with ID: " .. tostring(itemData.ID))
         return
-    end
+	end
 
-    self._ItemBag[itemData.ID] = nil
+	self._ItemBag[itemData.ID] = nil
+	self._NonMarkedBag[itemData.ID] = nil
+    self._MarkedBag[itemData.ID] = nil
+
+    self._ItemCount:Add(-1)
 end
 
 return UniqueBehavior :: Module

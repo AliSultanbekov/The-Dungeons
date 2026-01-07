@@ -17,7 +17,7 @@ export type Behaviors = {
 }
 export type BehaviorType = "ItemData" | "UI"
 export type ItemDataBehavior = {
-    GetItemData: (self: ItemDataBehavior, ignoreMarked: boolean?) -> ItemTypes.ItemData,
+    GetItemData: (self: ItemDataBehavior, id: string?, ignoreMarked: boolean?) -> ItemTypes.ItemData,
     ClearMarked: (self: ItemDataBehavior) -> (),
     Unmark: (self: ItemDataBehavior, itemData: ItemTypes.ItemData) -> (),
     Mark: (self: ItemDataBehavior, itemData: ItemTypes.ItemData) -> (),
@@ -25,7 +25,6 @@ export type ItemDataBehavior = {
     RemoveItemData: (self: ItemDataBehavior, itemData: ItemTypes.ItemData) -> (),
 }
 export type UIBehavior = {
-    UpdateAmount: (self: UIBehavior) -> (),
     UpdateUI: (self: UIBehavior) -> (),
 }
 export type ItemConfig = {

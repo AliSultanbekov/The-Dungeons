@@ -24,6 +24,7 @@ local ObjectPool = require("ObjectPool")
 local ServiceBag = require("ServiceBag")
 local ItemTypes = require("ItemTypes")
 local UIAnimUtil = require("UIAnimUtil")
+local ItemConstants = require("ItemConstants")
 
 -- [ Constants ] --
 local DELETE_MODE_OFF_COLOR = Color3.fromRGB(255, 255, 255)
@@ -37,6 +38,8 @@ local InventoryUIController = {}
 -- [ Types ] --
 type ItemUIObject = ItemUIClassBuilder.ItemUIObject
 type ItemUI = typeof(ReplicatedStorage.Assets.UIs.Inventory.ItemUI)
+type StackableItemData = ItemTypes.StackableItemData
+type UniqueItemData = ItemTypes.UniqueItemData
 type ItemData = ItemTypes.ItemData
 type GroupKey = string
 
@@ -54,6 +57,7 @@ type ModuleData = {
 
     _GridObjects: {[string]: UIGridClass.Object},
     _ItemUIObjects: { [GroupKey]: ItemUIObject },
+    _ItemIDToGroupKey: { [string]: GroupKey },
     _ItemUIToGroupKey: { [GuiObject]: GroupKey },
     _CurrentPage: string,
     _DeleteMode: boolean,
@@ -173,6 +177,22 @@ function InventoryUIController.SwitchPage(self: Module, pageName: string): boole
     return true
 end
 
+function InventoryUIController.UpdateItem(self: Module, itemData: ItemData)
+    local GroupKey = GetGroupKey(itemData)
+    local OldGroupKey = self._ItemIDToGroupKey[itemData.ID]
+    local OldItemUIObject = self._ItemUIObjects[OldGroupKey]
+
+    if GroupKey == OldGroupKey then
+        warn("[InventoryUIController] Tried to update item, but data group has not changed: " .. tostring(itemData.Name))
+        return
+    end
+
+    local OldItemData = OldItemUIObject:GetItemData(itemData.ID)
+
+    self:RemoveItem(OldItemData)
+    self:AddItem(itemData)
+end
+
 function InventoryUIController.AddItem(self: Module, itemData: ItemData)
     local GroupKey = GetGroupKey(itemData)
     local PageName = InventoryConstants.ItemTypeToPage[itemData.Type]
@@ -189,6 +209,8 @@ function InventoryUIController.AddItem(self: Module, itemData: ItemData)
     else
         ItemUIObject:AddItemData(itemData)
     end
+
+    self._ItemIDToGroupKey[itemData.ID] = GroupKey
 end
 
 function InventoryUIController.RemoveItem(self: Module, itemData: ItemData)
@@ -196,6 +218,7 @@ function InventoryUIController.RemoveItem(self: Module, itemData: ItemData)
     local PageName = InventoryConstants.ItemTypeToPage[itemData.Type]
     local GridObject = self._GridObjects[PageName]
     local ItemUIObject = self._ItemUIObjects[GroupKey]
+    local StorageType = ItemConstants.ItemTypeToStorageType[itemData.Type]
 
     if not ItemUIObject then
         warn("[InventoryUIController] Tried to remove item that does not exist in UI: " .. tostring(itemData.Name))
@@ -207,6 +230,14 @@ function InventoryUIController.RemoveItem(self: Module, itemData: ItemData)
         return
     end
 
+    local function handleUnqiue()
+        self._ItemIDToGroupKey[itemData.ID] = nil
+    end
+
+    --[[local function handleStackable()
+        
+    end]]
+
     ItemUIObject:RemoveItemData(itemData)
 
     if ItemUIObject:IsEmpty() then
@@ -215,6 +246,11 @@ function InventoryUIController.RemoveItem(self: Module, itemData: ItemData)
         self._ItemUIToGroupKey[ItemUI] = nil
 
         GridObject:RemoveElement(ItemUI)
+        self._UIPool:Return("ItemUI", ItemUI)
+    end
+
+    if StorageType == "Unqiue" then
+        handleUnqiue()
     end
 end
 
@@ -254,6 +290,7 @@ function InventoryUIController.Init(self: Module, serviceBag: ServiceBag.Service
 
     self._GridObjects = {}
     self._ItemUIObjects = {}
+    self._ItemIDToGroupKey = {}
     self._ItemUIToGroupKey = {}
     self._CurrentPage = "Items"
     self._DeleteMode = false
@@ -287,7 +324,7 @@ function InventoryUIController.Start(self: Module)
                         local ItemData = ItemUIObject:GetItemData()
                         
                         if self._TooltipController:GetActive() ~= "ItemActionTooltip" then
-                            self._TooltipController:UpdateInfo("ItemTooltip", ItemData)
+                            self._TooltipController:UpdateUI("ItemTooltip", { ItemData = ItemData })
                             self._TooltipController:Show("ItemTooltip", true)
                         end
                     end
@@ -311,10 +348,31 @@ function InventoryUIController.Start(self: Module)
                         end
 
                         if self._DeleteMode then
-                            local ItemData = ItemUIObject:GetItemData(true)
+                            local function handleUnique(itemData: UniqueItemData)
+                                self._ItemsDataToDelete[itemData.ID] = itemData
+                            end
+    
+                            local function handleStackable(itemData: StackableItemData)
+                                itemData.Amount = 1
+
+                                local ExistingItemDataToDelete  = self._ItemsDataToDelete[itemData.ID] :: StackableItemData
+                                if ExistingItemDataToDelete then
+                                    ExistingItemDataToDelete.Amount += itemData.Amount
+                                else
+                                    self._ItemsDataToDelete[itemData.ID] = itemData
+                                end
+                            end
+
+                            local ItemData = ItemUIObject:GetItemData(nil, true)
+                            local StorageType = ItemConstants.ItemTypeToStorageType[ItemData.Type]
+
+                            if StorageType == "Unique" then
+                                handleUnique(ItemData :: UniqueItemData)
+                            elseif StorageType == "Stackable" then
+                                handleStackable(ItemData :: StackableItemData)
+                            end
+
                             ItemUIObject:Mark(ItemData)
-                            
-                            self._ItemsDataToDelete[ItemData.ID] = ItemData
 
                             if not self._MarkedItemUIObjects[GroupKey] then
                                 self._MarkedItemUIObjects[GroupKey] = ItemUIObject
@@ -323,12 +381,18 @@ function InventoryUIController.Start(self: Module)
                             local ItemData = ItemUIObject:GetItemData()
                             local UIPosition = UI.AbsolutePosition + Vector2.new(UI.AbsoluteSize.X + 15, 0)
 
-                            self._TooltipController:SetCallBacks("ItemActionTooltip", {
-                                ["Close"] = function()
-                                    self._TooltipController:Hide("ItemActionTooltip")
+                            self._TooltipController:UpdateCbs("ItemActionTooltip", {
+                                ["Equip"] = function()
+                                    self._InventoryServiceClient:EquipItem(ItemData)
+                                end,
+                                ["Unequip"] = function()
+                                    self._InventoryServiceClient:UnequipItem(ItemData)
                                 end
                             })
-                            self._TooltipController:UpdateInfo("ItemActionTooltip", ItemData)
+
+                            self._TooltipController:UpdateUI("ItemActionTooltip", {
+                                ItemData = ItemData
+                            })
                             self._TooltipController:UpdatePosition("ItemActionTooltip", UDim2.new(0, UIPosition.X, 0, UIPosition.Y))
                             self._TooltipController:Show("ItemActionTooltip")
                         end
@@ -416,17 +480,25 @@ function InventoryUIController.Start(self: Module)
         hookUIs()
         processData()
 
-        self._InventoryServiceClient.PublicSignals.ItemsAdded:Connect(function(packet)
-            for _, itemData in packet do
+        self._InventoryServiceClient.PublicSignals.ItemsAdded:Connect(function(itemDataMap)
+            for _, itemData in itemDataMap do
                 self:AddItem(itemData)
             end
         end)
 
-        self._InventoryServiceClient.PublicSignals.ItemsRemoved:Connect(function(packet)
-            for _, itemData in packet do
+        self._InventoryServiceClient.PublicSignals.ItemsRemoved:Connect(function(itemDataMap)
+            for _, itemData in itemDataMap do
                 print(itemData)
                 self:RemoveItem(itemData)
             end
+        end)
+
+        self._InventoryServiceClient.PublicSignals.ItemUnequipped:Connect(function(itemData: ItemData)
+            self:UpdateItem(itemData)
+        end)
+
+        self._InventoryServiceClient.PublicSignals.ItemEquipped:Connect(function(itemData: ItemData)
+            self:UpdateItem(itemData)
         end)
     end)
 end

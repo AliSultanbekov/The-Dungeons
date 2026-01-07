@@ -64,6 +64,12 @@ function DefaultUIBehavior.UpdateUI(self: Object)
 
     UI.ItemImage.Image = ItemImage
 
+    if ItemData.Equipped == true then
+        UI.Equipped.Visible = true
+    else
+        UI.Equipped.Visible = false
+    end
+
     ItemUIUtil:SetupForRarity(UI, ItemRarity)
 end
 

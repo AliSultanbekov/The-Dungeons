@@ -517,7 +517,7 @@ local function UpdateAsync(profile_store, profile_key, transform_params, is_user
 	
 	local next_in_queue = WaitInUpdateQueue(SessionToken(profile_store.Name, profile_key, is_user_mock))
 
-	local success = true
+	local _success = true
 
 	local success, error_message = pcall(function()
 		local transform_function = function(latest_data)
@@ -972,7 +972,7 @@ end
 export type JSONAcceptable = { JSONAcceptable } | { [string]: JSONAcceptable } | number | string | boolean | buffer
 
 export type Profile<T> = {
-	Data: T & JSONAcceptable,
+	Data: T,
 	LastSavedData: T & JSONAcceptable,
 	FirstSessionTime: number,
 	SessionLoadCount: number,
@@ -1997,7 +1997,7 @@ function ProfileVersionQuery:NextAsync()
 				is_finished = true
 			end)
 
-			local success, error_message = pcall(function()
+			local success, _error_message = pcall(function()
 				self.query_pages:AdvanceToNextPageAsync()
 				self.query_index = 0
 			end)

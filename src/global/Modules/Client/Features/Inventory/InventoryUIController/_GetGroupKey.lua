@@ -21,6 +21,7 @@ local GetGroupKey = function(itemData: ItemTypes.ItemData)
     local InfoArray = {}
 
     table.insert(InfoArray, string.format("Name:%s", itemData.Name))
+    table.insert(InfoArray, string.format("Equipped:%s", tostring(itemData.Equipped)))
 
     local GroupKey = ""
 

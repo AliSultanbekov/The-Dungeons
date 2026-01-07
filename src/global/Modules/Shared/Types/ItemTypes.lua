@@ -3,6 +3,7 @@
 ]=]
 
 -- [ Types ] --
+export type ItemType = "Materials" | "Weapons"
 export type ItemID = string
 
 -- ============================================================================
@@ -32,6 +33,7 @@ export type MaterialItemData = {
     Name: string,
     Type: "Materials",
     Amount: number,
+    Equipped: boolean,
 }
 
 -- Weapons are unique
@@ -39,6 +41,7 @@ export type WeaponItemData = {
     ID: ItemID,
     Name: string,
     Type: "Weapons",
+    Equipped: boolean,
 }
 
 -- Union of all specific item types

@@ -57,16 +57,27 @@ function UniqueBehavior.new(context: Context): Object
     self._MarkedBag = {}
 
     self._ItemCount:Add(1)
+
+    task.spawn(function()
+        while true do
+            task.wait(1)
+            print(self._ItemCount:GetValue())
+            print(self._MarkedCount:GetValue())
+        end
+    end)
     
     return self
 end
 
-function UniqueBehavior.GetItemData(self: Object, ignoreMarked: boolean?): ItemData
+function UniqueBehavior.GetItemData(self: Object, id: string?, ignoreMarked: boolean?): ItemData
     local ItemData
 
     if ignoreMarked then
-        print("Went for the ignored")
         local Key = next(self._NonMarkedBag)
+
+        while Key ~= Key and id and Key ~= id do
+            Key = next(self._ItemBag, Key)
+        end
 
         if not Key then
             error("[UnqiueUIClass] No ItemData found in _NonMarkedBag")
@@ -74,8 +85,11 @@ function UniqueBehavior.GetItemData(self: Object, ignoreMarked: boolean?): ItemD
 
         ItemData = self._NonMarkedBag[Key]
     else
-        print("Went for the ..")
         local Key = next(self._ItemBag)
+
+        while Key ~= Key and id and Key ~= id do
+            Key = next(self._ItemBag, Key)
+        end
 
         if not Key then
             error("[UnqiueUIClass] No ItemData found in _ItemBag")
@@ -114,6 +128,7 @@ function UniqueBehavior.Mark(self: Object, itemData: ItemData)
     self._MarkedBag[itemData.ID] = itemData
     
     self._MarkedCount:Add(1)
+    print("Marked")
 end
 
 function UniqueBehavior.Unmark(self: Object, itemData: ItemData)

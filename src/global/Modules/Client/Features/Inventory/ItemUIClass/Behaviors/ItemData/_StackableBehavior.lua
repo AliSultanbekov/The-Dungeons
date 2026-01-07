@@ -57,7 +57,7 @@ function StackableBehavior.new(context: Context): Object
     return self
 end
 
-function StackableBehavior.GetItemData(self: Object, ignoreMarked: boolean?)
+function StackableBehavior.GetItemData(self: Object, id: string?, ignoreMarked: boolean?): ItemData
     if ignoreMarked then
         if self._ItemData.Amount - self._MarkedCount:GetValue() <= 0 then
             error("[StackableBehavior] No unmarked items left!")
@@ -65,7 +65,6 @@ function StackableBehavior.GetItemData(self: Object, ignoreMarked: boolean?)
     end
 
     local Data = Table.deepCopy(self._ItemData)
-    Data.Amount = 1
 
     return Data
 end

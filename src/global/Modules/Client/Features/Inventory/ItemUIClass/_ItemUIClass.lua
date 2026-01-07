@@ -28,6 +28,7 @@ ItemUIClass.__index = ItemUIClass
 type ItemData = ItemTypes.ItemData
 type ItemUI = ItemUIClassTypes.ItemUI
 type Behaviors = ItemUIClassTypes.Behaviors
+type UIBehavior = ItemUIClassTypes.UIBehavior
 type ItemDataBehavior = ItemUIClassTypes.ItemDataBehavior
 
 type Context = {
@@ -42,9 +43,8 @@ export type ObjectData = {
     _ItemCount: Counter.Counter,
     _MarkedCount: Counter.Counter,
 }
-export type Object = ObjectData & ItemDataBehavior & {
+export type Object = ObjectData & ItemDataBehavior & UIBehavior & {
     _UpdateItemAmount: (self: Object) -> (),
-    _UpdateUI: (self: Object) -> boolean,
     GetUI: (self: Object) -> ItemUI,
     IsEmpty: (self: Object) -> (),
     MaxMarked: (self: Object) -> (),
@@ -59,11 +59,12 @@ function ItemUIClass._UpdateItemAmount(self: Object)
     local ItemCount = self._ItemCount:GetValue()
     local MarkedCount = self._MarkedCount:GetValue()
     local UI = self._ItemUI
-
+    print(ItemCount)
+    print(MarkedCount)
     if MarkedCount > 0 then
         UI.ItemAmount.Visible = true
-        UI.ItemAmount.TextColor3 = MARKED_TEXT_COLOR
-        if MarkedCount == ItemCount then
+            UI.ItemAmount.TextColor3 = MARKED_TEXT_COLOR
+            if MarkedCount == ItemCount then
             UI.ItemAmount.Text = "-Max"
         else
             UI.ItemAmount.Text = string.format("-%d", MarkedCount)
@@ -79,7 +80,7 @@ function ItemUIClass._UpdateItemAmount(self: Object)
     end
 end
 
-function ItemUIClass._UpdateUI(self: Object)
+function ItemUIClass.UpdateUI(self: Object)
     self._Behaviors.UI:UpdateUI()
 end
 
@@ -102,7 +103,7 @@ function ItemUIClass.new(context: Context): Object
     end)
 
     self:_UpdateItemAmount()
-    self:_UpdateUI()
+    self:UpdateUI()
 
     return self
 end
@@ -119,8 +120,8 @@ function ItemUIClass.MaxMarked(self: Object): boolean
     return self._MarkedCount:GetValue() >= self._ItemCount:GetValue()
 end
 
-function ItemUIClass.GetItemData(self: Object, ignoreMarked: boolean?): ItemData
-    return self._Behaviors.ItemData:GetItemData(ignoreMarked)
+function ItemUIClass.GetItemData(self: Object, id: string?, ignoreMarked: boolean?): ItemData
+    return self._Behaviors.ItemData:GetItemData(id, ignoreMarked)
 end
 
 function ItemUIClass.ClearMarked(self: Object)

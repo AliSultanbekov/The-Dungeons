@@ -23,6 +23,8 @@ local Signal = require("Signal")
 local InventoryServiceClient = {}
 
 -- [ Types ] --
+type ItemEquippedRemotePacket = InventoryTypes.ItemEquippedRemotePacket
+type ItemUnequippedRemotePacket = InventoryTypes.ItemUnequippedRemotePacket
 type GetItemDatasRemotePacket = InventoryTypes.GetItemDatasRemotePacket
 type ItemsRemovedRemotePacket = InventoryTypes.ItemsRemovedRemotePacket
 type ItemsAddedRemotePacket = InventoryTypes.ItemsAddedRemotePacket
@@ -33,7 +35,9 @@ type ModuleData = {
     _NetworkServiceClient: typeof(require("NetworkServiceClient")),
     PublicSignals: {
         ItemsAdded: Signal.Signal<(ItemsAddedRemotePacket)>,
-        ItemsRemoved: Signal.Signal<(ItemsRemovedRemotePacket)>
+        ItemsRemoved: Signal.Signal<(ItemsRemovedRemotePacket)>,
+        ItemUnequipped: Signal.Signal<(ItemUnequippedRemotePacket)>,
+        ItemEquipped: Signal.Signal<(ItemEquippedRemotePacket)>,
     }
 }
 
@@ -42,6 +46,18 @@ export type Module = typeof(InventoryServiceClient) & ModuleData
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
+function InventoryServiceClient.EquipItem(self: Module, itemData: ItemData)
+    local Network = self._NetworkServiceClient:GetNetwork("InventoryService")
+
+    Network:FireServer("EquipItem", itemData)
+end
+
+function InventoryServiceClient.UnequipItem(self: Module, itemData: ItemData)
+    local Network = self._NetworkServiceClient:GetNetwork("InventoryService")
+
+    Network:FireServer("UnequipItem", itemData)
+end
+
 function InventoryServiceClient.RemoveItems(self: Module, itemDataMap: { [any]: ItemData })
     local Network = self._NetworkServiceClient:GetNetwork("InventoryService")
     Network:FireServer("RemoveItems", itemDataMap)
@@ -64,18 +80,28 @@ function InventoryServiceClient.Init(self: Module, serviceBag: ServiceBag.Servic
     self.PublicSignals = {
         ItemsAdded = Signal.new() :: any,
         ItemsRemoved = Signal.new() :: any,
+        ItemUnequipped = Signal.new() :: any,
+        ItemEquipped = Signal.new() :: any,
     }
 end
 
 function InventoryServiceClient.Start(self: Module)
     local Network = self._NetworkServiceClient:GetNetwork("InventoryService")
 
-    Network:Connect("ItemsAdded", function(packet: ItemsAddedRemotePacket)
-        self.PublicSignals.ItemsAdded:Fire(packet)
+    Network:Connect("ItemsAdded", function(itemDataMap: ItemsAddedRemotePacket)
+        self.PublicSignals.ItemsAdded:Fire(itemDataMap)
     end)
 
-    Network:Connect("ItemsRemoved", function(packet: ItemsRemovedRemotePacket)
-        self.PublicSignals.ItemsRemoved:Fire(packet)
+    Network:Connect("ItemsRemoved", function(itemDataMap: ItemsRemovedRemotePacket)
+        self.PublicSignals.ItemsRemoved:Fire(itemDataMap)
+    end)
+
+    Network:Connect("ItemUnequipped", function(itemData: ItemUnequippedRemotePacket)
+        self.PublicSignals.ItemUnequipped:Fire(itemData)
+    end)
+
+    Network:Connect("ItemEquipped", function(itemData: ItemEquippedRemotePacket)
+        self.PublicSignals.ItemEquipped:Fire(itemData)
     end)
 end
 

@@ -19,8 +19,13 @@ local ProfileConfig = {
             Materials = {}
         },
         
-        Currencys = {
+        Currencies = {
             Coins = 0
+        },
+
+        Equipped = {
+            Toolbar = {},
+            Equipment = {},
         }
     },
     Leaderstats = {"Coins"}
@@ -34,8 +39,16 @@ export type ProfileTemplate = {
         Materials: {},
     },
 
-    Currencys: {
+    Currencies: {
         Coins: number
+    },
+
+    Equipped: {
+        Toolbar: {
+        },
+        Equipment: {
+        }
+        
     }
 }
 

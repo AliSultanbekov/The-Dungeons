@@ -3,101 +3,97 @@
 ]=]
 
 -- [ Roblox Services ] --
-local StarterGui = game:GetService("StarterGui")
+local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 
 -- [ Imports ] --
-local TooltipClass = require("./TooltipClasses/_TooltipClass")
-local ItemTooltipClass = require("./TooltipClasses/_TooltipClass")
-local ItemActionTooltipClass = require("./TooltipClasses/_ItemActionTooltipClass")
+local TooltipClassBuilder = require("./TooltipClass/_TooltipClassBuilder")
 
 -- [ Require ] --
 local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 local ServiceBag = require("ServiceBag")
+local Maid = require("Maid")
 
 -- [ Constants ] --
 
 -- [ Variables ] --
+local Player = Players.LocalPlayer
+local PlayerGui = Player.PlayerGui
 
 -- [ Module Table ] --
 local TooltipController = {}
 
 -- [ Types ] --
-type ItemTooltipUI = typeof(StarterGui.Tooltips.ItemTooltip)
-
+type ItemTooltipUI = typeof(PlayerGui.Tooltips.ItemTooltip)
+type TooltipObject = TooltipClassBuilder.TooltipObject
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
     _UIController: typeof(require("UIController")),
-    _UserInputController: typeof(require("UserInputController")),
-
-    _Tooltips: {
-        [string]: TooltipClass.Object,
-    },
-    _ActiveTooltip: string?
+    _TooltipMaid: Maid.Maid,
+    _TooltipObjects: { [string]: TooltipObject },
+    _ActiveTooltip: string?,
 }
 
 export type Module = typeof(TooltipController) & ModuleData
 
 -- [ Private Functions ] --
-
--- [ Public Functions ] --
-
-
-function TooltipController.SetCallBacks(self: Module, tooltipType: string, cbs: {[string]: (...any) -> (...any)})
-    local Tooltip = self._Tooltips[tooltipType]
-
-    if not Tooltip then
-        warn(string.format("[TooltipController] No Tooltip found for type '%s'", tooltipType))
-        return
+function TooltipController._GetTooltipUI(self: Module, tooltipType: string): GuiObject
+    if tooltipType == "ItemTooltip" then
+        return self._UIController:GetUI("ItemTooltipUI")
+    elseif tooltipType == "ItemActionTooltip" then
+        return self._UIController:GetUI("ItemActionTooltipUI")
     end
 
-    Tooltip:SetCallBacks(cbs)
+    error(`Unknown tooltip type "{tooltipType}"`)
 end
 
-function TooltipController.GetActive(self: Module): string?
-    return self._ActiveTooltip
+-- [ Public Functions ] --
+function TooltipController.IsAttachedToMouse(self: Module, tooltipType: string): boolean
+    local TooltipObject = self._TooltipObjects[tooltipType]
+    return TooltipObject:IsAttachedToMouse()
 end
 
 function TooltipController.UpdatePosition(self: Module, tooltipType: string, position: UDim2)
-    local Tooltip = self._Tooltips[tooltipType]
-
-    if not Tooltip then
-        warn(string.format("[TooltipController] No Tooltip found for type '%s'", tooltipType))
-        return
-    end
-
-    Tooltip:UpdatePosition(position)
+    local TooltipObject = self._TooltipObjects[tooltipType]
+    TooltipObject:UpdatePosition(position)
 end
 
-function TooltipController.UpdateInfo(self: Module, tooltipType: string, info: { any })
-    local Tooltip = self._Tooltips[tooltipType]
-
-    if not Tooltip then
-        warn(string.format("[TooltipController] No Tooltip found for type '%s'", tooltipType))
-        return
-    end
-
-    Tooltip:UpdateInfo(info)
+function TooltipController.UpdateCbs(self: Module, tooltipType: string, cbs: { [any]: any })
+    local TooltipObject = self._TooltipObjects[tooltipType]
+    TooltipObject:UpdateCbs(cbs)
 end
 
-function TooltipController.Show(self: Module, tooltipType: string, hookToCursor: boolean?)
-    local Tooltip = self._Tooltips[tooltipType]
+function TooltipController.UpdateUI(self: Module, tooltipType: string, info: { [any]: any })
+    local TooltipObject = self._TooltipObjects[tooltipType]
+    TooltipObject:UpdateUI(info)
+end
 
-    if not Tooltip then
-        warn(string.format("[TooltipController] No Tooltip found for type '%s'", tooltipType))
+function TooltipController.Show(self: Module, tooltipType: string, attachToCursor: boolean?)
+    if self._ActiveTooltip == tooltipType then
         return
     end
 
-    if self._ActiveTooltip and self._ActiveTooltip ~= tooltipType then
-        self:Hide(self._ActiveTooltip)
-    end
-
-    Tooltip:Show()
-    Tooltip:SetHookToCursor(hookToCursor or false)
+    self._TooltipMaid:DoCleaning()
+    
+    local TooltipObject = self._TooltipObjects[tooltipType]
+    TooltipObject:Show()
+    TooltipObject:SetAttachToMouse(attachToCursor or false)
 
     self._ActiveTooltip = tooltipType
+
+    self._TooltipMaid:Add(function()
+        if self._ActiveTooltip then
+            TooltipObject:Hide()
+        end
+        
+        self._ActiveTooltip = nil
+    end)
+
+    self._TooltipMaid:Add(TooltipObject.DestroySignal:Connect(function()
+        self._TooltipMaid:DoCleaning()
+    end))
 end
 
 function TooltipController.Hide(self: Module, tooltipType: string)
@@ -105,18 +101,16 @@ function TooltipController.Hide(self: Module, tooltipType: string)
         return
     end
 
-    local Tooltip = self._Tooltips[tooltipType]
+    local TooltipObject = self._TooltipObjects[tooltipType]
+    TooltipObject:Hide()
+    TooltipObject:SetAttachToMouse(false)
 
-    if not Tooltip then
-        warn(string.format("[TooltipController] No Tooltip found for type '%s'", tooltipType))
-        return
-    end
 
-    Tooltip:Hide()
-    Tooltip:SetHookToCursor(false)
-    Tooltip:SetCallBacks({})
+    self._TooltipMaid:DoCleaning()
+end
 
-    self._ActiveTooltip = nil
+function TooltipController.GetActive(self: Module)
+    return self._ActiveTooltip
 end
 
 function TooltipController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
@@ -126,38 +120,35 @@ function TooltipController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
     self._UIController = self._ServiceBag:GetService(require("UIController"))
-    self._UserInputController = self._ServiceBag:GetService(require("UserInputController"))
-    self._Tooltips = {}
+    self._TooltipMaid = Maid.new()
+    self._TooltipObjects = {}
     self._ActiveTooltip = nil
 end
 
 function TooltipController.Start(self: Module)
     self._UIController:UIReady():Then(function()
-        local ItemTooltipUI = self._UIController:GetUI("ItemTooltipUI") :: ItemTooltipUI
-        local ItemActionTooltipUI = self._UIController:GetUI("ItemActionTooltipUI") :: ItemTooltipUI
-
-        self._Tooltips["ItemTooltip"] = ItemTooltipClass.new(ItemTooltipUI)
-        self._Tooltips["ItemActionTooltip"] = ItemActionTooltipClass.new(ItemActionTooltipUI)
+        self._TooltipObjects["ItemTooltip"] = TooltipClassBuilder:Build("ItemTooltip", self:_GetTooltipUI("ItemTooltip"))
+        self._TooltipObjects["ItemActionTooltip"] = TooltipClassBuilder:Build("ItemActionTooltip", self:_GetTooltipUI("ItemActionTooltip"))
 
         UserInputService.InputChanged:Connect(function(input: InputObject, gameProcesse:boolean)
             if input.UserInputType ~= Enum.UserInputType.MouseMovement then
                 return
             end
+    
+            local TooltipType = self._ActiveTooltip
 
-            if not self._ActiveTooltip then
+            if not TooltipType then
                 return
             end
-    
-            local TooltipObject = self._Tooltips[self._ActiveTooltip]
-    
-            if not TooltipObject:IsHookedToCursor() then
+
+            if not self:IsAttachedToMouse(TooltipType) then
                 return
             end
     
             local MouseLocation = UserInputService:GetMouseLocation()
             local MousePosition = UDim2.new(0, MouseLocation.X, 0, MouseLocation.Y - 40)
     
-            TooltipObject:UpdatePosition(MousePosition)
+            self:UpdatePosition(TooltipType, MousePosition)
         end)
     end)
 end

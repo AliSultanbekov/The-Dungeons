@@ -19,7 +19,7 @@ local DEFAULT_COMPARATOR = function(a: ElementUI, b: ElementUI): boolean
     return true
 end
 
-local BATCH_DEBOUNCE_TIME = 0.1
+local BATCH_DEBOUNCE_TIME = 0.00005
 local BATCH_MAX_PEND_TIME = 0.5
 
 -- [ Variables ] --

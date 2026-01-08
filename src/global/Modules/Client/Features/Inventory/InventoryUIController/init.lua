@@ -17,7 +17,7 @@ local ItemUIClassBuilder = require("./ItemUIClass/_ItemUIClassBuilder")
 local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
-local TopicConstants = require("TopicConstants")
+local TopicConstantsClient = require("TopicConstantsClient")
 local AssetProvider = require("AssetProvider")
 local ButtonUtil = require("ButtonUtil")
 local ObjectPool = require("ObjectPool")
@@ -260,7 +260,7 @@ function InventoryUIController.Close(self: Module)
     end
     
     self:_HideTooltips()
-    self._EventBusClient:Publish(TopicConstants.UI.Close("InventoryUI"))
+    self._EventBusClient:Publish(TopicConstantsClient.UI.Close("InventoryUI"))
 end
 
 function InventoryUIController.Toggle(self: Module)
@@ -269,7 +269,7 @@ function InventoryUIController.Toggle(self: Module)
     end
     
     self:_HideTooltips()
-    self._EventBusClient:Publish(TopicConstants.UI.Toggle("InventoryUI"))
+    self._EventBusClient:Publish(TopicConstantsClient.UI.Toggle("InventoryUI"))
 end
 
 function InventoryUIController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)

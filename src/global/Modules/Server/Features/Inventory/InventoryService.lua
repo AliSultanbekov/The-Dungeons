@@ -16,6 +16,7 @@ local ServiceBag = require("ServiceBag")
 local ItemTypes = require("ItemTypes")
 local Table = require("Table")
 local ItemConstants = require("ItemConstants")
+local TopicConstants = require("TopicConstants")
 
 -- [ Constants ] --
 
@@ -25,6 +26,7 @@ local ItemConstants = require("ItemConstants")
 local InventoryService = {}
 
 -- [ Types ] --
+type ItemID = ItemTypes.ItemID
 type ItemData = ItemTypes.ItemData
 type StackableItemData = ItemTypes.StackableItemData
 type UniqueItemData = ItemTypes.UniqueItemData
@@ -32,7 +34,8 @@ type RawItemData = ItemTypes.RawItemData
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
     _DataService: typeof(require("DataService")),
-    _NetworkService: typeof(require("NetworkService"))
+    _NetworkService: typeof(require("NetworkService")),
+    _EventBus: typeof(require("EventBus"))
 }
 
 export type Module = typeof(InventoryService) & ModuleData
@@ -87,6 +90,17 @@ function InventoryService._ProcessItemData(self: Module, player: Player, rawItem
     end
 end
 
+--[=[
+    since we only want to transmit the change in amount to client, we also need to make sure that the new stackable data has correct attributes,
+    like equipped etc. if you did transmit the wrong states from itemdata, it would end up with bugs
+]=]
+function InventoryService._CreateDelta(self: Module, itemData: StackableItemData, deltaAmount: number)
+    local Copy = Table.deepCopy(itemData) :: StackableItemData
+    Copy.Amount = deltaAmount
+
+    return Copy
+end
+
 -- [ Public Functions ] --
 
 --[=[
@@ -116,6 +130,8 @@ function InventoryService.Equip(self: Module, player: Player, itemData: ItemData
             handleUnique(InventoryData)
         end
     end)
+
+    self._EventBus:Publish(TopicConstants.Inventory.ItemEquipped, { Player = player, ItemData = itemData })
 
     Network:FireClient("ItemEquipped", player, itemData)
 end
@@ -148,53 +164,53 @@ function InventoryService.Unequip(self: Module, player: Player, itemData: ItemDa
         end
     end)
 
+    self._EventBus:Publish(TopicConstants.Inventory.ItemUnequipped, { Player = player, ItemData = itemData })
+
     Network:FireClient("ItemUnequipped", player, itemData)
 end
 
 --[=[
-    only ever gets called from server
+    only ever gets called from server       
 ]=]
 function InventoryService.AddItems(self: Module, player: Player, rawItemDataMap: { [any]: RawItemData })
     local Network = self._NetworkService:GetNetwork("InventoryService")
 
-    local function handleUnique(inventoryData: {}, cacheMap: {}, itemData: UniqueItemData)
-        inventoryData[itemData.Type][itemData.ID] = itemData
-        cacheMap[itemData.ID] = itemData
-    end
-
-    local function handleStackable(inventoryData: {}, cacheMap: {}, itemData: StackableItemData)
-        local ExistingItemData: StackableItemData? = inventoryData[itemData.Type][itemData.ID]
-        local DeltaAmount = itemData.Amount
-
-        local function updateDatastore()
-            if ExistingItemData then
-                ExistingItemData.Amount += DeltaAmount
-
-                -- make sure new itemdata is updated with new attributes
-                itemData = Table.deepCopy(ExistingItemData)
-                itemData.Amount = DeltaAmount
-            else
-                inventoryData[itemData.Type][itemData.ID] = itemData
-            end
-        end
-
-        local function updateCache()
-            local ExistingCacheItemData: StackableItemData? = cacheMap[itemData.ID]
-
-            if ExistingCacheItemData then
-                ExistingCacheItemData.Amount += DeltaAmount
-            else
-                cacheMap[itemData.ID] = itemData
-            end
-        end
-
-        updateDatastore()
-        updateCache()
-    end
-
     self._DataService:UpdateData(player, function(data)
+        local function handleUnique(inventoryData: {}, deltaCache: {}, itemData: UniqueItemData)
+            inventoryData[itemData.Type][itemData.ID] = itemData
+            deltaCache[itemData.ID] = itemData
+            self._EventBus:Publish(TopicConstants.Inventory.ItemAdded, { Player = player, ItemData = itemData })
+        end
+    
+        local function handleStackable(inventoryData: {}, deltaCache: {}, itemData: StackableItemData)
+            local ExistingItemData: StackableItemData? = inventoryData[itemData.Type][itemData.ID]
+            local DeltaAmount = itemData.Amount -- the change aka how much being added
+    
+            local function updateDatastore()
+                if ExistingItemData then
+                    ExistingItemData.Amount += DeltaAmount
+                    itemData = self:_CreateDelta(ExistingItemData, DeltaAmount)
+                else
+                    inventoryData[itemData.Type][itemData.ID] = itemData
+                end
+            end
+    
+            local function updateCache()
+                local DeltaItemData = deltaCache[itemData.ID]
+    
+                if DeltaItemData then
+                    DeltaItemData.Amount += DeltaAmount
+                else
+                    deltaCache[itemData.ID] = itemData
+                end
+            end
+    
+            updateDatastore()
+            updateCache()
+        end
+        
         local InventoryData = data.Inventory
-        local CacheMap: { [string]: ItemData } = {}
+        local DeltaCache: { [ItemID]: ItemData } = {}
 
         for _, rawItemData in rawItemDataMap do
             local ItemData = self:_ProcessItemData(player, rawItemData)
@@ -205,13 +221,18 @@ function InventoryService.AddItems(self: Module, player: Player, rawItemDataMap:
             end
 
             if ItemData.Type == "Materials" then
-                handleStackable(InventoryData, CacheMap, ItemData)
+                handleStackable(InventoryData, DeltaCache, ItemData)
             elseif ItemData.Type == "Weapons" then
-                handleUnique(InventoryData, CacheMap, ItemData)
+                handleUnique(InventoryData, DeltaCache, ItemData)
             end
         end
 
-        Network:FireClient("ItemsAdded", player, CacheMap)
+        if next(DeltaCache) == nil then
+            warn("[BackpackService] No items were added to the cache for player: " .. tostring(player))
+            return
+        end
+
+        Network:FireClient("ItemsAdded", player, DeltaCache)
     end)
 end
 
@@ -223,50 +244,50 @@ end
 function InventoryService.RemoveItems(self: Module, player: Player, ItemDataMap: { [any]: ItemData })
     local Network = self._NetworkService:GetNetwork("InventoryService")
 
-    local function handleUnique(inventoryData: {}, cacheMap: {}, itemData: UniqueItemData)
-        inventoryData[itemData.Type][itemData.ID] = nil
-        cacheMap[itemData.ID] = itemData
-    end
-
-    local function handleStackable(inventoryData: {}, cacheMap: {}, itemData: StackableItemData)
-        local ExistingItemData: StackableItemData? = inventoryData[itemData.Type][itemData.ID]
-        local DeltaAmount = itemData.Amount
-
-        if not ExistingItemData then
-            return
-        end
-
-        local function updateDatastore()  
-            if ExistingItemData.Amount - DeltaAmount <= 0 then
-                DeltaAmount = DeltaAmount + (ExistingItemData.Amount - DeltaAmount)
-                inventoryData[itemData.Type][itemData.ID] = nil
-
-                -- make sure new itemdata is updated with new attributes
-                itemData = Table.deepCopy(ExistingItemData)
-                itemData.Amount = DeltaAmount
-            else
-                ExistingItemData.Amount -= DeltaAmount
-            end
-        end
-
-        local function updateCache()
-            local ExistingCacheItemData: StackableItemData? = cacheMap[itemData.ID]
-
-            if ExistingCacheItemData then
-                ExistingCacheItemData.Amount += DeltaAmount
-            else
-                cacheMap[itemData.ID] = itemData
-            end
-        end
-
-        updateDatastore()
-        updateCache()
-    end
-
     self._DataService:UpdateData(player, function(data)
         local InventoryData = data.Inventory
-        local CacheMap: { [string]: ItemData } = {}
+        local DeltaCache: { [ItemID]: ItemData } = {}
 
+        local function handleUnique(inventoryData: {}, deltaCache: {}, itemData: UniqueItemData)
+            inventoryData[itemData.Type][itemData.ID] = nil
+            deltaCache[itemData.ID] = itemData
+            self._EventBus:Publish(TopicConstants.Inventory.ItemDeleted, { Player = player, ItemData = itemData })
+        end
+    
+        local function handleStackable(inventoryData: {}, deltaCache: {}, itemData: StackableItemData)
+            local ExistingItemData: StackableItemData? = inventoryData[itemData.Type][itemData.ID]
+            local DeltaAmount = itemData.Amount
+    
+            if not ExistingItemData then
+                warn(`[InventoryService.RemoveItem] Tried to remove item {itemData.ID} of type {itemData.Type} which does not exist in inventory for player {player.Name}`)
+                return
+            end
+    
+            local function updateDatastore()
+                if ExistingItemData.Amount - DeltaAmount <= 0 then
+                    DeltaAmount = DeltaAmount + (ExistingItemData.Amount - DeltaAmount)
+                    inventoryData[itemData.Type][itemData.ID] = nil
+                else
+                    ExistingItemData.Amount -= DeltaAmount
+                end
+    
+                itemData = self:_CreateDelta(ExistingItemData, DeltaAmount)
+            end
+    
+            local function updateCache()
+                local ExistingCacheItemData: StackableItemData? = deltaCache[itemData.ID]
+    
+                if ExistingCacheItemData then
+                    ExistingCacheItemData.Amount += DeltaAmount
+                else
+                    deltaCache[itemData.ID] = itemData
+                end
+            end
+    
+            updateDatastore()
+            updateCache()
+        end
+        
         for _, itemData in ItemDataMap do
             if not InventoryData[itemData.Type] then
                 warn(`[InventoryService.AddItem] InventoryData[{itemData.Type}] does not exist for player {player.Name}`)
@@ -279,13 +300,18 @@ function InventoryService.RemoveItems(self: Module, player: Player, ItemDataMap:
             end
 
             if itemData.Type == "Materials" then
-                handleStackable(InventoryData, CacheMap, itemData)
+                handleStackable(InventoryData, DeltaCache, itemData)
             elseif itemData.Type == "Weapons" then
-                handleUnique(InventoryData, CacheMap, itemData)
+                handleUnique(InventoryData, DeltaCache, itemData)
             end
         end
 
-        Network:FireClient("ItemsRemoved", player, CacheMap)
+        if next(DeltaCache) == nil then
+            warn("[BackpackService] No items were added to the cache for player: " .. tostring(player))
+            return
+        end
+
+        Network:FireClient("ItemsRemoved", player, DeltaCache)
     end)
 end
 
@@ -295,11 +321,11 @@ function InventoryService.FetchSecureItemData(self: Module, player: Player, item
     return SecureData
 end
 
-function InventoryService.GetItemDatas(self: Module, player: Player)
+function InventoryService.GetItemDatas(self: Module, player: Player): { [ItemID]: ItemData}
     local Success, InventoryData = self._DataService:GetData(player, "Inventory")
 
     if not Success then
-        return
+        error("Failed to get Inventory data for player: " .. player.Name)
     end
 
     local ItemsData = {}
@@ -320,6 +346,7 @@ function InventoryService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     self._ServiceBag = assert(serviceBag, "No serviceBag")
     self._DataService = self._ServiceBag:GetService(require("DataService"))
     self._NetworkService = self._ServiceBag:GetService(require("NetworkService"))
+    self._EventBus = self._ServiceBag:GetService(require("EventBus"))
 end
 
 function InventoryService.Start(self: Module)

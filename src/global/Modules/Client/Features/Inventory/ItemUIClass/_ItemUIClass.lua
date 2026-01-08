@@ -59,8 +59,7 @@ function ItemUIClass._UpdateItemAmount(self: Object)
     local ItemCount = self._ItemCount:GetValue()
     local MarkedCount = self._MarkedCount:GetValue()
     local UI = self._ItemUI
-    print(ItemCount)
-    print(MarkedCount)
+
     if MarkedCount > 0 then
         UI.ItemAmount.Visible = true
             UI.ItemAmount.TextColor3 = MARKED_TEXT_COLOR

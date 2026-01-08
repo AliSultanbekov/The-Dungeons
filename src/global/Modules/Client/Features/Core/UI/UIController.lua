@@ -15,7 +15,7 @@ local require = require(script.Parent.loader).load(script)
 local ServiceBag = require("ServiceBag")
 local Promise = require("Promise")
 local Signal = require("Signal")
-local TopicConstants = require("TopicConstants")
+local TopicConstantsClient = require("TopicConstantsClient")
 local UIUtil = require("UIUtil")
 
 -- [ Constants ] --
@@ -46,15 +46,15 @@ export type Module = typeof(UIController) & ModuleData
 
 -- [ Private Functions ] --
 function UIController._RegisterUI(self: Module, uiName: string)
-    table.insert(self._Conns, self._EventBusClient:Subscribe(TopicConstants.UI.Open(uiName), function()
+    table.insert(self._Conns, self._EventBusClient:Subscribe(TopicConstantsClient.UI.Open(uiName), function(packet: any)
         self:Open(uiName)
     end))
 
-    table.insert(self._Conns, self._EventBusClient:Subscribe(TopicConstants.UI.Close(uiName), function()
+    table.insert(self._Conns, self._EventBusClient:Subscribe(TopicConstantsClient.UI.Close(uiName), function(packet: any)
         self:Close(uiName)
     end))
 
-    table.insert(self._Conns, self._EventBusClient:Subscribe(TopicConstants.UI.Toggle(uiName), function()
+    table.insert(self._Conns, self._EventBusClient:Subscribe(TopicConstantsClient.UI.Toggle(uiName), function(packet: any)
         self:Toggle(uiName)
     end))
 end
@@ -123,7 +123,7 @@ function UIController.Open(self: Module, uiName: string)
 
     UIUtil:OpenUI(UI, OPEN_TWEENINFO, true)
 
-    self._EventBusClient:Publish(TopicConstants.UI.OpenedAny)
+    self._EventBusClient:Publish(TopicConstantsClient.UI.OpenedAny)
 end
 
 function UIController.Close(self: Module, uiName: string)
@@ -133,7 +133,7 @@ function UIController.Close(self: Module, uiName: string)
 
     UIUtil:CloseUI(UI, CLOSE_TWEENINFO, true)
 
-    self._EventBusClient:Publish(TopicConstants.UI.ClosedAny)
+    self._EventBusClient:Publish(TopicConstantsClient.UI.ClosedAny)
 end
 
 function UIController.GetUIComponent(self: Module, uiName: string, uiComponentName: string)

@@ -1,5 +1,5 @@
 --[=[
-    @class EventBusClient
+    @class EventBus
 ]=]
 
 -- [ Roblox Services ] --
@@ -18,7 +18,7 @@ local Signal = require("Signal")
 -- [ Variables ] --
 
 -- [ Module Table ] --
-local EventBusClient = {}
+local EventBus = {}
 
 -- [ Types ] --
 type ModuleData = {
@@ -26,7 +26,7 @@ type ModuleData = {
     _Signals: { [string]: Signal.Signal<any>}
 }
 
-export type Module = typeof(EventBusClient) & ModuleData
+export type Module = typeof(EventBus) & ModuleData
 
 -- [ Private Functions ] --
 function _GetSignal(self: Module, topic: string)
@@ -41,25 +41,25 @@ function _GetSignal(self: Module, topic: string)
 end
 
 -- [ Public Functions ] --
-function EventBusClient.Subscribe(self: Module, topic: string, cb: (packet: any) -> ()): Signal.Connection<any>
+function EventBus.Subscribe(self: Module, topic: string, cb: (packet: any) -> ()): Signal.Connection<any>
     return _GetSignal(self, topic):Connect(cb)
 end
 
-function EventBusClient.Once(self: Module, topic: string, cb: (packet: any) -> ()): Signal.Connection<any>
+function EventBus.Once(self: Module, topic: string, cb: (packet: any) -> ()): Signal.Connection<any>
     return _GetSignal(self, topic):Once(cb)
 end
 
-function EventBusClient.Unsubscribe(self: Module, conn: Signal.Connection<any>)
+function EventBus.Unsubscribe(self: Module, conn: Signal.Connection<any>)
     if conn then
         conn:Disconnect()
     end
 end
 
-function EventBusClient.Publish(self: Module, topic: string, packet: any)
+function EventBus.Publish(self: Module, topic: string, packet: any)
     _GetSignal(self, topic):Fire(packet)
 end
 
-function EventBusClient.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
+function EventBus.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     if self._ServiceBag ~= nil then
         error("Service already initialized")
     end
@@ -68,8 +68,8 @@ function EventBusClient.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     self._Signals = {}
 end
 
-function EventBusClient.Start(self: Module)
+function EventBus.Start(self: Module)
     
 end
 
-return EventBusClient :: Module
+return EventBus :: Module

@@ -70,6 +70,8 @@ function DefaultUIBehavior.UpdateUI(self: Object)
         UI.Equipped.Visible = false
     end
 
+    UI.ItemName.Text = ItemData.Name
+
     ItemUIUtil:SetupForRarity(UI, ItemRarity)
 end
 

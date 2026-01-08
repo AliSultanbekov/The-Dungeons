@@ -57,14 +57,6 @@ function UniqueBehavior.new(context: Context): Object
     self._MarkedBag = {}
 
     self._ItemCount:Add(1)
-
-    task.spawn(function()
-        while true do
-            task.wait(1)
-            print(self._ItemCount:GetValue())
-            print(self._MarkedCount:GetValue())
-        end
-    end)
     
     return self
 end

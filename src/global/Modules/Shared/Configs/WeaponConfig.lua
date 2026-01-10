@@ -18,21 +18,38 @@ local WeaponConfig = {
     ["Wooden Sword"] = {
         Image = "rbxassetid://...",
         Rarity = "Celestial",
-        Primary = {
-            [1] = { Anim = "rbxassetid://...", Damage = 2, Recovery = 0.25 },
-            [2] = { Anim = "rbxassetid://...", Damage = 2, Recovery = 0.25 },
-            [3] = { Anim = "rbxassetid://...", Damage = 3, Recovery = 0.35 },
+        BasicAttack = {
+            Name = "WoodenSwordBasicAttack",
+            Combo = {
+                [1] = { Animation = "rbxassetid://...", Damage = 2 },
+                [2] = { Animation = "rbxassetid://...", Damage = 2 },
+                [3] = { Animation = "rbxassetid://...", Damage = 3 },
+            }
         },
-        Secondary = {
-            [1] = { Anim = "rbxassetid://...", Damage = 2, Recovery = 0.25 },
+        SpecialAttack = {
+            Name = "WoodenSwordSpecialAttack",
+            Animation = "rbxassetid://...",
+            Damage = 2,
         }
     }
 } :: {
     [string]: {
         Image: string,
         Rarity: string,
-        Primary: {},
-        Secondary: {},
+        BasicAttack: {
+            Name: string,
+            Combo: { 
+                [number]: {
+                    Animation: string,
+                    Damage: number
+                }
+            }
+        },
+        SpecialAttack: {
+            Name: string,
+            Animation: string,
+            Damage: number
+        },
     }
 }
 

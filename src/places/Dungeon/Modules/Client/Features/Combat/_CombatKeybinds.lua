@@ -5,7 +5,7 @@
 -- [ Roblox Services ] --
 
 -- [ Require ] --
-local require = require(script.Parent.Parent.loader).load(script)
+local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 local InputKeyMap = require("InputKeyMap")
@@ -16,22 +16,35 @@ local InputModeTypes = require("InputModeTypes")
 
 -- [ Variables ] --
 local Actions = {
-    ["WEAPON_PRIMARY"] = "WEAPON_PRIMARY"
+    ["BASIC_ATTACK"] = "BASIC_ATTACK",
+    ["SPECIAL_ATTACK"] = "SPECIAL_ATTACK"
 }
 
 -- [ Module Table ] --
 local CombatKeyMap = {
     Actions = Actions,
     KeyMaps = {
-        [Actions.WEAPON_PRIMARY] = InputKeyMapList.new(
-            Actions.WEAPON_PRIMARY,
+        [Actions.BASIC_ATTACK] = InputKeyMapList.new(
+            Actions.BASIC_ATTACK,
             {
                 InputKeyMap.new(InputModeTypes.Mouse, {
                     Enum.UserInputType.MouseButton1
                 })
             },
             {
-                bindingName = "Weapon Primary",
+                bindingName = "Basic Attack",
+                rebindable = true,
+            }
+        ),
+        [Actions.SPECIAL_ATTACK] = InputKeyMapList.new(
+            Actions.SPECIAL_ATTACK,
+            {
+                InputKeyMap.new(InputModeTypes.Mouse, {
+                    Enum.UserInputType.MouseButton2
+                })
+            },
+            {
+                bindingName = "Special Attack",
                 rebindable = true,
             }
         )

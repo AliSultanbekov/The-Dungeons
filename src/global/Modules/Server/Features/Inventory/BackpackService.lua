@@ -32,7 +32,7 @@ type ItemData = ItemTypes.ItemData
 type ItemID = ItemTypes.ItemID
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
-    _CharacterService: typeof(require("CharacterService")),
+    _PlayerCharacterService: typeof(require("PlayerCharacterService")),
     _InventoryService: typeof(require("InventoryService")),
     _EventBus: typeof(require("EventBus")),
 
@@ -115,7 +115,7 @@ function BackpackService.RemoveItem(self: Module, player: Player, itemData: Item
     PlayerBackpack[itemData.ID] = nil
 end
 
-function BackpackService.OnCharacterAdded(self: Module, maid: Maid.Maid, character: Model)
+function BackpackService.OnPlayerCharacterAdded(self: Module, maid: Maid.Maid, character: Model)
     local Player = Players:GetPlayerFromCharacter(character)
 
     if not Player then
@@ -145,7 +145,7 @@ function BackpackService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     end
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
-    self._CharacterService = self._ServiceBag:GetService(require("CharacterService"))
+    self._PlayerCharacterService = self._ServiceBag:GetService(require("PlayerCharacterService"))
     self._InventoryService = self._ServiceBag:GetService(require("InventoryService"))
     self._EventBus = self._ServiceBag:GetService(require("EventBus"))
 
@@ -153,7 +153,7 @@ function BackpackService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
 end
 
 function BackpackService.Start(self: Module)
-    self._CharacterService:RegisterService(self)
+    self._PlayerCharacterService:RegisterService(self)
 
     self._EventBus:Subscribe(TopicConstants.Inventory.ItemRemoved, function(packet: { Player: Player, ItemData: ItemData })
         if not packet.ItemData.Equipped then
@@ -188,7 +188,6 @@ function BackpackService.Start(self: Module)
     self._EventBus:Subscribe(TopicConstants.Inventory.ItemUnequipped, function(packet: { Player: Player, ItemData: ItemData })
         self:RemoveItem(packet.Player, packet.ItemData)
     end)
-    
 end     
 
 return BackpackService :: Module

@@ -1,5 +1,5 @@
 --[=[
-    @class CharacterService
+    @class PlayerCharacterController
 ]=]
 
 -- [ Roblox Services ] --
@@ -19,29 +19,29 @@ local RxPlayerUtils = require("RxPlayerUtils")
 -- [ Variables ] --
 
 -- [ Module Table ] --
-local CharacterService = {}
+local PlayerCharacterController = {}
 
 -- [ Types ] --
-type ServiceTemplate = {
-    OnCharacterAdded: (self: ServiceTemplate, maid: Maid.Maid, character: Model) -> ()?
+type ServiceModule = {
+    OnPlayerCharacterAdded: (self: ServiceModule, maid: Maid.Maid, character: Model) -> ()?
 }
 
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
     _Maid: Maid.Maid,
-    _Services: { ServiceTemplate }
+    _Services: { ServiceModule }
 }
 
-export type Module = typeof(CharacterService) & ModuleData
+export type Module = typeof(PlayerCharacterController) & ModuleData
 
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function CharacterService.RegisterService(self: Module, service: ServiceTemplate)
+function PlayerCharacterController.RegisterService(self: Module, service: ServiceModule)
     table.insert(self._Services, service)
 end
 
-function CharacterService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
+function PlayerCharacterController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     if self._ServiceBag ~= nil then
         error("Service already initialized")
     end
@@ -51,16 +51,16 @@ function CharacterService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     self._Services = {}
 end
 
-function CharacterService.Start(self: Module)
+function PlayerCharacterController.Start(self: Module)
     self._Maid:Add(RxPlayerUtils.observeCharactersBrio():Subscribe(function(brio)
         local Maid: Maid.Maid, Character: Model = brio:ToMaidAndValue()
 
         for _, service in ipairs(self._Services) do
-			if service.OnCharacterAdded then
-				task.spawn(service.OnCharacterAdded, service, Maid, Character)
+			if service.OnPlayerCharacterAdded then
+				task.spawn(service.OnPlayerCharacterAdded, service, Maid, Character)
 			end
 		end
     end))
 end
 
-return CharacterService :: Module
+return PlayerCharacterController :: Module

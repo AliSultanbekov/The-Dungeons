@@ -10,8 +10,13 @@ export type Context = {
     Attacker: Model,
 }
 
+export type AbilityObject = {
+    Activate: (self: AbilityObject, Context) -> ()
+}
+
 export type AbilityModule = {
-    Activate: (self: AbilityModule, Context) -> ()
+    __index: AbilityModule,
+    new: (config: any) -> AbilityObject,
 }
 
 return nil

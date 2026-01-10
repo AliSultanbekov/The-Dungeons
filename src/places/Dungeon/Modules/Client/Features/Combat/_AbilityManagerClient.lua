@@ -31,7 +31,7 @@ export type ObjectData = {
 }
 export type Object = ObjectData & {
     _LoadAbilities: (self: Object) -> (),
-    GetAbility: (self: Object, abilityName: string) -> ()
+    GetAbility: (self: Object, abilityName: string) -> AbilityModule
 }
 export type Module = {
     __index: Module,
@@ -63,7 +63,7 @@ function AbilityManagerClient.new(): Object
 end
 
 function AbilityManagerClient.GetAbility(self: Object, abilityName: string): AbilityModule
-    return self._Abilities[string.format("%s%s", abilityName, "Client")]
+    return self._Abilities[string.format("_%s%s", abilityName, "Client")]
 end
 
 return AbilityManagerClient :: Module

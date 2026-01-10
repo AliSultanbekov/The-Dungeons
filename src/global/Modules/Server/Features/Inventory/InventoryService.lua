@@ -35,7 +35,9 @@ type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
     _DataService: typeof(require("DataService")),
     _NetworkService: typeof(require("NetworkService")),
-    _EventBus: typeof(require("EventBus"))
+    _EventBus: typeof(require("EventBus")),
+
+    _EquippedWeapon: ItemData?,
 }
 
 export type Module = typeof(InventoryService) & ModuleData
@@ -176,41 +178,45 @@ function InventoryService.AddItems(self: Module, player: Player, rawItemDataMap:
     local Network = self._NetworkService:GetNetwork("InventoryService")
 
     self._DataService:UpdateData(player, function(data)
-        local function handleUnique(inventoryData: {}, deltaCache: {}, itemData: UniqueItemData)
-            inventoryData[itemData.Type][itemData.ID] = itemData
-            deltaCache[itemData.ID] = itemData
-            self._EventBus:Publish(TopicConstants.Inventory.ItemAdded, { Player = player, ItemData = itemData })
+        local InventoryData = data.Inventory
+        local DeltaCache = {} :: any
+        local AddedItems = {} :: any
+        local UpdatedItems = {} :: any
+
+        local function handleUnique(itemData: UniqueItemData)
+            InventoryData[itemData.Type][itemData.ID] = itemData
+            DeltaCache[itemData.ID] = itemData
+            AddedItems[itemData.ID] = itemData
         end
     
-        local function handleStackable(inventoryData: {}, deltaCache: {}, itemData: StackableItemData)
-            local ExistingItemData: StackableItemData? = inventoryData[itemData.Type][itemData.ID]
+        local function handleStackable(itemData: StackableItemData)
+            local ExistingItemData: StackableItemData? = InventoryData[itemData.Type][itemData.ID]
             local DeltaAmount = itemData.Amount -- the change aka how much being added
     
             local function updateDatastore()
                 if ExistingItemData then
                     ExistingItemData.Amount += DeltaAmount
                     itemData = self:_CreateDelta(ExistingItemData, DeltaAmount)
+                    UpdatedItems[itemData.ID] = ExistingItemData
                 else
-                    inventoryData[itemData.Type][itemData.ID] = itemData
+                    InventoryData[itemData.Type][itemData.ID] = itemData
+                    AddedItems[itemData.ID] = ExistingItemData
                 end
             end
     
             local function updateCache()
-                local DeltaItemData = deltaCache[itemData.ID]
+                local DeltaItemData = DeltaCache[itemData.ID]
     
                 if DeltaItemData then
                     DeltaItemData.Amount += DeltaAmount
                 else
-                    deltaCache[itemData.ID] = itemData
+                    DeltaCache[itemData.ID] = itemData
                 end
             end
     
             updateDatastore()
             updateCache()
         end
-        
-        local InventoryData = data.Inventory
-        local DeltaCache: { [ItemID]: ItemData } = {}
 
         for _, rawItemData in rawItemDataMap do
             local ItemData = self:_ProcessItemData(player, rawItemData)
@@ -221,9 +227,9 @@ function InventoryService.AddItems(self: Module, player: Player, rawItemDataMap:
             end
 
             if ItemData.Type == "Materials" then
-                handleStackable(InventoryData, DeltaCache, ItemData)
+                handleStackable(ItemData)
             elseif ItemData.Type == "Weapons" then
-                handleUnique(InventoryData, DeltaCache, ItemData)
+                handleUnique(ItemData)
             end
         end
 
@@ -231,6 +237,16 @@ function InventoryService.AddItems(self: Module, player: Player, rawItemDataMap:
             warn("[BackpackService] No items were added to the cache for player: " .. tostring(player))
             return
         end
+
+        task.defer(function()
+            for _, fullItemData in AddedItems do
+                self._EventBus:Publish(TopicConstants.Inventory.ItemAdded, { Player = player, ItemData = fullItemData })
+            end
+
+            for _, fullItemData in UpdatedItems do
+                self._EventBus:Publish(TopicConstants.Inventory.ItemUpdated, { Player = player, ItemData = fullItemData })
+            end
+        end)
 
         Network:FireClient("ItemsAdded", player, DeltaCache)
     end)
@@ -246,16 +262,18 @@ function InventoryService.RemoveItems(self: Module, player: Player, ItemDataMap:
 
     self._DataService:UpdateData(player, function(data)
         local InventoryData = data.Inventory
-        local DeltaCache: { [ItemID]: ItemData } = {}
+        local DeltaCache = {} :: any
+        local RemovedItems = {} :: any
+        local UpdatedItems = {} :: any
 
-        local function handleUnique(inventoryData: {}, deltaCache: {}, itemData: UniqueItemData)
-            inventoryData[itemData.Type][itemData.ID] = nil
-            deltaCache[itemData.ID] = itemData
-            self._EventBus:Publish(TopicConstants.Inventory.ItemDeleted, { Player = player, ItemData = itemData })
+        local function handleUnique(itemData: UniqueItemData)
+            InventoryData[itemData.Type][itemData.ID] = nil
+            DeltaCache[itemData.ID] = itemData
+            RemovedItems[itemData.ID] = itemData
         end
     
-        local function handleStackable(inventoryData: {}, deltaCache: {}, itemData: StackableItemData)
-            local ExistingItemData: StackableItemData? = inventoryData[itemData.Type][itemData.ID]
+        local function handleStackable(itemData: StackableItemData)
+            local ExistingItemData: StackableItemData? = InventoryData[itemData.Type][itemData.ID]
             local DeltaAmount = itemData.Amount
     
             if not ExistingItemData then
@@ -266,21 +284,23 @@ function InventoryService.RemoveItems(self: Module, player: Player, ItemDataMap:
             local function updateDatastore()
                 if ExistingItemData.Amount - DeltaAmount <= 0 then
                     DeltaAmount = DeltaAmount + (ExistingItemData.Amount - DeltaAmount)
-                    inventoryData[itemData.Type][itemData.ID] = nil
+                    InventoryData[itemData.Type][itemData.ID] = nil
+                    RemovedItems[itemData.ID] = itemData
                 else
                     ExistingItemData.Amount -= DeltaAmount
+                    UpdatedItems[itemData.ID] = ExistingItemData
                 end
     
                 itemData = self:_CreateDelta(ExistingItemData, DeltaAmount)
             end
     
             local function updateCache()
-                local ExistingCacheItemData: StackableItemData? = deltaCache[itemData.ID]
+                local ExistingCacheItemData: StackableItemData? = DeltaCache[itemData.ID]
     
                 if ExistingCacheItemData then
                     ExistingCacheItemData.Amount += DeltaAmount
                 else
-                    deltaCache[itemData.ID] = itemData
+                    DeltaCache[itemData.ID] = itemData
                 end
             end
     
@@ -300,9 +320,9 @@ function InventoryService.RemoveItems(self: Module, player: Player, ItemDataMap:
             end
 
             if itemData.Type == "Materials" then
-                handleStackable(InventoryData, DeltaCache, itemData)
+                handleStackable(itemData)
             elseif itemData.Type == "Weapons" then
-                handleUnique(InventoryData, DeltaCache, itemData)
+                handleUnique(itemData)
             end
         end
 
@@ -310,6 +330,16 @@ function InventoryService.RemoveItems(self: Module, player: Player, ItemDataMap:
             warn("[BackpackService] No items were added to the cache for player: " .. tostring(player))
             return
         end
+
+        task.defer(function()
+            for _, fullItemData in RemovedItems do
+                self._EventBus:Publish(TopicConstants.Inventory.ItemRemoved, { Player = player, ItemData = fullItemData })
+            end
+
+            for _, fullItemData in UpdatedItems do
+                self._EventBus:Publish(TopicConstants.Inventory.ItemUpdated, { Player = player, ItemData = fullItemData })
+            end
+        end)
 
         Network:FireClient("ItemsRemoved", player, DeltaCache)
     end)
@@ -338,6 +368,23 @@ function InventoryService.GetItemDatas(self: Module, player: Player): { [ItemID]
     return ItemsData
 end
 
+
+--[[
+Possibly add cache in future, but currently it takes < 1ms to get itemdata of equipped (tested with 500 weapons)
+]]
+function InventoryService.GetEquippedWeapon(self: Module, player: Player): ItemData?
+    local _, itemDataMap = self._DataService:GetData(player, "Inventory/Weapons")
+
+    for _, itemData: ItemData in itemDataMap do
+        if itemData.Equipped then
+            self._EquippedWeapon = itemData
+            return itemData
+        end
+    end
+
+    return nil
+end
+
 function InventoryService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     if self._ServiceBag ~= nil then
         error("Service already initialized")
@@ -347,6 +394,8 @@ function InventoryService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     self._DataService = self._ServiceBag:GetService(require("DataService"))
     self._NetworkService = self._ServiceBag:GetService(require("NetworkService"))
     self._EventBus = self._ServiceBag:GetService(require("EventBus"))
+
+    self._EquippedWeapon = nil
 end
 
 function InventoryService.Start(self: Module)
@@ -391,51 +440,6 @@ function InventoryService.Start(self: Module)
         end
 
         self:Unequip(player, SecureItemData)
-    end)
-    --
-
-    task.spawn(function()
-        task.wait(3)
-        local player = Players:GetPlayers()[1]
-        if not player then
-            return
-        end
-
-        self:AddItems(player, {
-            {
-                Type = "Materials",
-                Name = "Wooden Plank",
-                Amount = 10,
-            },
-            {
-                Type = "Weapons",
-                Name = "Wooden Sword",
-            },
-            {
-                Type = "Weapons",
-                Name = "Wooden Sword",
-            },
-            {
-                Type = "Weapons",
-                Name = "Wooden Sword",
-            },
-            {
-                Type = "Weapons",
-                Name = "Wooden Sword",
-            },
-            {
-                Type = "Weapons",
-                Name = "Wooden Sword",
-            },
-            {
-                Type = "Weapons",
-                Name = "Wooden Sword",
-            },
-            {
-                Type = "Weapons",
-                Name = "Wooden Sword",
-            },
-        })
     end)
 end
 

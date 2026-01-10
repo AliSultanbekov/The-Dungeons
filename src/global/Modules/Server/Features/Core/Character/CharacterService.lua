@@ -1,5 +1,5 @@
 --[=[
-    @class PlayerService
+    @class CharacterService
 ]=]
 
 -- [ Roblox Services ] --
@@ -19,28 +19,29 @@ local RxPlayerUtils = require("RxPlayerUtils")
 -- [ Variables ] --
 
 -- [ Module Table ] --
-local PlayerService = {}
+local CharacterService = {}
 
 -- [ Types ] --
 type ServiceTemplate = {
-    OnPlayerAdded: ((self: any, maid: Maid.Maid, player: Player) -> ())?,
+    OnCharacterAdded: (self: ServiceTemplate, maid: Maid.Maid, character: Model) -> ()?
 }
 
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
     _Maid: Maid.Maid,
-    _Services: { ServiceTemplate },
+    _Services: { ServiceTemplate }
 }
 
-export type Module = typeof(PlayerService) & ModuleData
+export type Module = typeof(CharacterService) & ModuleData
 
 -- [ Private Functions ] --
-function PlayerService.RegisterService(self: Module, service: ServiceTemplate)
+
+-- [ Public Functions ] --
+function CharacterService.RegisterService(self: Module, service: ServiceTemplate)
     table.insert(self._Services, service)
 end
 
--- [ Public Functions ] --
-function PlayerService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
+function CharacterService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     if self._ServiceBag ~= nil then
         error("Service already initialized")
     end
@@ -50,16 +51,16 @@ function PlayerService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     self._Services = {}
 end
 
-function PlayerService.Start(self: Module)
-    self._Maid:Add(RxPlayerUtils.observePlayersBrio():Subscribe(function(brio)
-        local Maid: Maid.Maid, Player: Player = brio:ToMaidAndValue()
+function CharacterService.Start(self: Module)
+    self._Maid:Add(RxPlayerUtils.observeCharactersBrio():Subscribe(function(brio)
+        local Maid: Maid.Maid, Character: Model = brio:ToMaidAndValue()
 
         for _, service in ipairs(self._Services) do
-			if service.OnPlayerAdded then
-				task.spawn(service.OnPlayerAdded, service, Maid, Player)
+			if service.OnCharacterAdded then
+				task.spawn(service.OnCharacterAdded, service, Maid, Character)
 			end
 		end
     end))
 end
 
-return PlayerService :: Module
+return CharacterService :: Module

@@ -51,7 +51,7 @@ function PlayerService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
 end
 
 function PlayerService.Start(self: Module)
-    self._Maid:GiveTask(RxPlayerUtils.observePlayersBrio():Subscribe(function(brio)
+    self._Maid:Add(RxPlayerUtils.observePlayersBrio():Subscribe(function(brio)
         local Maid: Maid.Maid, Player: Player = brio:ToMaidAndValue()
 
         for _, service in ipairs(self._Services) do

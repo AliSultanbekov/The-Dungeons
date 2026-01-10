@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 --[=[
     @class BackpackService
 ]=]
@@ -31,7 +32,7 @@ type ItemData = ItemTypes.ItemData
 type ItemID = ItemTypes.ItemID
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
-    _PlayerService: typeof(require("PlayerService")),
+    _PlayerCharacterService: typeof(require("PlayerCharacterService")),
     _InventoryService: typeof(require("InventoryService")),
     _EventBus: typeof(require("EventBus")),
 
@@ -114,16 +115,26 @@ function BackpackService.RemoveItem(self: Module, player: Player, itemData: Item
     PlayerBackpack[itemData.ID] = nil
 end
 
-function BackpackService.OnPlayerAdded(self: Module, maid: Maid.Maid, player: Player)
-    self._PlayerBackpacks[player] = {}
+function BackpackService.OnPlayerCharacterAdded(self: Module, maid: Maid.Maid, character: Model)
+    local Player = Players:GetPlayerFromCharacter(character)
+
+    if not Player then
+        return
+    end
+
+    self._PlayerBackpacks[Player] = {}
 
     maid:Add(function()
-        self._PlayerBackpacks[player] = nil
+        for _, tool in self._PlayerBackpacks[Player] do
+            tool:Destroy()
+        end
+
+        self._PlayerBackpacks[Player] = nil
     end)
     
-    for _, itemData in self._InventoryService:GetItemDatas(player) do
+    for _, itemData in self._InventoryService:GetItemDatas(Player) do
         if itemData.Equipped == true then
-            self:AddItem(player, itemData)
+            self:AddItem(Player, itemData)
         end
     end
 end
@@ -134,7 +145,7 @@ function BackpackService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     end
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
-    self._PlayerService = self._ServiceBag:GetService(require("PlayerService"))
+    self._PlayerCharacterService = self._ServiceBag:GetService(require("PlayerCharacterService"))
     self._InventoryService = self._ServiceBag:GetService(require("InventoryService"))
     self._EventBus = self._ServiceBag:GetService(require("EventBus"))
 
@@ -142,7 +153,33 @@ function BackpackService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
 end
 
 function BackpackService.Start(self: Module)
-    self._PlayerService:RegisterService(self)
+    self._PlayerCharacterService:RegisterService(self)
+
+    self._EventBus:Subscribe(TopicConstants.Inventory.ItemRemoved, function(packet: { Player: Player, ItemData: ItemData })
+        if not packet.ItemData.Equipped then
+            return
+        end
+
+        self:RemoveItem(packet.Player, packet.ItemData)
+    end)
+
+    self._EventBus:Subscribe(TopicConstants.Inventory.ItemAdded, function(packet: { Player: Player, ItemData: ItemData })
+        if not packet.ItemData.Equipped then
+            return
+        end
+
+        self:RemoveItem(packet.Player, packet.ItemData)
+    end)
+
+    self._EventBus:Subscribe(TopicConstants.Inventory.ItemUpdated, function(packet: { Player: Player, ItemData: ItemData })
+        print(packet.ItemData)
+        
+        if not packet.ItemData.Equipped then
+            return
+        end
+
+        self:UpdateItem(packet.Player, packet.ItemData)
+    end)
 
     self._EventBus:Subscribe(TopicConstants.Inventory.ItemEquipped, function(packet: { Player: Player, ItemData: ItemData })
         self:AddItem(packet.Player, packet.ItemData)
@@ -151,6 +188,6 @@ function BackpackService.Start(self: Module)
     self._EventBus:Subscribe(TopicConstants.Inventory.ItemUnequipped, function(packet: { Player: Player, ItemData: ItemData })
         self:RemoveItem(packet.Player, packet.ItemData)
     end)
-end
+end     
 
 return BackpackService :: Module

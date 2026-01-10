@@ -22,7 +22,7 @@ local TopicConstants = {
         ItemUnequipped = "Inventory/ItemUnequipped",
         ItemUpdated = "Inventory/ItemUpdated",
         ItemAdded = "Inventory/ItemAdded",
-        ItemDeleted = "Inventory/ItemDeleted",
+        ItemRemoved = "Inventory/ItemRemoved",
     }
 }
 

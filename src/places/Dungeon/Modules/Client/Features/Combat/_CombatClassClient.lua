@@ -24,11 +24,13 @@ CombatClassClient.__index = CombatClassClient
 
 -- [ Types ] --
 type AbilityManagerClient = AbilityManagerClient.Object
+type AbilityModule = CombatTypes.AbilityModule
+type AbilityObject = CombatTypes.AbilityObject
 export type ObjectData = {
     _Character: Model,
     _AbilityManagerClient: AbilityManagerClient,
-    _BasicAttack: CombatTypes.AbilityModule?,
-    _SpecialAttack: CombatTypes.AbilityModule?,
+    _BasicAttack: AbilityObject?,
+    _SpecialAttack: AbilityObject?,
 }
 export type Object = ObjectData & {
     SetActiveWeapon: (self: Object, weaponName: string) -> (),
@@ -59,8 +61,11 @@ function CombatClassClient.SetActiveWeapon(self: Object, weaponName: string?)
         self._BasicAttack = nil
         self._SpecialAttack = nil
     else
-        self._BasicAttack = self._AbilityManagerClient:GetAbility(WeaponConfig[weaponName].BasicAttack.Name)
-        self._SpecialAttack = self._AbilityManagerClient:GetAbility(WeaponConfig[weaponName].SpecialAttack.Name)
+        local BasicAttackModule = self._AbilityManagerClient:GetAbility(WeaponConfig[weaponName].BasicAttack.Name)
+        local SpecialAttack = self._AbilityManagerClient:GetAbility(WeaponConfig[weaponName].BasicAttack.Name)
+
+        self._BasicAttack = BasicAttackModule.new()
+        self._SpecialAttack = SpecialAttack.new()
     end
 end
 

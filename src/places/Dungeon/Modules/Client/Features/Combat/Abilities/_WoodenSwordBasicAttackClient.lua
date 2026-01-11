@@ -11,6 +11,7 @@ local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] -- 
 local SharedModule = require("WoodenSwordBasicAttackShared")
+local CombatTypes = require("CombatTypes")
 
 -- [ Constants ] --
 
@@ -21,21 +22,25 @@ local WoodenSwordBasicAttackClient = {}
 WoodenSwordBasicAttackClient.__index = WoodenSwordBasicAttackClient
 
 -- [ Types ] --
+type ClientAbilityData = CombatTypes.ClientAbilityData
+type Activate_Context = {
+    Mode: Mode,
+    Attacker: Model
+}
+type Mode = CombatTypes.Mode
+type AbilityObject = CombatTypes.AbilityObject
 type Config = {
+    Range: number,
+    MinDot: number,
+    Animation: string,
     Name: string,
-    Combo: { 
-        [number]: {
-            Animation: string,
-            Damage: number
-        }
-    }
+    Damage: number,
 }
 export type ObjectData = {
     _Config: Config,
     _Active: boolean,
 }
-export type Object = ObjectData & {
-
+export type Object = ObjectData & AbilityObject & {
 }
 export type Module = {
     __index: Module,
@@ -54,18 +59,57 @@ function WoodenSwordBasicAttackClient.new(config: Config): Object
     return self
 end
 
-function WoodenSwordBasicAttackClient.Activate(self: Object, context: { Attacker: Model })
+function WoodenSwordBasicAttackClient.Activate(self: Object, context: Activate_Context): ClientAbilityData?
     if self._Active == true then
         return
     end
 
     self._Active = true
 
-    local _Hits = SharedModule:DetectHits(context.Attacker)
+    local Humanoid = context.Attacker:FindFirstChildOfClass("Humanoid")
+    if not Humanoid then return end
+    local Animator = Humanoid:FindFirstChildOfClass("Animator")
+    if not Animator then return end
 
-    task.delay(2, function()
+    local Animation = Instance.new("Animation")
+    Animation.AnimationId = self._Config.Animation
+
+    local Track = Animator:LoadAnimation(Animation)
+    Track:Play()
+
+
+    if context.Mode == "Prediction" then
+        local Hits = {}
+
+        Track:GetMarkerReachedSignal("Hit"):Connect(function()
+            SharedModule:DetectHits({
+                Attacker = context.Attacker,
+                Config = self._Config,
+                OnHit = function(hitCharacter)
+                    table.insert(Hits, hitCharacter)
+                end
+            })
+        end)
+
+        Track.Stopped:Wait()
+    
+        if context.Mode == "Prediction" then
+            SharedModule:Validate({
+                Attacker = context.Attacker,
+                Config = self._Config,
+                Hits = Hits,
+            })
+        end
+
+        Track.Ended:Wait()
         self._Active = false
-    end)
+
+        return { Hits = Hits }
+    else
+        Track.Ended:Wait()
+        self._Active = false
+        return nil
+    end
 end
 
 return WoodenSwordBasicAttackClient :: Module

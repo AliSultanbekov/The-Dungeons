@@ -16,6 +16,7 @@ local require = require(script.Parent.loader).load(script)
 -- [ Imports ] --
 local ServiceBag = require("ServiceBag")
 local Maid = require("Maid")
+local CombatTypes = require("CombatTypes")
 
 -- [ Constants ] --
 
@@ -26,10 +27,12 @@ local Player = Players.LocalPlayer
 local CombatController = {}
 
 -- [ Types ] --
+type ClientAbilityData = CombatTypes.ClientAbilityData
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
     _UserInputController: typeof(require("UserInputController")),
     _PlayerCharacterController: typeof(require("PlayerCharacterController")),
+    _CombatServiceClient: typeof(require("CombatServiceClient")),
     _AbilityManagerClient: AbilityManagerClient.Object,
     _CombatObjectsClient: { [Model]: CombatClassClient.Object },
 }
@@ -61,11 +64,13 @@ function CombatController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     self._ServiceBag = assert(serviceBag, "No serviceBag")
     self._UserInputController = self._ServiceBag:GetService(require("UserInputController"))
     self._PlayerCharacterController = self._ServiceBag:GetService(require("PlayerCharacterController"))
+    self._CombatServiceClient = self._ServiceBag:GetService(require("CombatServiceClient"))
     self._AbilityManagerClient = AbilityManagerClient.new()
     self._CombatObjectsClient = {}
 end
 
 function CombatController.Start(self: Module)
+    print("CombatController Started")
     self._PlayerCharacterController:RegisterService(self)
 
     local Actions = CombatKeyBinds.Actions
@@ -84,7 +89,11 @@ function CombatController.Start(self: Module)
 
         local CombatObjectClient = self._CombatObjectsClient[Character]
 
-        CombatObjectClient:UseBasicAttack()
+        local AbilityData = CombatObjectClient:UseBasicAttack({Mode = "Prediction"})
+
+        if AbilityData then
+            self._CombatServiceClient:UseBasicAttack(AbilityData)
+        end
     end)
 
     task.spawn(function()
@@ -99,6 +108,7 @@ function CombatController.Start(self: Module)
 
         CombatObjectClient:SetActiveWeapon("Wooden Sword")
     end)
+    print("CombatController Finished")
 end
 
 return CombatController :: Module

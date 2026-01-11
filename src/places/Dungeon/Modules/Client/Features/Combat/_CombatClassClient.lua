@@ -23,6 +23,14 @@ local CombatClassClient = {}
 CombatClassClient.__index = CombatClassClient
 
 -- [ Types ] --
+type ClientAbilityData = CombatTypes.ClientAbilityData
+type UseBasicAttack_Context = {
+    Mode: Mode
+}
+type UseSpecialAttack_Context = {
+    Mode: Mode
+}
+type Mode = CombatTypes.Mode
 type AbilityManagerClient = AbilityManagerClient.Object
 type AbilityModule = CombatTypes.AbilityModule
 type AbilityObject = CombatTypes.AbilityObject
@@ -34,8 +42,8 @@ export type ObjectData = {
 }
 export type Object = ObjectData & {
     SetActiveWeapon: (self: Object, weaponName: string) -> (),
-    UseBasicAttack: (self: Object) -> (),
-    UseSpecialAttack: (self: Object) -> (),
+    UseBasicAttack: (self: Object, Context: UseBasicAttack_Context) -> ClientAbilityData?,
+    UseSpecialAttack: (self: Object, Context: UseSpecialAttack_Context) -> ClientAbilityData?,
 }
 export type Module = {
     __index: Module,
@@ -64,20 +72,34 @@ function CombatClassClient.SetActiveWeapon(self: Object, weaponName: string?)
         local BasicAttackModule = self._AbilityManagerClient:GetAbility(WeaponConfig[weaponName].BasicAttack.Name)
         local SpecialAttack = self._AbilityManagerClient:GetAbility(WeaponConfig[weaponName].BasicAttack.Name)
 
-        self._BasicAttack = BasicAttackModule.new()
-        self._SpecialAttack = SpecialAttack.new()
+        self._BasicAttack = BasicAttackModule.new(WeaponConfig[weaponName].BasicAttack)
+        self._SpecialAttack = SpecialAttack.new(WeaponConfig[weaponName].SpecialAttack)
     end
 end
 
-function CombatClassClient.UseBasicAttack(self: Object)
+function CombatClassClient.UseBasicAttack(self: Object, Context: UseBasicAttack_Context): ClientAbilityData?
     if self._BasicAttack then
-        self._BasicAttack:Activate({ Attacker = self._Character })
+        local AbilityData = self._BasicAttack:Activate({
+            Mode = Context.Mode,
+            Attacker = self._Character 
+        })
+
+        return AbilityData
+    else
+        return
     end
 end
 
-function CombatClassClient.UseSpecialAttack(self: Object)
+function CombatClassClient.UseSpecialAttack(self: Object, Context: UseBasicAttack_Context): ClientAbilityData?
     if self._SpecialAttack then
-        self._SpecialAttack:Activate({ Attacker = self._Character })
+        local AbilityData = self._SpecialAttack:Activate({ 
+            Mode = Context.Mode, 
+            Attacker = self._Character 
+        })
+
+        return AbilityData
+    else
+        return
     end
 end
 

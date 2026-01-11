@@ -19,16 +19,17 @@ local WeaponConfig = {
         Image = "rbxassetid://...",
         Rarity = "Celestial",
         BasicAttack = {
+            Range = 5,
+            MinDot = 0.7,
+            Animation = "rbxassetid://94075119278445",
             Name = "WoodenSwordBasicAttack",
-            Combo = {
-                [1] = { Animation = "rbxassetid://...", Damage = 2 },
-                [2] = { Animation = "rbxassetid://...", Damage = 2 },
-                [3] = { Animation = "rbxassetid://...", Damage = 3 },
-            }
+            Damage = 5,
         },
         SpecialAttack = {
+            Range = 5,
+            MinDot = 0.7,
+            Animation = "rbxassetid://94075119278445",
             Name = "WoodenSwordSpecialAttack",
-            Animation = "rbxassetid://...",
             Damage = 2,
         }
     }
@@ -37,13 +38,14 @@ local WeaponConfig = {
         Image: string,
         Rarity: string,
         BasicAttack: {
+            Animation: string,
             Name: string,
-            Combo: { 
+            --[[Combo: { 
                 [number]: {
                     Animation: string,
                     Damage: number
                 }
-            }
+            }]]
         },
         SpecialAttack: {
             Name: string,

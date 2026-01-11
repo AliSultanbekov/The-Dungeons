@@ -24,14 +24,14 @@ export type Module = typeof(GetPartFromCharacter)
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function GetPartFromCharacter.GetPart(self: Module, player: Player, partName: string): (BasePart?)
+function GetPartFromCharacter.GetPart(self: Module, player: Player, partName: string): (Instance?)
     local Character = player.Character
 
     if not Character then
         return nil
     end
 
-    local Part = Character:FindFirstChild(partName) :: BasePart?
+    local Part = Character:FindFirstChild(partName) :: Instance?
 
     if not Part then
         return nil

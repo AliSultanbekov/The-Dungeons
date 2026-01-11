@@ -1,3 +1,4 @@
+local RunService = game:GetService("RunService")
 --[=[
     @class HitboxClass
 ]=]
@@ -7,9 +8,10 @@
 -- [ Imports ] --
 
 -- [ Require ] --
-local _require = require(script.Parent.loader).load(script)
+local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] -- 
+local Maid = require("Maid")
 
 -- [ Constants ] --
 
@@ -20,32 +22,34 @@ local HitboxClass = {}
 HitboxClass.__index = HitboxClass
 
 -- [ Types ] --
+type Seen = { [Model]: boolean }
 export type Cb = (hitCharacter: Model) -> ()
 export type SphereParams = {
     HitboxClassType: "Sphere",
-    CFrame: CFrame,
+    GetCFrame: () -> CFrame,
     Radius: number,
+    Length: number,
     Cb: Cb,
-    RelativeTo: CFrame?,
     Ignore: { any }?,
     Visualise: boolean?,
 }
 export type BoxParams = {
     HitboxClassType: "Box",
-    CFrame: CFrame,
+    GetCFrame: () -> CFrame,
     Size: Vector3,
+    Length: number,
     Cb: Cb,
-    RelativeTo: CFrame?,
     Ignore: { any }?,
     Visualise: boolean?,
 }
 export type Params = SphereParams | BoxParams
 export type ObjectData = {
-    Trigger: (self: Object) -> (),
+    _Maid: Maid.Maid,
+    _Params: Params,
 }
 export type Object = ObjectData & {
-    _Params: Params,
-    _Cb: Cb,
+    _CheckHitbox: (self: Object, seen: Seen) -> (),
+    Trigger: (self: Object) -> (),
 }
 export type Module = {
     __index: Module,
@@ -53,24 +57,14 @@ export type Module = {
 }
 
 -- [ Private Functions ] --
-
--- [ Public Functions ] --
-function HitboxClass.new(params: Params): Object
-    local self = setmetatable({} :: any, HitboxClass) :: Object
-
-    self._Params = params
-
-    return self
-end
-
-function HitboxClass.Trigger(self: Object)
+function HitboxClass._CheckHitbox(self: Object, seen: Seen)
     local Overlap = OverlapParams.new()
     Overlap.FilterDescendantsInstances = self._Params.Ignore or {}
     Overlap.RespectCanCollide = false
 
     local Params = self._Params
     local Parts = nil
-    local FinalCFrame = Params.CFrame * (Params.RelativeTo or CFrame.new())
+    local FinalCFrame = (Params :: any).GetCFrame()
 
     if Params.HitboxClassType == "Box" then
         if Params.Visualise then
@@ -84,7 +78,7 @@ function HitboxClass.Trigger(self: Object)
             Visual.Color = Color3.new(1, 0, 0)
             Visual:PivotTo(FinalCFrame)
 
-            task.delay(1, function()
+            task.delay(3, function()
                 Visual:Destroy()
             end)
         end
@@ -103,7 +97,7 @@ function HitboxClass.Trigger(self: Object)
             Visual.Color = Color3.new(1, 0, 0)
             Visual:PivotTo(FinalCFrame)
 
-            task.delay(1, function()
+            task.delay(0.2, function()
                 Visual:Destroy()
             end)
         end
@@ -115,9 +109,6 @@ function HitboxClass.Trigger(self: Object)
         return
     end
 
-    local Seen = {}
-    local Hits = {}
-
     for _, instance in Parts do
         local Model = instance:FindFirstAncestorOfClass("Model")
 
@@ -125,11 +116,11 @@ function HitboxClass.Trigger(self: Object)
             continue
         end
 
-        if Seen[Model] then
+        if seen[Model] then
             continue
         end
 
-        Seen[Model] = true
+        seen[Model] = true
 
         local Humanoid = Model:FindFirstChildOfClass("Humanoid")
 
@@ -141,12 +132,37 @@ function HitboxClass.Trigger(self: Object)
             continue
         end
 
-        table.insert(Hits, Model)
+        Params.Cb(Model)
     end
+end
 
-    for _, character in Hits do
-        Params.Cb(character)
-    end
+-- [ Public Functions ] --
+function HitboxClass.new(params: Params): Object
+    local self = setmetatable({} :: any, HitboxClass) :: Object
+
+    self._Maid = Maid.new()
+    self._Params = params
+
+    return self
+end
+
+function HitboxClass.Trigger(self: Object)
+    local Params = self._Params
+    local Length = Params.Length
+    local Seen = {} :: Seen
+    local Event = RunService:IsClient() and RunService.RenderStepped or RunService.Heartbeat
+
+    local Elapsed = 0
+
+    self._Maid:Add(Event:Connect(function(dt: number)
+        Elapsed += dt
+
+        self:_CheckHitbox(Seen)
+        
+        if Elapsed >= Length then
+            self._Maid:DoCleaning()
+        end
+    end))
 end
 
 return HitboxClass :: Module

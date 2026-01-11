@@ -14,7 +14,6 @@ local require = require(script.Parent.Parent.loader).load(script)
 
 -- [ Imports ] -- 
 local AssetProvider = require("AssetProvider")
-local GetPartFromCharacter = require("GetPartFromCharacter")
 local Easings = require("Easings")
 
 -- [ Constants ] --
@@ -102,7 +101,13 @@ function EquipmentDisplayClass.Show(self: Object)
     local Size = self._AdorneePart.Size
 
     self:_SetUpdate(function(dt: number)
-        local HumanoidRootPart = GetPartFromCharacter:GetPart(Player, "HumanoidRootPart")
+        local Character = Player.Character
+
+        if not Character then
+            return 
+        end
+
+        local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
 
         if not HumanoidRootPart then
             return
@@ -135,7 +140,13 @@ function EquipmentDisplayClass.Hide(self: Object)
     local Size = self._AdorneePart.Size
 
     self:_SetUpdate(function(dt: number)
-        local HumanoidRootPart = GetPartFromCharacter:GetPart(Player, "HumanoidRootPart")
+        local Character = Player.Character
+
+        if not Character then
+            return 
+        end
+
+        local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
 
         if not HumanoidRootPart then
             return

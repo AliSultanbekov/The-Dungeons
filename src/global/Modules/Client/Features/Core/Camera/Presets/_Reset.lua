@@ -1,9 +1,9 @@
-local Players = game:GetService("Players")
 --[=[
     @class Reset
 ]=]
 
 -- [ Roblox Services ] --
+local Players = game:GetService("Players")
 
 -- [ Imports ] --
 

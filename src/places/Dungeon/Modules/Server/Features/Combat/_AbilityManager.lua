@@ -23,7 +23,7 @@ local AbilityManager = {}
 AbilityManager.__index = AbilityManager
 
 -- [ Types ] --
-type AbilityModule = CombatTypes.AbilityModule
+type AbilityModule = CombatTypes.ServerAbilityModule
 export type ObjectData = {
     _Abilities: {
         [string]: AbilityModule
@@ -63,7 +63,7 @@ function AbilityManager.new(): Object
 end
 
 function AbilityManager.GetAbility(self: Object, abilityName: string): AbilityModule
-    return self._Abilities[string.format("_%s%s", abilityName, "Client")]
+    return self._Abilities[string.format("_%s", abilityName)]
 end
 
 return AbilityManager :: Module

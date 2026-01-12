@@ -135,7 +135,7 @@ function InventoryUIController.ToggleDeleteMode(self: Module)
 
         if next(self._ItemsDataToDelete) ~= nil then
             self._NotificationController:Notify("ChoiceNotification", { 
-                InfoText = "Are you sure you want to delete selected items?", 
+                InfoText = "Are you sure you want to delete selected items?",
                 Button1Text = "No", 
                 Button2Text = "Yes",
                 Button1Cb = function()
@@ -230,14 +230,6 @@ function InventoryUIController.RemoveItem(self: Module, itemData: ItemData)
         return
     end
 
-    local function handleUnqiue()
-        self._ItemIDToGroupKey[itemData.ID] = nil
-    end
-
-    --[[local function handleStackable()
-        
-    end]]
-
     ItemUIObject:RemoveItemData(itemData)
 
     if ItemUIObject:IsEmpty() then
@@ -249,8 +241,8 @@ function InventoryUIController.RemoveItem(self: Module, itemData: ItemData)
         self._UIPool:Return("ItemUI", ItemUI)
     end
 
-    if StorageType == "Unqiue" then
-        handleUnqiue()
+    if StorageType == "Unique" then
+        self._ItemIDToGroupKey[itemData.ID] = nil
     end
 end
 

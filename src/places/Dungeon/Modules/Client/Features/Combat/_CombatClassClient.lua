@@ -32,8 +32,8 @@ type UseSpecialAttack_Context = {
 }
 type Mode = CombatTypes.Mode
 type AbilityManagerClient = AbilityManagerClient.Object
-type AbilityModule = CombatTypes.AbilityModule
-type AbilityObject = CombatTypes.AbilityObject
+type AbilityModule = CombatTypes.ClientAbilityModule
+type AbilityObject = CombatTypes.ClientAbilityObject
 export type ObjectData = {
     _Character: Model,
     _AbilityManagerClient: AbilityManagerClient,

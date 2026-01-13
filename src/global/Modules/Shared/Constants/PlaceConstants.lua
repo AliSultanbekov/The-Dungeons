@@ -23,6 +23,7 @@ local PlaceConstants = {
     PlaceIDToPlaceName = {
         [107299473436919] = "Hub",
         [74225058208807] = "Dungeon",
+        [0] = "Dungeon",
     }
 }
 

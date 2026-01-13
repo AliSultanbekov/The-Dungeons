@@ -11,6 +11,7 @@ local RunService = game:GetService("RunService")
 -- [ Imports ] --
 local NPCGroupUtil = require("./_NPCGroupUtil")
 local Types = require("./_Types")
+local EnemyConfigs = require("EnemyConfigs")
 
 -- [ Require ] --
 local require = require(script.Parent.loader).load(script)
@@ -60,7 +61,8 @@ type ModuleData = {
 	_NPCTemplate: NPC,
 
 	_Heartbeat: RBXScriptConnection?,
-	_Leader: Member?
+	_Leader: Member?,
+	_SquadStats : any
 }
 
 export type Module = typeof(SquadService) & ModuleData
@@ -76,6 +78,7 @@ end
 function SquadService.InitializeSquad(self: Module)
 	self._NPCFolder:ClearAllChildren()
 	self._Members = {}
+	self._SquadStats = {}
 
 	local IdCounter = 1
 
@@ -86,6 +89,8 @@ function SquadService.InitializeSquad(self: Module)
 	self._Leader = Leader
 	IdCounter += 1
 
+	self._SquadStats[Leader] = EnemyConfigs.EliteEnemy
+
 	-- Spawn Squad
 	for y = 1, self._Config.SquadSizeY do
 		for x = 1, self._Config.SquadSizeX do
@@ -94,6 +99,8 @@ function SquadService.InitializeSquad(self: Module)
 			Mem.RootPart.CFrame = CFrame.new(SpawnPos)
 			table.insert(self._Members, Mem)
 			IdCounter += 1
+
+			self._SquadStats[Mem] = EnemyConfigs.Basic
 		end
 	end
 

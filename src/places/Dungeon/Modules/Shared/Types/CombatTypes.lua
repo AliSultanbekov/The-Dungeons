@@ -6,18 +6,32 @@ local _require = require(script.Parent.loader).load(script)
 -- [ Imports ] --
 
 -- [ Types ] --
-export type Activate_Context = {
+export type ClientActivate_Context = {
     Mode: Mode,
     Attacker: Model,
 }
 
-export type AbilityObject = {
-    Activate: (self: AbilityObject, Activate_Context) -> ClientAbilityData
+export type ServerActivate_Context = {
+    Attacker: Model,
+    Hits: Hits
 }
 
-export type AbilityModule = {
-    __index: AbilityModule,
-    new: (config: any) -> AbilityObject,
+export type ClientAbilityObject = {
+    Activate: (self: ClientAbilityObject, ClientActivate_Context) -> ClientAbilityData
+}
+
+export type ClientAbilityModule = {
+    __index: ClientAbilityModule,
+    new: (config: any) -> ClientAbilityObject,
+}
+
+export type ServerAbilityObject = {
+    Activate: (self: ServerAbilityObject, ServerActivate_Context) -> any
+}
+
+export type ServerAbilityModule = {
+    __index: ClientAbilityModule,
+    new: (config: any) -> ServerAbilityObject,
 }
 
 export type Mode = string

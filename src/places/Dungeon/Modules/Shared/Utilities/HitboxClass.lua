@@ -23,13 +23,14 @@ HitboxClass.__index = HitboxClass
 
 -- [ Types ] --
 type Seen = { [Model]: boolean }
+type Hits = { Model }
 export type Cb = (hitCharacter: Model) -> ()
 export type SphereParams = {
     HitboxClassType: "Sphere",
     GetCFrame: () -> CFrame,
     Radius: number,
-    Length: number,
-    Cb: Cb,
+    Length: number?,
+    Cb: Cb?,
     Ignore: { any }?,
     Visualise: boolean?,
 }
@@ -37,8 +38,8 @@ export type BoxParams = {
     HitboxClassType: "Box",
     GetCFrame: () -> CFrame,
     Size: Vector3,
-    Length: number,
-    Cb: Cb,
+    Length: number?,
+    Cb: Cb?,
     Ignore: { any }?,
     Visualise: boolean?,
 }
@@ -48,8 +49,8 @@ export type ObjectData = {
     _Params: Params,
 }
 export type Object = ObjectData & {
-    _CheckHitbox: (self: Object, seen: Seen) -> (),
-    Trigger: (self: Object) -> (),
+    _CheckHitbox: (self: Object, seen: Seen, hits: Hits) -> (),
+    Trigger: (self: Object) -> Hits,
 }
 export type Module = {
     __index: Module,
@@ -57,7 +58,7 @@ export type Module = {
 }
 
 -- [ Private Functions ] --
-function HitboxClass._CheckHitbox(self: Object, seen: Seen)
+function HitboxClass._CheckHitbox(self: Object, seen: Seen, hits: Hits)
     local Overlap = OverlapParams.new()
     Overlap.FilterDescendantsInstances = self._Params.Ignore or {}
     Overlap.RespectCanCollide = false
@@ -130,9 +131,13 @@ function HitboxClass._CheckHitbox(self: Object, seen: Seen)
 
         if Humanoid.Health <= 0 then
             continue
-        end
+        end     
 
-        Params.Cb(Model)
+        table.insert(hits, Model)
+        
+        if Params.Cb then
+            Params.Cb(Model)
+        end
     end
 end
 
@@ -146,23 +151,31 @@ function HitboxClass.new(params: Params): Object
     return self
 end
 
-function HitboxClass.Trigger(self: Object)
+function HitboxClass:Trigger(): Hits
     local Params = self._Params
-    local Length = Params.Length
-    local Seen = {} :: Seen
-    local Event = RunService:IsClient() and RunService.RenderStepped or RunService.Heartbeat
-
-    local Elapsed = 0
-
-    self._Maid:Add(Event:Connect(function(dt: number)
-        Elapsed += dt
-
-        self:_CheckHitbox(Seen)
+    local Length = Params.Length or 0
+    local Seen = {}
+    local Hits = {}
+    
+    if Length > 0 then
+        local Event = RunService:IsClient() and RunService.RenderStepped or RunService.Heartbeat
+        local Elapsed = 0
         
-        if Elapsed >= Length then
-            self._Maid:DoCleaning()
-        end
-    end))
+        self._Maid:Add(Event:Connect(function(dt)
+            Elapsed += dt
+            self:_CheckHitbox(Seen, Hits)
+            
+            if Elapsed >= Length then
+                self._Maid:DoCleaning()
+            end
+        end))
+        
+        task.wait(Length)
+    else
+        self:_CheckHitbox(Seen, Hits)
+    end
+    
+    return Hits
 end
 
 return HitboxClass :: Module

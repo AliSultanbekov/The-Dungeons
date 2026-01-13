@@ -12,6 +12,7 @@ local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] -- 
 local CombatTypes = require("CombatTypes")
+local WeaponConfig = require("WeaponConfig")
 
 -- [ Constants ] --
 
@@ -22,7 +23,10 @@ local CombatClass = {}
 CombatClass.__index = CombatClass
 
 -- [ Types ] --
-type AbilityObject = CombatTypes.AbilityObject
+type UseBasicAttack_Context = {
+    Hits: { Model }
+}
+type AbilityObject = CombatTypes.ServerAbilityObject
 type AbilityManagerObject = AbilityManager.Object
 export type ObjectData = {
     _Character: Model,
@@ -32,7 +36,9 @@ export type ObjectData = {
     _SpecialAttack: AbilityObject?,
 }
 export type Object = ObjectData & {
-    
+    SetActiveWeapon: (self: Object, weaponName: string?) -> (),
+    UseBasicAttack: (self: Object, context: UseBasicAttack_Context) -> (),
+    UseSpecialAttack: (self: Object) -> (),
 }
 export type Module = {
     __index: Module,
@@ -54,7 +60,26 @@ function CombatClass.new(character: Model, abilityManager: AbilityManagerObject)
     return self
 end
 
-function CombatClass.SetActiveWeapon(self: Object, weaponName: string)
+function CombatClass.SetActiveWeapon(self: Object, weaponName: string?)
+    if not weaponName then
+        self._BasicAttack = nil
+        self._SpecialAttack = nil
+    else
+        local BasicAttackModule = self._AbilityManager:GetAbility(WeaponConfig[weaponName].BasicAttack.Name)
+        local SpecialAttack = self._AbilityManager:GetAbility(WeaponConfig[weaponName].BasicAttack.Name)
+
+        self._BasicAttack = BasicAttackModule.new(WeaponConfig[weaponName].BasicAttack)
+        self._SpecialAttack = SpecialAttack.new(WeaponConfig[weaponName].SpecialAttack)
+    end
+end
+
+function CombatClass.UseBasicAttack(self: Object, context: UseBasicAttack_Context)
+    if self._BasicAttack then
+        self._BasicAttack:Activate({ Attacker = self._Character, Hits = context.Hits })
+    end
+end
+
+function CombatClass.UseSpecialAttack(self: Object)
     
 end
 

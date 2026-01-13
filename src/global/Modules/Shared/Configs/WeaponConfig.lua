@@ -20,14 +20,14 @@ local WeaponConfig = {
         Rarity = "Celestial",
         BasicAttack = {
             Range = 5,
-            MinDot = 0.7,
+            MinDot = 0.6,
             Animation = "rbxassetid://94075119278445",
             Name = "WoodenSwordBasicAttack",
             Damage = 5,
         },
         SpecialAttack = {
             Range = 5,
-            MinDot = 0.7,
+            MinDot = 0.6,
             Animation = "rbxassetid://94075119278445",
             Name = "WoodenSwordSpecialAttack",
             Damage = 2,

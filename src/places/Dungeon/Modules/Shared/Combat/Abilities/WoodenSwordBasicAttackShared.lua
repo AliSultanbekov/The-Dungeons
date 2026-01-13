@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 --[=[
     @class WoodenSwordBasicAttackShared
 ]=]
@@ -12,9 +13,10 @@ local require = require(script.Parent.loader).load(script)
 -- [ Imports ] --
 local _WeaponConfig = require("WeaponConfig")
 local HitboxClass = require("HitboxClass")
-local _VectorUtil = require("VectorUtil")
 
 -- [ Constants ] --
+local BASE_DISTANCE_TOLERANCE = 3
+local BASE_ANGLE_TOLERANCE = 0.15
 
 -- [ Variables ] --
 
@@ -24,7 +26,6 @@ local WoodenSwordBasicAttackShared = {}
 -- [ Types ] --
 type DetectHits_Context = {
     Attacker: Model, 
-    OnHit: (hitCharacter: Model) -> (),
     Config: Config
 }
 type Validate_Context = {
@@ -42,11 +43,26 @@ type Config = {
 export type Module = typeof(WoodenSwordBasicAttackShared)
 
 -- [ Private Functions ] --
+function WoodenSwordBasicAttackShared._GetTolerance(self: Module, character: Model): (number?, number?)
+    local Player = Players:GetPlayerFromCharacter(character)
+
+    if not Player then
+        return
+    end
+
+    local Ping = Player:GetNetworkPing() * 1000
+
+    print(Ping)
+
+    local Distance = math.min(Ping/100, 2)
+    local Angle = math.min(Ping/1000, 0.2)
+
+    return Distance, Angle
+end
 
 -- [ Public Functions ] --
 function WoodenSwordBasicAttackShared.DetectHits(self: Module, context: DetectHits_Context)
     local Attacker = context.Attacker
-    local OnHit = context.OnHit
     local Config = context.Config
 
     local HRP = Attacker:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -54,6 +70,8 @@ function WoodenSwordBasicAttackShared.DetectHits(self: Module, context: DetectHi
     if not HRP then
         return
     end
+
+    print(Attacker:GetPivot().Position)
 
     local HitboxObject = HitboxClass.new({
         HitboxClassType = "Box",
@@ -65,16 +83,15 @@ function WoodenSwordBasicAttackShared.DetectHits(self: Module, context: DetectHi
             return FlatCFrame * CFrame.new(0, 0, -(HRP.Size.Z/2 + Config.Range/2))
         end,
         Size = Vector3.new(3,3,Config.Range),
-        Length = 2/60,
-        Cb = function(hitCharacter)
-            OnHit(hitCharacter)
-        end,
         Visualise = true,
         Ignore = {
             Attacker
         }
     })
-    HitboxObject:Trigger()
+
+    local Hits = HitboxObject:Trigger()
+
+    return Hits
 end
 
 function WoodenSwordBasicAttackShared.Validate(self: Module, context: Validate_Context)
@@ -89,6 +106,10 @@ function WoodenSwordBasicAttackShared.Validate(self: Module, context: Validate_C
         return
     end
 
+    print(Attacker:GetPivot().Position)
+
+    local DistanceTolerance, AngleTolerance = self:_GetTolerance(Attacker)
+
     for i = #Hits, 1, -1 do
         local Attacked = Hits[i]
         local AttackedHRP = Attacked:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -102,10 +123,13 @@ function WoodenSwordBasicAttackShared.Validate(self: Module, context: Validate_C
         local CenterDistance = delta.Magnitude
         local Direction = delta.Unit
 
-        local AttackedRadius = math.max(AttackedHRP.Size.X, AttackedHRP.Size.Z)
+        local AttackedRadius = math.max(AttackedHRP.Size.X, AttackedHRP.Size.Z)/2
         local EffectiveDistance = CenterDistance - AttackedRadius
-    
-        if EffectiveDistance > Config.Range then
+        local MaxAllowedDistance = Config.Range + BASE_DISTANCE_TOLERANCE + (DistanceTolerance or 0)
+
+        print("Distance - Effective:", EffectiveDistance, "Max:", MaxAllowedDistance)
+
+        if EffectiveDistance > MaxAllowedDistance then
             table.remove(context.Hits, i)
             continue
         end
@@ -114,8 +138,11 @@ function WoodenSwordBasicAttackShared.Validate(self: Module, context: Validate_C
         local FlatLook = Vector3.new(AttackerLookVec.X, 0, AttackerLookVec.Z).Unit
         local FlatDir = Vector3.new(Direction.X, 0, Direction.Z).Unit
         local Dot = FlatLook:Dot(FlatDir)
+        local MinRequiredDot = Config.MinDot + BASE_ANGLE_TOLERANCE - (AngleTolerance or 0)
 
-        if Dot < Config.MinDot then
+        print("Angle - Dot:", Dot, "Min:", MinRequiredDot)
+
+        if Dot < MinRequiredDot then
             table.remove(context.Hits, i)
             continue
         end

@@ -23,7 +23,7 @@ local AbilityManagerClient = {}
 AbilityManagerClient.__index = AbilityManagerClient
 
 -- [ Types ] --
-type AbilityModule = CombatTypes.AbilityModule
+type AbilityModule = CombatTypes.ClientAbilityModule
 export type ObjectData = {
     _Abilities: {
         [string]: AbilityModule

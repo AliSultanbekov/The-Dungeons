@@ -26,7 +26,7 @@ type Seen = { [Model]: boolean }
 type Hits = { Model }
 export type Cb = (hitCharacter: Model) -> ()
 export type SphereParams = {
-    HitboxClassType: "Sphere",
+    HitboxType: "Sphere",
     GetCFrame: () -> CFrame,
     Radius: number,
     Length: number?,
@@ -35,7 +35,7 @@ export type SphereParams = {
     Visualise: boolean?,
 }
 export type BoxParams = {
-    HitboxClassType: "Box",
+    HitboxType: "Box",
     GetCFrame: () -> CFrame,
     Size: Vector3,
     Length: number?,
@@ -67,7 +67,7 @@ function HitboxClass._CheckHitbox(self: Object, seen: Seen, hits: Hits)
     local Parts = nil
     local FinalCFrame = (Params :: any).GetCFrame()
 
-    if Params.HitboxClassType == "Box" then
+    if Params.HitboxType == "Box" then
         if Params.Visualise then
             local Visual = Instance.new("Part")
             Visual.Name = "VisualBaba"
@@ -79,13 +79,13 @@ function HitboxClass._CheckHitbox(self: Object, seen: Seen, hits: Hits)
             Visual.Color = Color3.new(1, 0, 0)
             Visual:PivotTo(FinalCFrame)
 
-            task.delay(3, function()
+            task.delay(0.2, function()
                 Visual:Destroy()
             end)
         end
 
         Parts = workspace:GetPartBoundsInBox(FinalCFrame, Params.Size, Overlap)
-    elseif Params.HitboxClassType == "Sphere" then
+    elseif Params.HitboxType == "Sphere" then
         if Params.Visualise then
             local Visual = Instance.new("Part")
             Visual.Shape = Enum.PartType.Ball

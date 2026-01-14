@@ -6,9 +6,7 @@
 local Players = game:GetService("Players")
 
 -- [ Imports ] --
-local AbilityManagerClient = require("./_AbilityManagerClient")
-local CombatClassClient = require("./_CombatClassClient")
-local CombatKeyBinds = require("./_CombatKeybinds")
+local CombatKeybinds = require("./_CombatKeybinds")
 
 -- [ Require ] --
 local require = require(script.Parent.loader).load(script)
@@ -16,7 +14,8 @@ local require = require(script.Parent.loader).load(script)
 -- [ Imports ] --
 local ServiceBag = require("ServiceBag")
 local Maid = require("Maid")
-local CombatTypes = require("CombatTypes")
+local AbilityManager = require("AbilityManager")
+local CombatClass = require("CombatClass")
 
 -- [ Constants ] --
 
@@ -27,14 +26,16 @@ local Player = Players.LocalPlayer
 local CombatController = {}
 
 -- [ Types ] --
-type ClientAbilityData = CombatTypes.ClientAbilityData
+type CombatObject = CombatClass.Object
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
-    _UserInputController: typeof(require("UserInputController")),
     _PlayerCharacterController: typeof(require("PlayerCharacterController")),
+    _UserInputController: typeof(require("UserInputController")),
     _CombatServiceClient: typeof(require("CombatServiceClient")),
-    _AbilityManagerClient: AbilityManagerClient.Object,
-    _CombatObjectsClient: { [Model]: CombatClassClient.Object },
+    _AbilityManager: AbilityManager.Object,
+    _CombatObjects: {
+        [Model]: CombatObject
+    }
 }
 
 export type Module = typeof(CombatController) & ModuleData
@@ -42,17 +43,14 @@ export type Module = typeof(CombatController) & ModuleData
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function CombatController.OnCharacterAdded(self: Module, character: Model)
-    print(character)
-    local CombatObjectClient = CombatClassClient.new(character, self._AbilityManagerClient)
-    self._CombatObjectsClient[character] = CombatObjectClient
-end
-
 function CombatController.OnPlayerCharacterAdded(self: Module, maid: Maid.Maid, character: Model)
-    self:OnCharacterAdded(character)
+    local CombatObject = CombatClass.new(character, self._AbilityManager)
+    CombatObject:AddAbility("DefaultBasicAttack", { ItemData = { Name = "Wooden Sword" } })
+
+    self._CombatObjects[character] = CombatObject
 
     maid:Add(function()
-        self._CombatObjectsClient[character] = nil
+        self._CombatObjects[character] = nil
     end)
 end
 
@@ -62,19 +60,19 @@ function CombatController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     end
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
-    self._UserInputController = self._ServiceBag:GetService(require("UserInputController"))
     self._PlayerCharacterController = self._ServiceBag:GetService(require("PlayerCharacterController"))
+    self._UserInputController = self._ServiceBag:GetService(require("UserInputController"))
     self._CombatServiceClient = self._ServiceBag:GetService(require("CombatServiceClient"))
-    self._AbilityManagerClient = AbilityManagerClient.new()
-    self._CombatObjectsClient = {}
+
+    self._AbilityManager = AbilityManager.new(script.Parent.Abilities)
+    self._CombatObjects = {}
 end
 
 function CombatController.Start(self: Module)
-    print("CombatController Started")
     self._PlayerCharacterController:RegisterService(self)
-
-    local Actions = CombatKeyBinds.Actions
-    local KeyMaps = CombatKeyBinds.KeyMaps
+    
+    local Actions = CombatKeybinds.Actions
+    local KeyMaps = CombatKeybinds.KeyMaps
 
     self._UserInputController:RegisterKeymapAction(Actions.BASIC_ATTACK, KeyMaps[Actions.BASIC_ATTACK], function(data)
         if data.InputState ~= Enum.UserInputState.Begin then
@@ -87,28 +85,20 @@ function CombatController.Start(self: Module)
             return
         end
 
-        local CombatObjectClient = self._CombatObjectsClient[Character]
+        local CombatObject = self._CombatObjects[Character]
 
-        local AbilityData = CombatObjectClient:UseBasicAttack({Mode = "Prediction"})
-
-        if AbilityData then
-            self._CombatServiceClient:UseBasicAttack(AbilityData)
-        end
+        CombatObject:UseAbility(
+            "DefaultBasicAttack",
+            {
+                Mode = "Prediction",
+                OnHit = function(hitCharacter: Model)
+                    
+                end
+            }
+        )
+        
+        self._CombatServiceClient:UseAbility()
     end)
-
-    task.spawn(function()
-        task.wait(3)
-        local Character = Player.Character
-
-        if not Character then
-            return
-        end
-
-        local CombatObjectClient = self._CombatObjectsClient[Character]
-
-        CombatObjectClient:SetActiveWeapon("Wooden Sword")
-    end)
-    print("CombatController Finished")
 end
 
 return CombatController :: Module

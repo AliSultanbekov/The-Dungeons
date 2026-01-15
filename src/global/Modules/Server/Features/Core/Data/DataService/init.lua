@@ -165,7 +165,7 @@ function DataService.GetData(self: Module, player: Player, path: string): (boole
 end
 
 function DataService.GetProfile(self: Module, player: Player): Profile
-    local Deadline = os.clock() + 5
+    local Deadline = os.clock() + 10
 
     while self._Profiles[player] == nil and os.clock() < Deadline do
         task.wait(0.05)

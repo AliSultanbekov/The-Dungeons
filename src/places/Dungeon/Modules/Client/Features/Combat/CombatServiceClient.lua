@@ -11,7 +11,6 @@ local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 local ServiceBag = require("ServiceBag")
-local CombatTypes = require("CombatTypes")
 
 -- [ Constants ] --
 
@@ -21,7 +20,6 @@ local CombatTypes = require("CombatTypes")
 local CombatServiceClient = {}
 
 -- [ Types ] --
-type ClientAbilityData = CombatTypes.ClientAbilityData
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
     _NetworkServiceClient: typeof(require("NetworkServiceClient"))
@@ -32,9 +30,14 @@ export type Module = typeof(CombatServiceClient) & ModuleData
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function CombatServiceClient.UseBasicAttack(self: Module, abilityData: ClientAbilityData)
+function CombatServiceClient.UseAbility(self: Module, params: {[any]: any}?)
     local Network = self._NetworkServiceClient:GetNetwork("CombatService")
-    Network:FireServer("UseBasicAttack", abilityData)
+    Network:FireServer("UseAbility", params)
+end
+
+function CombatServiceClient.HitTarget(self: Module, params: {[any]: any}?)
+    local Network = self._NetworkServiceClient:GetNetwork("CombatService")
+    Network:FireServer("HitTarget", params)
 end
 
 function CombatServiceClient.Init(self: Module, serviceBag: ServiceBag.ServiceBag)

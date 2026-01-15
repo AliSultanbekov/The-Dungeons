@@ -16,54 +16,58 @@ local CombatTypes = require("CombatTypes")
 -- [ Constants ] --
 
 -- [ Variables ] --
-local Abilities = script.Parent.Abilities
 
 -- [ Module Table ] --
 local AbilityManager = {}
 AbilityManager.__index = AbilityManager
 
 -- [ Types ] --
-type AbilityModule = CombatTypes.ServerAbilityModule
+type AbilityModule = CombatTypes.ClientAbilityModule
 export type ObjectData = {
-    _Abilities: {
+    _Abilties: {
         [string]: AbilityModule
     }
 }
 export type Object = ObjectData & {
-    _LoadAbilities: (self: Object) -> (),
-    GetAbility: (self: Object, abilityName: string) -> AbilityModule
+    _LoadAbilities: (self: Object, abilityFolder: Folder) -> (),
+    Get: (self: Object, abilityName: string) -> AbilityModule,
 }
 export type Module = {
     __index: Module,
-    new: () -> Object
+    new: (abilityFolder: Folder) -> Object
 }
 
 -- [ Private Functions ] --
-function AbilityManager._LoadAbilities(self: Object)
-    for _, instance in Abilities:GetChildren() do
+function AbilityManager._LoadAbilities(self: Object, abilityFolder: Folder)
+    for _, instance in abilityFolder:GetChildren() do
         if not instance:IsA("ModuleScript") then
+            continue
+        end
+
+        if instance.Name == "loader" then
             continue
         end
 
         local AbilityModule: AbilityModule = rbxrequire(instance)
 
-        self._Abilities[instance.Name] = AbilityModule
+        self._Abilties[AbilityModule.AbilityName] = AbilityModule
     end
 end
 
 -- [ Public Functions ] --
-function AbilityManager.new(): Object
+function AbilityManager.new(abilityFolder: Folder): Object
     local self = setmetatable({} :: any, AbilityManager) :: Object
 
-    self._Abilities = {}
+    self._Abilties = {}
 
-    self:_LoadAbilities()
+    self:_LoadAbilities(abilityFolder)
 
     return self
 end
 
-function AbilityManager.GetAbility(self: Object, abilityName: string): AbilityModule
-    return self._Abilities[string.format("_%s", abilityName)]
+function AbilityManager.Get(self: Object, abilityName: string): AbilityModule
+    print(self._Abilties)
+    return self._Abilties[abilityName]
 end
 
 return AbilityManager :: Module

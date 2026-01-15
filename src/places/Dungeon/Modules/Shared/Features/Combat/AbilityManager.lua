@@ -48,7 +48,9 @@ function AbilityManager._LoadAbilities(self: Object, abilityFolder: Folder)
             continue
         end
 
-        self._Abilties[instance.Name:split("_")[2]] = rbxrequire(instance)
+        local AbilityModule: AbilityModule = rbxrequire(instance)
+
+        self._Abilties[AbilityModule.AbilityName] = AbilityModule
     end
 end
 

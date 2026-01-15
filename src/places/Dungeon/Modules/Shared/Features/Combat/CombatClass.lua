@@ -67,6 +67,8 @@ end
 function CombatClass.ApplyAbility(self: Object, abilityName: string, params: {[any]: any}?)
     local Params: {[any]: any} = params or {}
 
+    Params.Attacker = self._Character
+
     self._Abilities[abilityName]:Apply(Params)
 end
 

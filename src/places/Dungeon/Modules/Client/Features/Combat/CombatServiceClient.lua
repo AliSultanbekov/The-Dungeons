@@ -30,9 +30,14 @@ export type Module = typeof(CombatServiceClient) & ModuleData
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function CombatServiceClient.UseAbility(self: Module, params: any)
+function CombatServiceClient.UseAbility(self: Module, params: {[any]: any}?)
     local Network = self._NetworkServiceClient:GetNetwork("CombatService")
     Network:FireServer("UseAbility", params)
+end
+
+function CombatServiceClient.HitTarget(self: Module, params: {[any]: any}?)
+    local Network = self._NetworkServiceClient:GetNetwork("CombatService")
+    Network:FireServer("HitTarget", params)
 end
 
 function CombatServiceClient.Init(self: Module, serviceBag: ServiceBag.ServiceBag)

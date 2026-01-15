@@ -87,17 +87,17 @@ function CombatController.Start(self: Module)
 
         local CombatObject = self._CombatObjects[Character]
 
-        CombatObject:UseAbility(
-            "DefaultBasicAttack",
+        CombatObject:UseAbility("DefaultBasicAttack",
             {
                 Mode = "Prediction",
-                OnHit = function(hitCharacter: Model)
-                    
+                OnHit = function(params: {[any]: any}?)
+                    self._CombatServiceClient:HitTarget(params)
+                end,
+                OnUse = function(params: {[any]: any}?)
+                    self._CombatServiceClient:UseAbility(params)
                 end
             }
         )
-        
-        self._CombatServiceClient:UseAbility()
     end)
 end
 

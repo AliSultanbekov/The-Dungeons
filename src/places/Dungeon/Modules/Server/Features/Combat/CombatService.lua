@@ -28,6 +28,7 @@ type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
     _PlayerCharacterService: typeof(require("PlayerCharacterService")),
     _NetworkService: typeof(require("NetworkService")),
+    _PositionHistoryService: typeof(require("PositionHistoryService")),
     _AbilityManager: AbilityManager.Object,
     _CombatObjects: { [Model]: CombatObject},
 }
@@ -39,7 +40,10 @@ export type Module = typeof(CombatService) & ModuleData
 -- [ Public Functions ] --
 function CombatService.OnPlayerCharacterAdded(self: Module, maid: Maid.Maid, character: Model)
     local CombatObject = CombatClass.new(character, self._AbilityManager)
-    CombatObject:AddAbility("DefaultBasicAttack")
+    CombatObject:AddAbility("DefaultBasicAttack", { 
+        ItemData = { Name = "Wooden Sword" }, 
+        PositionHistoryService = self._PositionHistoryService
+    })
 
     self._CombatObjects[character] = CombatObject
 
@@ -56,6 +60,7 @@ function CombatService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     self._ServiceBag = assert(serviceBag, "No serviceBag")
     self._PlayerCharacterService = self._ServiceBag:GetService(require("PlayerCharacterService"))
     self._NetworkService = self._ServiceBag:GetService(require("NetworkService"))
+    self._PositionHistoryService = self._ServiceBag:GetService(require("PositionHistoryService"))
     self._AbilityManager = AbilityManager.new(script.Parent.Abilities)
     self._CombatObjects = {}
 end
@@ -72,7 +77,7 @@ function CombatService.Start(self: Module)
     Network:DeclareEvent("AbilityUsed")
     Network:DeclareEvent("TargetHit")
 
-    Network:Connect("UseAbility", function(player: Player, params: any)
+    Network:Connect("UseAbility", function(player: Player, params: {[any]: any}?)
         local Character = player.Character
 
         if not Character then
@@ -82,6 +87,22 @@ function CombatService.Start(self: Module)
         local CombatObject = self._CombatObjects[Character]
 
         CombatObject:UseAbility("DefaultBasicAttack", params)
+    end)
+
+    Network:Connect("HitTarget", function(player: Player, params: {[any]: any}?)  
+        local Character = player.Character
+
+        if not Character then
+            return
+        end
+
+        local CombatObject = self._CombatObjects[Character]
+
+        local Params: {[any]: any} = params or {}
+
+        Params.Mode = "FromClient"
+
+        CombatObject:ApplyAbility("DefaultBasicAttack", Params)
     end)
 end
 

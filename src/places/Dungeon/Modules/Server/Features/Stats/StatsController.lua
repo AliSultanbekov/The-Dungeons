@@ -1,19 +1,45 @@
+--[=[
+    @class StatsController
+]=]
+
+-- [ Roblox Services ] --
+
+-- [ Imports ] --
+
 -- [ Require ] --
 local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 local ServiceBag = require("ServiceBag")
-local Maid = require("Maid")
-local CombatTypes = require("CombatTypes")
 
+-- [ Constants ] --
 
-local Controller = {}
+-- [ Variables ] --
 
-function Controller.Init(self, serviceBag: ServiceBag.ServiceBag)
-    print("Called")
-    self._serviceBag = serviceBag
+-- [ Module Table ] --
+local StatsController = {}
+
+-- [ Types ] --
+type ModuleData = {
+    _ServiceBag: ServiceBag.ServiceBag,
+    _NetworkService: typeof(require("NetworkService")),
+}
+
+export type Module = typeof(StatsController) & ModuleData
+
+-- [ Private Functions ] --
+
+-- [ Public Functions ] --
+function StatsController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
+    if self._ServiceBag ~= nil then
+        error("Service already initialized")
+    end
+
+    self._ServiceBag = assert(serviceBag, "No serviceBag")
 end
 
+function StatsController.Start(self: Module)
+    
+end
 
-print("Ran")
-return Controller
+return StatsController :: Module

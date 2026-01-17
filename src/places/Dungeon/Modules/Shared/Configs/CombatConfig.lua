@@ -5,7 +5,7 @@
 -- [ Roblox Services ] --
 
 -- [ Require ] --
-local require = require(script.Parent.loader).load(script)
+local _require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 
@@ -15,8 +15,11 @@ local require = require(script.Parent.loader).load(script)
 
 -- [ Module Table ] --
 local CombatConfig = {
-    DistanceTolerance = 2.5,
-    AngleTolerance = 0.2
+    PingAdditionalDelay = 0.05,
+    BaseAngle = math.rad(90),
+    AnglePer100ms = math.rad(30),
+    DistanceTolerance = 4,
+    EndGracePeriod = 0.12,
 }
 
 -- [ Types ] --

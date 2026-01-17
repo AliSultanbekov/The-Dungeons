@@ -15,7 +15,7 @@ local ServiceBag = require("ServiceBag")
 local Maid = require("Maid")
 
 -- [ Constants ] --
-local HISTORY_LENGTH = 10
+local HISTORY_LENGTH = 30
 
 -- [ Variables ] --
 
@@ -67,7 +67,9 @@ end
 -- [ Public Functions ] --
 function PositionHistoryService.GetCFrameAt(self: Module, Character: Model, Timestamp: number): CFrame?
     local Buffer = self._CharacterHistory[Character]
+
     if not Buffer or Buffer.Size == 0 then
+        print("[PositionHistory] No buffer for", Character.Name, "Size:", Buffer and Buffer.Size)
         return nil
     end
     
@@ -76,7 +78,7 @@ function PositionHistoryService.GetCFrameAt(self: Module, Character: Model, Time
     
     -- Iterate from newest to oldest
     for i = 1, Buffer.Size do
-        local Index = (Buffer.Head - i + HISTORY_LENGTH) % HISTORY_LENGTH + 1
+        local Index = (Buffer.Head - 1 - i + HISTORY_LENGTH) % HISTORY_LENGTH + 1
         local Entry = Buffer.Data[Index]
         
         if not Entry then continue end
@@ -86,7 +88,7 @@ function PositionHistoryService.GetCFrameAt(self: Module, Character: Model, Time
             
             -- Get the next entry chronologically (after Before)
             if i > 1 then
-                local NextIndex = (Buffer.Head - i + 1 + HISTORY_LENGTH) % HISTORY_LENGTH + 1
+                local NextIndex = (Buffer.Head - i + HISTORY_LENGTH) % HISTORY_LENGTH + 1
                 After = Buffer.Data[NextIndex]
             end
             
@@ -151,7 +153,7 @@ function PositionHistoryService.Start(self: Module)
     task.spawn(function()
         task.wait(2)
 
-        for _, instance in workspace:WaitForChild("SquadNPCs"):GetChildren() do
+        for _, instance in workspace:GetChildren() do
             if not instance:IsA("Model") then
                 continue
             end

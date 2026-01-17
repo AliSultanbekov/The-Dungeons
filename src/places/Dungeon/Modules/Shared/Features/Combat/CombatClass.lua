@@ -34,7 +34,8 @@ export type ObjectData = {
 }
 export type Object = ObjectData & {
     UseAbility: (self: Object, abilityName: string, params: {[any]: any}?) -> (),
-    ApplyAbility: (self: Object, abilityName: string, params: {[any]: any}?) -> (),
+    EndAbility: (self: Object, abilityName: string, params: {[any]: any}?) -> (),
+    HitAbility: (self: Object, abilityName: string, params: {[any]: any}?) -> (),
     AddAbility: (self: Object, abilityName: string, params: {[any]: any}?) -> (),
     RemoveAbility: (self: Object, abilityName: string, params: {[any]: any}?) -> (),
 }
@@ -64,12 +65,20 @@ function CombatClass.UseAbility(self: Object, abilityName: string, params: {[any
     self._Abilities[abilityName]:Use(Params)
 end
 
-function CombatClass.ApplyAbility(self: Object, abilityName: string, params: {[any]: any}?)
+function CombatClass.EndAbility(self: Object, abilityName: string, params: {[any]: any}?)
+    local Params: {[any]: any} = params or {}
+    
+    Params.Attacker = self._Character
+
+    self._Abilities[abilityName]:End(Params)
+end
+
+function CombatClass.HitAbility(self: Object, abilityName: string, params: {[any]: any}?)
     local Params: {[any]: any} = params or {}
 
     Params.Attacker = self._Character
 
-    self._Abilities[abilityName]:Apply(Params)
+    self._Abilities[abilityName]:Hit(Params)
 end
 
 function CombatClass.AddAbility(self: Object, abilityName: string, params: {[any]: any}?)

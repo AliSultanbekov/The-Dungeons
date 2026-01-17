@@ -6,10 +6,14 @@ local _require = require(script.Parent.loader).load(script)
 -- [ Imports ] --
 
 -- [ Types ] --
+export type Mode = "FromClient" | "FromServer"
+
 export type ClientAbilityObject = {
     AbilityName: string,
     Use: (self: ClientAbilityObject, context: {[any]: any}) -> (),
-    Apply: (self: ClientAbilityObject, context: {[any]: any}) -> (),
+    End: (self: ServerAbilityObject, context: {[any]: any}) -> (),
+    Hit: (self: ClientAbilityObject, context: {[any]: any}) -> (),
+    IsActive: (self: ClientAbilityObject) -> boolean,
 }
 
 export type ClientAbilityModule = {
@@ -21,7 +25,9 @@ export type ClientAbilityModule = {
 export type ServerAbilityObject = {
     AbilityName: string,
     Use: (self: ServerAbilityObject, context: {[any]: any}) -> (),
-    Apply: (self: ServerAbilityObject, context: {[any]: any}) -> (),
+    End: (self: ServerAbilityObject, context: {[any]: any}) -> (),
+    Hit: (self: ServerAbilityObject, context: {[any]: any}) -> (),
+    IsActive: (self: ServerAbilityObject) -> boolean,
 }
 
 export type ServerAbilityModule = {

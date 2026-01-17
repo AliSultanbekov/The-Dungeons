@@ -11,7 +11,6 @@ local RunService = game:GetService("RunService")
 -- [ Imports ] --
 local NPCGroupUtil = require("./_NPCGroupUtil")
 local Types = require("./_Types")
-local EnemyConfigs = require("EnemyConfigs")
 
 -- [ Require ] --
 local require = require(script.Parent.loader).load(script)
@@ -19,6 +18,7 @@ local require = require(script.Parent.loader).load(script)
 -- [ Imports ] --
 local ServiceBag = require("ServiceBag")
 local AssetProvider = require("AssetProvider")
+local EnemyConfigs = require("EnemyConfigs")
 
 -- [ Constants ] --
 local CONFIG = {

@@ -89,15 +89,28 @@ function CombatController.Start(self: Module)
 
         CombatObject:UseAbility("DefaultBasicAttack",
             {
-                Mode = "Prediction",
-                OnHit = function(params: {[any]: any}?)
-                    self._CombatServiceClient:HitTarget(params)
-                end,
+                Mode = "FromClient",
                 OnUse = function(params: {[any]: any}?)
                     self._CombatServiceClient:UseAbility(params)
-                end
+                end,
+                OnEnd = function(params: {[any]: any}?)
+                    self._CombatServiceClient:EndAbility(params)
+                end,
+                OnHit = function(params: {[any]: any}?)
+                    self._CombatServiceClient:HitAbility(params)
+                end,
             }
         )
+    end)
+
+    self._CombatServiceClient.PublicSignals.AbilityHit:Connect(function(params: { [any]: any }?)
+        if not params then
+            return
+        end
+
+        local Attacker = params.Attacker
+        local CombatObject = self._CombatObjects[Attacker]
+        CombatObject:HitAbility("DefaultBasicAttack", params)
     end)
 end
 

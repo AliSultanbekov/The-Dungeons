@@ -103,7 +103,7 @@ function HitboxClass._CheckHitbox(self: Object, seen: Seen, hits: Hits)
             end)
         end
 
-        Parts = workspace:GetPartBoundsInRadius(FinalCFrame, Params.Radius, Overlap)
+        Parts = workspace:GetPartBoundsInRadius(FinalCFrame.Position, Params.Radius, Overlap)
     end
 
     if not Parts then
@@ -122,6 +122,10 @@ function HitboxClass._CheckHitbox(self: Object, seen: Seen, hits: Hits)
         end
 
         seen[Model] = true
+
+        if Model.Name == "Tester" then
+            continue
+        end
 
         local Humanoid = Model:FindFirstChildOfClass("Humanoid")
 
@@ -159,18 +163,23 @@ function HitboxClass:Trigger(): Hits
     
     if Length > 0 then
         local Event = RunService:IsClient() and RunService.RenderStepped or RunService.Heartbeat
-        local Elapsed = 0
+        local Frames = 0
+        local Completed = false
         
         self._Maid:Add(Event:Connect(function(dt)
-            Elapsed += dt
+            Frames += 1
             self:_CheckHitbox(Seen, Hits)
             
-            if Elapsed >= Length then
+            if Frames >= Length then
+                Completed = true
                 self._Maid:DoCleaning()
             end
         end))
         
-        task.wait(Length)
+        -- Wait for frames to complete (Length frames at ~60fps)
+        while not Completed do
+            task.wait()
+        end
     else
         self:_CheckHitbox(Seen, Hits)
     end

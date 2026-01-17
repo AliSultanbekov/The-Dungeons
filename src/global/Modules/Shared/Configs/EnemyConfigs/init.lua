@@ -29,7 +29,6 @@ local ConfigsByEnemyName = {
             Focus = 5,
         },
 
-
         RawStats = {}
     },
 

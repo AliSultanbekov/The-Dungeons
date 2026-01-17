@@ -72,24 +72,14 @@ function CombatService.Start(self: Module)
     
     -- client
     Network:DeclareEvent("UseAbility")
-    Network:DeclareEvent("HitTarget")
+    Network:DeclareEvent("EndAbility")
+    Network:DeclareEvent("HitAbility")
     -- server
     Network:DeclareEvent("AbilityUsed")
-    Network:DeclareEvent("TargetHit")
+    Network:DeclareEvent("AbilityEnded")
+    Network:DeclareEvent("AbilityHit")
 
     Network:Connect("UseAbility", function(player: Player, params: {[any]: any}?)
-        local Character = player.Character
-
-        if not Character then
-            return
-        end
-
-        local CombatObject = self._CombatObjects[Character]
-
-        CombatObject:UseAbility("DefaultBasicAttack", params)
-    end)
-
-    Network:Connect("HitTarget", function(player: Player, params: {[any]: any}?)  
         local Character = player.Character
 
         if not Character then
@@ -101,8 +91,49 @@ function CombatService.Start(self: Module)
         local Params: {[any]: any} = params or {}
 
         Params.Mode = "FromClient"
+        Params.OnUse = function(params)
+            Network:FireAllClients("AbilityUsed", params)
+        end
 
-        CombatObject:ApplyAbility("DefaultBasicAttack", Params)
+        CombatObject:UseAbility("DefaultBasicAttack", params)
+    end)
+
+    Network:Connect("EndAbility", function(player: Player, params: {[any]: any}?)
+        local Character = player.Character
+
+        if not Character then
+            return
+        end
+
+        local CombatObject = self._CombatObjects[Character]
+
+        local Params: {[any]: any} = params or {}
+
+        Params.Mode = "FromClient"
+        Params.OnEnd = function(params)
+            Network:FireAllClients("AbilityEnded", params)
+        end
+
+        CombatObject:EndAbility("DefaultBasicAttack", params)
+    end)
+
+    Network:Connect("HitAbility", function(player: Player, params: {[any]: any}?)
+        local Character = player.Character
+
+        if not Character then
+            return
+        end
+
+        local CombatObject = self._CombatObjects[Character]
+
+        local Params: {[any]: any} = params or {}
+
+        Params.Mode = "FromClient"
+        Params.OnHit = function(params)
+            Network:FireAllClients("AbilityHit", params)
+        end
+
+        CombatObject:HitAbility("DefaultBasicAttack", Params)
     end)
 end
 

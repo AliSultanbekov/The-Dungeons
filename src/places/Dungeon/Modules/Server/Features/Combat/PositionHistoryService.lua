@@ -33,7 +33,7 @@ type CircularBuffer = {
 }
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
-    _PlayerCharacterService: typeof(require("PlayerCharacterService")),
+    _PlayerCharacterManager: typeof(require("PlayerCharacterManager")),
     _CharacterHistory: { [Model]: CircularBuffer }
 }
 
@@ -139,12 +139,12 @@ function PositionHistoryService.Init(self: Module, serviceBag: ServiceBag.Servic
     end
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
-    self._PlayerCharacterService = self._ServiceBag:GetService(require("PlayerCharacterService"))
+    self._PlayerCharacterManager = self._ServiceBag:GetService(require("PlayerCharacterManager"))
     self._CharacterHistory = {}
 end
 
 function PositionHistoryService.Start(self: Module)
-    self._PlayerCharacterService:RegisterService(self)
+    self._PlayerCharacterManager:RegisterModule(self)
 
     RunService.Heartbeat:Connect(function(dt: number)
         self:_OnHeartbeat()

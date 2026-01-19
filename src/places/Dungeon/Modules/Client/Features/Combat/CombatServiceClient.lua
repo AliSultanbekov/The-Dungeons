@@ -1,18 +1,21 @@
 --[=[
-    @class CombatServiceClient
+    @class CombatController
 ]=]
 
 -- [ Roblox Services ] --
 local Players = game:GetService("Players")
 
 -- [ Imports ] --
+local CombatKeybinds = require("./_CombatKeybinds")
 
 -- [ Require ] --
 local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 local ServiceBag = require("ServiceBag")
-local Signal = require("Signal")
+local Maid = require("Maid")
+local AbilityManager = require("AbilityManager")
+local CombatClass = require("CombatClass")
 
 -- [ Constants ] --
 
@@ -20,91 +23,95 @@ local Signal = require("Signal")
 local Player = Players.LocalPlayer
 
 -- [ Module Table ] --
-local CombatServiceClient = {}
+local CombatController = {}
 
 -- [ Types ] --
+type CombatObject = CombatClass.Object
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
-    _NetworkServiceClient: typeof(require("NetworkServiceClient")),
-    PublicSignals: {
-        AbilityUsed: Signal.Signal<{[any]: any}?>,
-        AbilityEnded: Signal.Signal<{[any]: any}?>,
-        AbilityHit: Signal.Signal<{[any]: any}?>,
+    _PlayerCharacterManager: typeof(require("PlayerCharacterManager")),
+    _UserInputManager: typeof(require("UserInputManager")),
+    _CombatNetworkClient: typeof(require("CombatNetworkClient")),
+    _AbilityManager: AbilityManager.Object,
+    _CombatObjects: {
+        [Model]: CombatObject
     }
 }
 
-export type Module = typeof(CombatServiceClient) & ModuleData
+export type Module = typeof(CombatController) & ModuleData
 
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function CombatServiceClient.UseAbility(self: Module, params: {[any]: any}?)
-    local Network = self._NetworkServiceClient:GetNetwork("CombatService")
-    Network:FireServer("UseAbility", params)
+function CombatController.OnPlayerCharacterAdded(self: Module, maid: Maid.Maid, character: Model)
+    local CombatObject = CombatClass.new(character, self._AbilityManager)
+    CombatObject:AddAbility("DefaultBasicAttack", { ItemData = { Name = "Wooden Sword" } })
+
+    self._CombatObjects[character] = CombatObject
+
+    maid:Add(function()
+        self._CombatObjects[character] = nil
+    end)
 end
 
-function CombatServiceClient.EndAbility(self: Module, params: {[any]: any}?)
-    local Network = self._NetworkServiceClient:GetNetwork("CombatService")
-    Network:FireServer("EndAbility", params)
-end
-
-function CombatServiceClient.HitAbility(self: Module, params: {[any]: any}?)
-    local Network = self._NetworkServiceClient:GetNetwork("CombatService")
-    Network:FireServer("HitAbility", params)
-end
-
-function CombatServiceClient.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
+function CombatController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     if self._ServiceBag ~= nil then
         error("Service already initialized")
     end
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
-    self._NetworkServiceClient = self._ServiceBag:GetService(require("NetworkServiceClient"))
-    self.PublicSignals = {
-        AbilityUsed = Signal.new() :: any,
-        AbilityEnded = Signal.new() :: any,
-        AbilityHit = Signal.new() :: any
-    }
+    self._PlayerCharacterManager = self._ServiceBag:GetService(require("PlayerCharacterManager"))
+    self._UserInputManager = self._ServiceBag:GetService(require("UserInputManager"))
+    self._CombatNetworkClient = self._ServiceBag:GetService(require("CombatNetworkClient"))
+
+    self._AbilityManager = AbilityManager.new(script.Parent.Abilities)
+    self._CombatObjects = {}
 end
 
-function CombatServiceClient.Start(self: Module)
-    local Network = self._NetworkServiceClient:GetNetwork("CombatService")
+function CombatController.Start(self: Module)
+    self._PlayerCharacterManager:RegisterModule(self)
+    
+    local Actions = CombatKeybinds.Actions
+    local KeyMaps = CombatKeybinds.KeyMaps
 
-    Network:Connect("AbilityUsed", function(params: {[any]: any}?)
-        if not params then
+    self._UserInputManager:RegisterKeymapAction(Actions.BASIC_ATTACK, KeyMaps[Actions.BASIC_ATTACK], function(data)
+        if data.InputState ~= Enum.UserInputState.Begin then
             return
         end
 
-        if params.Attacker == Player.Character then
+        local Character = Player.Character
+
+        if not Character then
             return
         end
 
-        self.PublicSignals.AbilityUsed:Fire(params)
+        local CombatObject = self._CombatObjects[Character]
+
+        CombatObject:UseAbility("DefaultBasicAttack",
+            {
+                Mode = "FromClient",
+                OnUse = function(params: {[any]: any}?)
+                    self._CombatNetworkClient:UseAbility(params)
+                end,
+                OnEnd = function(params: {[any]: any}?)
+                    self._CombatNetworkClient:EndAbility(params)
+                end,
+                OnHit = function(params: {[any]: any}?)
+                    self._CombatNetworkClient:HitAbility(params)
+                end,
+            }
+        )
     end)
 
-    Network:Connect("AbilityEnded", function(params: {[any]: any}?)
+    self._CombatNetworkClient.RemoteEvents.AbilityHit:Connect(function(params: { [any]: any }?)
         if not params then
             return
         end
 
-        if params.Attacker == Player.Character then
-            return
-        end
-
-        self.PublicSignals.AbilityEnded:Fire(params)
-    end)
-
-    Network:Connect("AbilityHit", function(params: {[any]: any}?)
-        if not params then
-            return
-        end
-
-        if params.Attacker == Player.Character then
-            return
-        end
-        
-        self.PublicSignals.AbilityHit:Fire(params)
+        local Attacker = params.Attacker
+        local CombatObject = self._CombatObjects[Attacker]
+        CombatObject:HitAbility("DefaultBasicAttack", params)
     end)
 end
 
-return CombatServiceClient :: Module
+return CombatController :: Module

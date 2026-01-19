@@ -36,4 +36,13 @@ export type ServerAbilityModule = {
     AbilityName: string,
 }
 
+
+export type UseAbilityRemotePacket = {}
+export type EndAbilityRemotePacket = {}
+export type HitAbilityRemotePacket = {}
+
+export type AbilityUsedRemotePacket = {}
+export type AbilityEndedRemotePacket = {}
+export type AbilityHitRemotePacket = {}
+
 return nil

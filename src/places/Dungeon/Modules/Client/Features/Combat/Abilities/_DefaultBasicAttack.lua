@@ -213,7 +213,6 @@ function DefaultBasicAttack.End(self: Object, params: Use_Params)
 end
 
 function DefaultBasicAttack.Hit(self: Object, params: Hit_Params)
-    print("hit")
     local Sound = AssetProvider:Get(string.format("Sounds/Punches/Punch%d", math.random(1,5))) :: Sound
     Sound.Parent = workspace
     Sound:Play()

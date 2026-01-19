@@ -1,10 +1,9 @@
 --[=[
-    @class InventoryService
+    @class InventoryController
 ]=]
 
 -- [ Roblox Services ] --
 local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
 
 -- [ Imports ] --
 
@@ -23,7 +22,7 @@ local TopicConstants = require("TopicConstants")
 -- [ Variables ] --
 
 -- [ Module Table ] --
-local InventoryService = {}
+local InventoryController = {}
 
 -- [ Types ] --
 type ItemID = ItemTypes.ItemID
@@ -33,18 +32,19 @@ type UniqueItemData = ItemTypes.UniqueItemData
 type RawItemData = ItemTypes.RawItemData
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
-    _DataService: typeof(require("DataService")),
-    _NetworkService: typeof(require("NetworkService")),
+    _InventoryNetworkServer: typeof(require("InventoryNetworkServer")),
+    _DataManager: typeof(require("DataManager")),
+    _NetworkManager: typeof(require("NetworkManager")),
     _EventBus: typeof(require("EventBus")),
 
     _EquippedWeapon: ItemData?,
 }
 
-export type Module = typeof(InventoryService) & ModuleData
+export type Module = typeof(InventoryController) & ModuleData
 
 -- [ Private Functions ] --
-function InventoryService._GenerateID(self: Module, player: Player)
-    local Success, PlayerInventoryData = self._DataService:GetData(player, "Inventory")
+function InventoryController._GenerateID(self: Module, player: Player)
+    local Success, PlayerInventoryData = self._DataManager:GetData(player, "Inventory")
 
     if not Success then
         error("Failed to get Inventory data for player: " .. player.Name)
@@ -66,7 +66,7 @@ function InventoryService._GenerateID(self: Module, player: Player)
     return ID
 end
 
-function InventoryService._ProcessItemData(self: Module, player: Player, rawItemData: RawItemData): ItemData
+function InventoryController._ProcessItemData(self: Module, player: Player, rawItemData: RawItemData): ItemData
     local StorageType = ItemConstants.ItemTypeToStorageType[rawItemData.Type]
     local ID = StorageType == "Unique" and self:_GenerateID(player) or rawItemData.Name
     
@@ -96,7 +96,7 @@ end
     since we only want to transmit the change in amount to client, we also need to make sure that the new stackable data has correct attributes,
     like equipped etc. if you did transmit the wrong states from itemdata, it would end up with bugs
 ]=]
-function InventoryService._CreateDelta(self: Module, itemData: StackableItemData, deltaAmount: number)
+function InventoryController._CreateDelta(self: Module, itemData: StackableItemData, deltaAmount: number)
     local Copy = Table.deepCopy(itemData) :: StackableItemData
     Copy.Amount = deltaAmount
 
@@ -108,9 +108,7 @@ end
 --[=[
     itemData here is secure and up to date
 ]=]
-function InventoryService.Equip(self: Module, player: Player, itemData: ItemData)
-    local Network = self._NetworkService:GetNetwork("InventoryService")
-
+function InventoryController.Equip(self: Module, player: Player, itemData: ItemData)
     local function handleUnique(InventoryData: {})
         (itemData :: UniqueItemData).Equipped = true
     end
@@ -123,7 +121,7 @@ function InventoryService.Equip(self: Module, player: Player, itemData: ItemData
         return
     end
 
-    self._DataService:UpdateData(player, function(data)
+    self._DataManager:UpdateData(player, function(data)
         local InventoryData = data.Inventory
 
         if itemData.Type == "Materials" then
@@ -135,15 +133,13 @@ function InventoryService.Equip(self: Module, player: Player, itemData: ItemData
 
     self._EventBus:Publish(TopicConstants.Inventory.ItemEquipped, { Player = player, ItemData = itemData })
 
-    Network:FireClient("ItemEquipped", player, itemData)
+    self._InventoryNetworkServer:ItemUpdated(player, itemData)
 end
 
 --[=[
     itemData here is secure and up to date
 ]=]
-function InventoryService.Unequip(self: Module, player: Player, itemData: ItemData)
-    local Network = self._NetworkService:GetNetwork("InventoryService")
-
+function InventoryController.Unequip(self: Module, player: Player, itemData: ItemData)
     local function handleUnique(InventoryData: {})
         (itemData :: UniqueItemData).Equipped = false
     end
@@ -156,7 +152,7 @@ function InventoryService.Unequip(self: Module, player: Player, itemData: ItemDa
         return
     end
 
-    self._DataService:UpdateData(player, function(data)
+    self._DataManager:UpdateData(player, function(data)
         local InventoryData = data.Inventory
 
         if itemData.Type == "Materials" then
@@ -168,16 +164,14 @@ function InventoryService.Unequip(self: Module, player: Player, itemData: ItemDa
 
     self._EventBus:Publish(TopicConstants.Inventory.ItemUnequipped, { Player = player, ItemData = itemData })
 
-    Network:FireClient("ItemUnequipped", player, itemData)
+    self._InventoryNetworkServer:ItemUpdated(player, itemData)
 end
 
 --[=[
     only ever gets called from server       
 ]=]
-function InventoryService.AddItems(self: Module, player: Player, rawItemDataMap: { [any]: RawItemData })
-    local Network = self._NetworkService:GetNetwork("InventoryService")
-
-    self._DataService:UpdateData(player, function(data)
+function InventoryController.AddItems(self: Module, player: Player, rawItemDataMap: { [any]: RawItemData })
+    self._DataManager:UpdateData(player, function(data)
         local InventoryData = data.Inventory
         local DeltaCache = {} :: any
         local AddedItems = {} :: any
@@ -222,7 +216,7 @@ function InventoryService.AddItems(self: Module, player: Player, rawItemDataMap:
             local ItemData = self:_ProcessItemData(player, rawItemData)
 
             if not InventoryData[ItemData.Type] then
-                warn(`[InventoryService.AddItem] InventoryData[{ItemData.Type}] does not exist for player {player.Name}`)
+                warn(`[InventoryController.AddItem] InventoryData[{ItemData.Type}] does not exist for player {player.Name}`)
                 continue
             end
 
@@ -248,7 +242,7 @@ function InventoryService.AddItems(self: Module, player: Player, rawItemDataMap:
             end
         end)
 
-        Network:FireClient("ItemsAdded", player, DeltaCache)
+        self._InventoryNetworkServer:ItemsAdded(player, DeltaCache)
     end)
 end
 
@@ -257,10 +251,8 @@ end
 
     only use item ids and item types
 ]=]
-function InventoryService.RemoveItems(self: Module, player: Player, ItemDataMap: { [any]: ItemData })
-    local Network = self._NetworkService:GetNetwork("InventoryService")
-
-    self._DataService:UpdateData(player, function(data)
+function InventoryController.RemoveItems(self: Module, player: Player, ItemDataMap: { [any]: ItemData })
+    self._DataManager:UpdateData(player, function(data)
         local InventoryData = data.Inventory
         local DeltaCache = {} :: any
         local RemovedItems = {} :: any
@@ -277,7 +269,7 @@ function InventoryService.RemoveItems(self: Module, player: Player, ItemDataMap:
             local DeltaAmount = itemData.Amount
     
             if not ExistingItemData then
-                warn(`[InventoryService.RemoveItem] Tried to remove item {itemData.ID} of type {itemData.Type} which does not exist in inventory for player {player.Name}`)
+                warn(`[InventoryController.RemoveItem] Tried to remove item {itemData.ID} of type {itemData.Type} which does not exist in inventory for player {player.Name}`)
                 return
             end
     
@@ -310,12 +302,12 @@ function InventoryService.RemoveItems(self: Module, player: Player, ItemDataMap:
         
         for _, itemData in ItemDataMap do
             if not InventoryData[itemData.Type] then
-                warn(`[InventoryService.AddItem] InventoryData[{itemData.Type}] does not exist for player {player.Name}`)
+                warn(`[InventoryController.AddItem] InventoryData[{itemData.Type}] does not exist for player {player.Name}`)
                 continue
             end
 
             if not InventoryData[itemData.Type][itemData.ID] then
-                warn(`[InventoryService.RemoveItem] InventoryData[{itemData.Type}][{itemData.ID}] does not exist for player {player.Name}`)
+                warn(`[InventoryController.RemoveItem] InventoryData[{itemData.Type}][{itemData.ID}] does not exist for player {player.Name}`)
                 continue
             end
 
@@ -341,18 +333,18 @@ function InventoryService.RemoveItems(self: Module, player: Player, ItemDataMap:
             end
         end)
 
-        Network:FireClient("ItemsRemoved", player, DeltaCache)
+        self._InventoryNetworkServer:ItemsRemoved(player, DeltaCache)
     end)
 end
 
-function InventoryService.FetchSecureItemData(self: Module, player: Player, itemData: ItemData): ItemData?
-    local _, SecureData = self._DataService:GetData(player, string.format("Inventory/%s/%s", itemData.Type, itemData.ID))
+function InventoryController.FetchSecureItemData(self: Module, player: Player, itemData: ItemData): ItemData?
+    local _, SecureData = self._DataManager:GetData(player, string.format("Inventory/%s/%s", itemData.Type, itemData.ID))
 
     return SecureData
 end
 
-function InventoryService.GetItemDatas(self: Module, player: Player): { [ItemID]: ItemData}
-    local Success, InventoryData = self._DataService:GetData(player, "Inventory")
+function InventoryController.GetItemsData(self: Module, player: Player): { [ItemID]: ItemData}
+    local Success, InventoryData = self._DataManager:GetData(player, "Inventory")
 
     if not Success then
         error("Failed to get Inventory data for player: " .. player.Name)
@@ -368,12 +360,11 @@ function InventoryService.GetItemDatas(self: Module, player: Player): { [ItemID]
     return ItemsData
 end
 
-
 --[[
 Possibly add cache in future, but currently it takes < 1ms to get itemdata of equipped (tested with 500 weapons)
 ]]
-function InventoryService.GetEquippedWeapon(self: Module, player: Player): ItemData?
-    local _, itemDataMap = self._DataService:GetData(player, "Inventory/Weapons")
+function InventoryController.GetEquippedWeapon(self: Module, player: Player): ItemData?
+    local _, itemDataMap = self._DataManager:GetData(player, "Inventory/Weapons")
 
     for _, itemData: ItemData in itemDataMap do
         if itemData.Equipped then
@@ -385,44 +376,30 @@ function InventoryService.GetEquippedWeapon(self: Module, player: Player): ItemD
     return nil
 end
 
-function InventoryService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
+function InventoryController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     if self._ServiceBag ~= nil then
         error("Service already initialized")
     end
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
-    self._DataService = self._ServiceBag:GetService(require("DataService"))
-    self._NetworkService = self._ServiceBag:GetService(require("NetworkService"))
+    self._InventoryNetworkServer = self._ServiceBag:GetService(require("InventoryNetworkServer"))
+    self._DataManager = self._ServiceBag:GetService(require("DataManager"))
+    self._NetworkManager = self._ServiceBag:GetService(require("NetworkManager"))
     self._EventBus = self._ServiceBag:GetService(require("EventBus"))
 
     self._EquippedWeapon = nil
 end
 
-function InventoryService.Start(self: Module)
-    local Network = self._NetworkService:GetNetwork("InventoryService")
+function InventoryController.Start(self: Module)
+    self._InventoryNetworkServer.RemoteFunctions.GetItemsData = function(player: Player)
+        return self:GetItemsData(player)
+    end
 
-    -- Client --
-    Network:DeclareEvent("RemoveItems")
-    Network:DeclareMethod("GetItemDatas")
-    Network:DeclareEvent("EquipItem")
-    Network:DeclareEvent("UnequipItem")
-
-    -- Server --
-    Network:DeclareEvent("ItemsAdded")
-    Network:DeclareEvent("ItemsRemoved")
-    Network:DeclareEvent("ItemEquipped")
-    Network:DeclareEvent("ItemUnequipped")
-    
-    -- Implementation --
-    Network:Connect("RemoveItems", function(player: Player, itemDataMap: { [any]: ItemData })
-        self:RemoveItems(player, itemDataMap)
+    self._InventoryNetworkServer.RemoteEvents.RemoveItems:Connect(function(player: Player, itemsData: { [any]: ItemData })
+        self:RemoveItems(player, itemsData)
     end)
 
-    Network:Bind("GetItemDatas", function(player: Player)
-        return self:GetItemDatas(player)
-    end)
-
-    Network:Connect("EquipItem", function(player: Player, itemData: ItemData)  
+    self._InventoryNetworkServer.RemoteEvents.EquipItem:Connect(function(player: Player, itemData: ItemData)
         local SecureItemData = self:FetchSecureItemData(player, itemData)
 
         if not SecureItemData then
@@ -432,7 +409,7 @@ function InventoryService.Start(self: Module)
         self:Equip(player, SecureItemData)
     end)
 
-    Network:Connect("UnequipItem", function(player: Player, itemData: ItemData)  
+    self._InventoryNetworkServer.RemoteEvents.UnequipItem:Connect(function(player: Player, itemData: ItemData)
         local SecureItemData = self:FetchSecureItemData(player, itemData)
 
         if not SecureItemData then
@@ -443,6 +420,4 @@ function InventoryService.Start(self: Module)
     end)
 end
 
-
-
-return InventoryService :: Module
+return InventoryController :: Module

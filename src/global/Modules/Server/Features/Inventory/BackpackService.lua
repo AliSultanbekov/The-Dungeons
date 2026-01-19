@@ -1,6 +1,6 @@
 local Players = game:GetService("Players")
 --[=[
-    @class BackpackService
+    @class BackpackController
 ]=]
 
 -- [ Roblox Services ] --
@@ -23,7 +23,7 @@ local TopicConstants = require("TopicConstants")
 -- [ Variables ] --
 
 -- [ Module Table ] --
-local BackpackService = {}
+local BackpackController = {}
 
 -- [ Types ] --
 type UniqueItemData = ItemTypes.UniqueItemData
@@ -32,17 +32,17 @@ type ItemData = ItemTypes.ItemData
 type ItemID = ItemTypes.ItemID
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
-    _PlayerCharacterService: typeof(require("PlayerCharacterService")),
+    _PlayerCharacterManager: typeof(require("PlayerCharacterManager")),
     _InventoryService: typeof(require("InventoryService")),
     _EventBus: typeof(require("EventBus")),
 
     _PlayerBackpacks: { [Player]: { [ItemID]: Tool }}
 }
 
-export type Module = typeof(BackpackService) & ModuleData
+export type Module = typeof(BackpackController) & ModuleData
 
 -- [ Private Functions ] --
-function BackpackService._UpdateTool(self: Module, tool: Tool, itemData: ItemData)
+function BackpackController._UpdateTool(self: Module, tool: Tool, itemData: ItemData)
     local StorageType = ItemConstants.ItemTypeToStorageType[itemData.Type]
 
     local function handleUnique(unqiueItemData: UniqueItemData)
@@ -60,11 +60,11 @@ function BackpackService._UpdateTool(self: Module, tool: Tool, itemData: ItemDat
     end
 end
 
-function BackpackService._GetTool(self: Module, itemData: ItemData): Tool
+function BackpackController._GetTool(self: Module, itemData: ItemData): Tool
     local ItemInstance = AssetProvider:Get(string.format("Objects/Items/%s/%s", itemData.Type, itemData.Name)) :: Tool
 
     if not ItemInstance then
-        error(string.format("[BackpackService] Failed to get tool asset for item %s (type %s)", itemData.Name, itemData.Type))
+        error(string.format("[BackpackController] Failed to get tool asset for item %s (type %s)", itemData.Name, itemData.Type))
     end
 
     self:_UpdateTool(ItemInstance, itemData)
@@ -73,11 +73,11 @@ function BackpackService._GetTool(self: Module, itemData: ItemData): Tool
 end
 
 -- [ Public Functions ] --
-function BackpackService.AddItem(self: Module, player: Player, itemData: ItemData)
+function BackpackController.AddItem(self: Module, player: Player, itemData: ItemData)
     local PlayerBackpack = self._PlayerBackpacks[player]
 
     if PlayerBackpack[itemData.ID] then
-        warn("[BackpackService] Player already has item with ID:", itemData.ID)
+        warn("[BackpackController] Player already has item with ID:", itemData.ID)
         return
     end
 
@@ -88,7 +88,7 @@ function BackpackService.AddItem(self: Module, player: Player, itemData: ItemDat
     PlayerBackpack[itemData.ID] = Tool
 end
 
-function BackpackService.UpdateItem(self: Module, player: Player, itemData: ItemData)
+function BackpackController.UpdateItem(self: Module, player: Player, itemData: ItemData)
     local PlayerBackpack = self._PlayerBackpacks[player]
 
     local Tool = PlayerBackpack[itemData.ID]
@@ -100,13 +100,13 @@ function BackpackService.UpdateItem(self: Module, player: Player, itemData: Item
     self:_UpdateTool(Tool, itemData)
 end
 
-function BackpackService.RemoveItem(self: Module, player: Player, itemData: ItemData)
+function BackpackController.RemoveItem(self: Module, player: Player, itemData: ItemData)
     local PlayerBackpack = self._PlayerBackpacks[player]
 
     local Tool = PlayerBackpack[itemData.ID]
 
     if not Tool then
-        warn(string.format("[BackpackService] Tried to remove tool for item with ID %s, but it was not found in the player's backpack", itemData.ID))
+        warn(string.format("[BackpackController] Tried to remove tool for item with ID %s, but it was not found in the player's backpack", itemData.ID))
         return
     end
 
@@ -115,7 +115,7 @@ function BackpackService.RemoveItem(self: Module, player: Player, itemData: Item
     PlayerBackpack[itemData.ID] = nil
 end
 
-function BackpackService.OnPlayerCharacterAdded(self: Module, maid: Maid.Maid, character: Model)
+function BackpackController.OnPlayerCharacterAdded(self: Module, maid: Maid.Maid, character: Model)
     local Player = Players:GetPlayerFromCharacter(character)
 
     if not Player then
@@ -132,28 +132,28 @@ function BackpackService.OnPlayerCharacterAdded(self: Module, maid: Maid.Maid, c
         self._PlayerBackpacks[Player] = nil
     end)
     
-    for _, itemData in self._InventoryService:GetItemDatas(Player) do
+    for _, itemData in self._InventoryService:GetItemsData(Player) do
         if itemData.Equipped == true then
             self:AddItem(Player, itemData)
         end
     end
 end
 
-function BackpackService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
+function BackpackController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     if self._ServiceBag ~= nil then
         error("Service already initialized")
     end
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
-    self._PlayerCharacterService = self._ServiceBag:GetService(require("PlayerCharacterService"))
+    self._PlayerCharacterManager = self._ServiceBag:GetService(require("PlayerCharacterManager"))
     self._InventoryService = self._ServiceBag:GetService(require("InventoryService"))
     self._EventBus = self._ServiceBag:GetService(require("EventBus"))
 
     self._PlayerBackpacks = {}
 end
 
-function BackpackService.Start(self: Module)
-    self._PlayerCharacterService:RegisterService(self)
+function BackpackController.Start(self: Module)
+    self._PlayerCharacterManager:RegisterModule(self)
 
     self._EventBus:Subscribe(TopicConstants.Inventory.ItemRemoved, function(packet: { Player: Player, ItemData: ItemData })
         if not packet.ItemData.Equipped then
@@ -172,8 +172,6 @@ function BackpackService.Start(self: Module)
     end)
 
     self._EventBus:Subscribe(TopicConstants.Inventory.ItemUpdated, function(packet: { Player: Player, ItemData: ItemData })
-        print(packet.ItemData)
-        
         if not packet.ItemData.Equipped then
             return
         end
@@ -190,4 +188,4 @@ function BackpackService.Start(self: Module)
     end)
 end     
 
-return BackpackService :: Module
+return BackpackController :: Module

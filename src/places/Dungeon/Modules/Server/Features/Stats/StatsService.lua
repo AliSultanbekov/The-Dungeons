@@ -1,5 +1,5 @@
 --[=[
-    @class CombatService
+    @class StatsService
 ]=]
 
 -- [ Roblox Services ] --
@@ -15,51 +15,46 @@ local StatTypes = require("StatsTypes")
 local StatsCalculationUtility = require("StatsCalculationUtility")
 
 -- [ Constants ] --
-local GET_PLAYER_RAW_STATS = "GetPlayerRawStats"
-local GET_PLAYER_PRIMARY_STATS = "GetPlayerPrimaryStats"
-local GET_STATS_SERVICE_CHANNEL = "StatsServiceChannel"
 
 -- [ Variables ] --
 
 -- [ Module Table ] --
-local CombatService = {}
+local StatsService = {}
 
 -- [ Types ] --
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
-    _NetworkService: typeof(require("NetworkService")),
-    _DataService :  typeof(require("DataService")),
+    _StatsNetworkServer: typeof(require("StatsNetworkServer")),
+    _DataManager:  typeof(require("DataManager")),
 }
 
-export type Module = typeof(CombatService) & ModuleData
+export type Module = typeof(StatsService) & ModuleData
 
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function CombatService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
+function StatsService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     if self._ServiceBag ~= nil then
         error("Service already initialized")
     end
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
-    self._NetworkService = self._ServiceBag:GetService(require("NetworkService"))
-    self._DataService = self._ServiceBag:GetService(require("DataService"))
+    self._StatsNetworkServer = self._ServiceBag:GetService(require("StatsNetworkServer"))
+    self._DataManager = self._ServiceBag:GetService(require("DataManager"))
 end
 
-function CombatService.Start(self: Module)
-    local networkChannel = self._NetworkService:GetNetwork(GET_STATS_SERVICE_CHANNEL)
-    
-    networkChannel:Bind(GET_PLAYER_PRIMARY_STATS, function(player : Player)
-        local isValid, data : StatTypes.PrimaryStats = self._DataService:GetData(player,  "PrimaryStats")
+function StatsService.Start(self: Module)
+    self._StatsNetworkServer.RemoteFunctions.GetPlayerRawStats = function(player : Player)
+        local isValid, data : StatTypes.PrimaryStats = self._DataManager:GetData(player,  "PrimaryStats")
         if not isValid then
             return warn(`No data for player {player.Name}`)
         end
 
         return table.clone(data)
-    end)
+    end
 
-    networkChannel:Bind(GET_PLAYER_RAW_STATS, function(player : Player)
-        local isValid, data : StatTypes.PrimaryStats = self._DataService:GetData(player,  "RawStats")
+    self._StatsNetworkServer.RemoteFunctions.GetPlayerPrimaryStats = function(player : Player)
+        local isValid, data : StatTypes.PrimaryStats = self._DataManager:GetData(player,  "RawStats")
         if not isValid then
             return warn(`No data for player {player.Name}`)
         end
@@ -72,7 +67,7 @@ function CombatService.Start(self: Module)
         StatsCalculationUtility:UpdateStats(stat)
 
         return table.clone(stat.RawStats)
-    end)
+    end
 end
 
-return CombatService :: Module
+return StatsService :: Module

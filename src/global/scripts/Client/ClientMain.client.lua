@@ -5,6 +5,6 @@ local loader = game:GetService("ReplicatedStorage"):WaitForChild("Game"):WaitFor
 local require = require(loader).bootstrapGame(loader.Parent) :: any
 
 local serviceBag = require("ServiceBag").new()
-serviceBag:GetService(require("InitServiceClient"))
+serviceBag:GetService(require("InitManager"))
 serviceBag:Init()
 serviceBag:Start()

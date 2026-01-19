@@ -1,4 +1,4 @@
-local loader = require(script.Parent.loader)
+
 export type CapConfig = {
     LevelSeg: number,
     HardCap: number,
@@ -25,29 +25,33 @@ export type StatConfig = {
     PHYSICAL_MASTERY: CapConfig,
 }
 
-export type PlayerStats = {
-    RawStats : {
-        Health : number,
-        Mana : number,
-        CriticalRating : number,
-        PhysicalMitigation : number,
-        TacticalMitigation : number,
-        CriticalDefense : number,
-        ManaRegen : number,
-        HealthRegen : number,
-        OutgoingHealing : number,
-        IncomingHealing : number,
-        TacticalMastery : number,
-        PhysicalMastery : number,
-    },
+export type RawStats = {
+    Health : number,
+    HealthBubble : number,
+    Mana : number,
+    CriticalRating : number,
+    PhysicalMitigation : number,
+    TacticalMitigation : number,
+    CriticalDefense : number,
+    ManaRegen : number,
+    HealthRegen : number,
+    OutgoingHealing : number,
+    IncomingHealing : number,
+    TacticalMastery : number,
+    PhysicalMastery : number,
+}
 
-    PrimaryStats : {
-        Strength : number,
-        Dexterity : number,
-        Intelligence : number,
-        Vitality : number,
-        Focus : number,
-    },
+export type PrimaryStats = {
+    Strength : number,
+    Dexterity : number,
+    Intelligence : number,
+    Vitality : number,
+    Focus : number,
+}
+    
+export type PlayerStats = {
+    RawStats : RawStats,
+    PrimaryStats : PrimaryStats,
 }
 
 return {}

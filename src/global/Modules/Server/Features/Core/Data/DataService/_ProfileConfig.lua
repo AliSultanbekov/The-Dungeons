@@ -26,7 +26,15 @@ local ProfileConfig = {
         Equipped = {
             Toolbar = {},
             Equipment = {},
-        }
+        },
+
+        PrimaryStats = {
+            Strength = 0,
+            Dexterity = 0,
+            Intelligence = 0,
+            Vitality = 0,
+            Focus = 0,
+        },
     },
     Leaderstats = {"Coins"}
 } :: { Template: ProfileTemplate, Leaderstats: { string }}

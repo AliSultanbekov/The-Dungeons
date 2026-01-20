@@ -17,17 +17,18 @@ local require = require(script.Parent.Parent.Parent.loader).load(script)
 -- [ Variables ] --
 
 -- [ Module Table ] --
-local TestSystem = {}
+local BlockSystem = {}
 
 -- [ Types ] --
 type ModuleData = {}
 
-export type Module = typeof(TestSystem) & ModuleData
+export type Module = typeof(BlockSystem) & ModuleData
 
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function TestSystem.Update(self: Module, context: Types.SystemContext)
+function BlockSystem.Update(self: Module, context: Types.SystemContext)
+
 end
 
-return TestSystem :: Module
+return BlockSystem :: Module

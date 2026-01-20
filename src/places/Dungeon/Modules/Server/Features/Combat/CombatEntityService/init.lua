@@ -49,6 +49,30 @@ export type Module = typeof(CombatEntityService) & ModuleData
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
+function CombatEntityService.GetEntityFromCharacter(self: Module, character: Model): Jecs.Entity
+    local Entity = character:GetAttribute("EntityID") :: Jecs.Entity
+
+    if not Entity then
+        error("[CombatEntityService] Entity not found on character")
+    end
+
+    return Entity
+end
+
+function CombatEntityService.GetEntityFromPlayer(self: Module, player: Player): Jecs.Entity
+    local Character = player.Character
+
+    if not Character then
+        error("[CombatEntityService] Player does not have a character")
+    end
+
+    return self:GetEntityFromCharacter(Character)
+end
+
+function CombatEntityService.StartBlocking(self: Module)
+    
+end
+
 function CombatEntityService.Update(self: Module, dt: number)
     for systemName, systemModule in self._Systems do
         systemModule:Update({
@@ -72,6 +96,8 @@ function CombatEntityService.OnPlayerCharacterAdded(self: Module, maid: Maid.Mai
     local Components = self._Components
 
     local Entity = self._World:entity() 
+
+    character:SetAttribute("Entity", Entity)
     
     World:add(Entity, Tags.Player)
     World:set(Entity, Components.Health, 100)
@@ -90,8 +116,6 @@ function CombatEntityService.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._ServiceBag = assert(serviceBag, "No serviceBag")
     self._PlayerCharacterManager = self._ServiceBag:GetService(require("PlayerCharacterManager"))
 
-    self._World = Jecs.World.new()
-
     self._Tags = {
         Player = Jecs.tag(),
         NPC = Jecs.tag(),
@@ -109,6 +133,7 @@ function CombatEntityService.Init(self: Module, serviceBag: ServiceBag.ServiceBa
         Dodging = self._World:component(),
         Stunned = self._World:component(),
     }
+    self._World = Jecs.World.new()
 
     -- TODO: automate
     self._Systems = {

@@ -40,7 +40,9 @@ export type Components = {
     Positon: Jecs.Id<Vector3>,
 
     -- Combat states
-    Blocking: Jecs.Id<any>,
+    Blocking: Jecs.Id<{
+        StartTime: number
+    }>,
     Parrying: Jecs.Id<any>,
     Dodging: Jecs.Id<any>,
     Stunned: Jecs.Id<any>,

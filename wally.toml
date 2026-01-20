@@ -1,0 +1,9 @@
+[package]
+name = "theha/dungeon"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+
+[dependencies]
+Jabby = "alicesaidhi/jabby@0.2.0"
+Jecs = "ukendio/jecs@0.9.0-rc.10"

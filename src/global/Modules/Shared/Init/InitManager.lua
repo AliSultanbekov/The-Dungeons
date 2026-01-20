@@ -3,6 +3,8 @@
 ]=]
 
 -- [ Roblox Services ] --
+local RunService = game:GetService("RunService")
+local ContextActionService = game:GetService("ContextActionService")
 
 -- [ Imports ] --
 
@@ -13,6 +15,7 @@ local require = require(script.Parent.loader).load(script)
 local ServiceBag = require("ServiceBag")
 local PlaceConstants = require("PlaceConstants")
 local InitUtil = require("InitUtil")
+local Jabby = require("Jabby")
 
 -- [ Constants ] --
 
@@ -48,7 +51,16 @@ function InitControllerClient.Init(self: Module, serviceBag: ServiceBag.ServiceB
 end
 
 function InitControllerClient.Start(self: Module)
-
+    if RunService:IsClient() then
+        local client = Jabby.obtain_client()
+    
+        local function create_widget(_, state: Enum.UserInputState)
+            if state ~= Enum.UserInputState.Begin then return end
+            client.spawn_app((client.apps.home) :: any, nil)
+        end
+        
+        ContextActionService:BindAction("Open Jabby Home", create_widget, false, Enum.KeyCode.F4)
+    end
 end
 
 return InitControllerClient :: Module

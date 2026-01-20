@@ -15,11 +15,15 @@ local _require = require(script.Parent.loader).load(script)
 
 -- [ Module Table ] --
 local CombatConfig = {
+    -- Combat Hit Validation
     PingAdditionalDelay = 0.05,
     BaseAngle = math.rad(90),
     AnglePer100ms = math.rad(30),
     DistanceTolerance = 4,
     EndGracePeriod = 0.12,
+
+    
+
 }
 
 -- [ Types ] --

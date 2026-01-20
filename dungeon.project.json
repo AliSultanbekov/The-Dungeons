@@ -13,8 +13,11 @@
           "Global": { "$path": "src/global/Modules" },
           "Dungeon": { "$path": "src/places/Dungeon/Modules" }
         },
-        "Packages": {
+        "node_modules": {
           "$path": "node_modules"
+        },
+        "Packages": {
+          "$path": "Packages"
         }
       },
       "Scripts": {

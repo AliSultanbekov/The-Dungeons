@@ -1,6 +1,6 @@
 {
 	"Nevermore Service Template": {
-	"prefix": "Service",
+	"prefix": "rbx-service",
 	"description": "Roblox Service template with ServiceBag (Nevermore-style)",
 		"body": [
 			"--[=[",
@@ -47,8 +47,9 @@
 			"return ${1:ServiceName} :: Module"
 		]
 	},
+
 	"Roblox Service (Networked)": {
-		"prefix": "Network",
+		"prefix": "rbx-network",
 		"description": "Roblox Service with ServiceBag and NetworkManager",
 		"body": [
 			"--[=[",
@@ -107,8 +108,9 @@
 			"return ${1:ServiceName} :: Module"
 		]
 	},
+
 	"Roblox Utility Module": {
-		"prefix": "Util",
+		"prefix": "rbx-util",
 		"description": "Roblox Utility module (stateless helper)",
 		"body": [
 			"--[=[",
@@ -139,6 +141,172 @@
 			"return ${1:UtilName} :: Module"
 		]
 	},
+
+    "Component Module": {
+		"prefix": "rbx-component",
+		"body": [
+			"--[=[",
+			"    @class ${1:Name}",
+			"]=]",
+			"",
+			"-- [ Roblox Services ] --",
+			"",
+			"-- [ Imports ] --",
+			"",
+			"-- [ Require ] --",
+			"local require = require(script.Parent.loader).load(script)",
+			"",
+			"-- [ Imports ] --",
+			"local ServiceBag = require(\"ServiceBag\")",
+			"local Binder = require(\"Binder\")",
+			"local AttributeValue = require(\"AttributeValue\")",
+			"",
+			"-- [ Constants ] --",
+			"",
+			"-- [ Variables ] --",
+			"",
+			"-- [ Module Table ] --",
+			"local ${1:Name} = {}",
+			"${1:Name}.__index = ${1:Name}",
+			"${1:Name}.Tag = \"${2:Tag}\"",
+			"",
+			"-- [ Types ] --",
+			"export type ObjectData = {",
+			"    _ServiceBag: ServiceBag.ServiceBag,",
+			"",
+			"    _Attributes: {",
+			"        ",
+			"    }",
+			"}",
+			"export type Object = typeof(setmetatable({} :: ObjectData, ${1:Name}))",
+			"export type Module = typeof(${1:Name})",
+			"",
+			"-- [ Private Functions ] --",
+			"",
+			"-- [ Public Functions ] --",
+			"function ${1:Name}.new(instance: Instance, serviceBag: ServiceBag.ServiceBag): Object",
+			"    local self = setmetatable({} :: any, ${1:Name}) :: Object",
+			"",
+			"    self._ServiceBag = serviceBag",
+			"",
+			"    self._Attributes = {",
+			"        ",
+			"    }",
+			"",
+			"    return self",
+			"end",
+			"",
+			"function ${1:Name}.Binded(self: Object)",
+			"    ",
+			"end",
+			"",
+			"function ${1:Name}.UnBinded(self: Object)",
+			"    ",
+			"end",
+			"",
+			"function ${1:Name}.Start(binder: Binder.Binder<Object>, serviceBag: ServiceBag.ServiceBag)",
+			"    ",
+			"end",
+			"",
+			"return ${1:Name} :: Module"
+		],
+	},
+
+    "Auto Class Module": {
+		"prefix": "rbx-auto-class",
+		"description": "Roblox class-style module with one base name placeholder",
+        "body": [
+            "--[=[",
+            "    @class ${1:Name}",
+            "]=]",
+            "",
+            "-- [ Roblox Services ] --",
+            "",
+            "-- [ Imports ] --",
+            "",
+            "-- [ Require ] --",
+            "local require = require(script.Parent.loader).load(script)",
+            "",
+            "-- [ Imports ] --",
+            "",
+            "-- [ Constants ] --",
+            "",
+            "-- [ Variables ] --",
+            "",
+            "-- [ Module Table ] --",
+            "local ${1:Name} = {}",
+            "${1:Name}.__index = ${1:Name}",
+            "",
+            "-- [ Types ] --",
+            "export type ObjectData = {",
+            "    ",
+            "}",
+            "export type Object = typeof(setmetatable({} :: ObjectData, ${1:Name}))",
+            "export type Module = typeof(${1:Name})",
+            "",
+            "-- [ Private Functions ] --",
+            "",
+            "-- [ Public Functions ] --",
+            "function ${1:Name}.new(): Object",
+            "    local self = setmetatable({} :: any, ${1:Name}) :: Object",
+            "",
+            "    return self",
+            "end",
+            "",
+            "return ${1:Name} :: Module"
+        ],
+	},
+
+    "Manual Class Module": {
+		"prefix": "rbx-manual-class",
+		"description": "Roblox class-style module with one base name placeholder",
+		"body": [
+			"--[=[",
+			"    @class ${1:Name}",
+			"]=]",
+			"",
+			"-- [ Roblox Services ] --",
+			"",
+			"-- [ Imports ] --",
+			"",
+			"-- [ Require ] --",
+			"local require = require(script.Parent.loader).load(script)",
+			"",
+			"-- [ Imports ] -- ",
+			"",
+			"-- [ Constants ] --",
+			"",
+			"-- [ Variables ] --",
+			"",
+			"-- [ Module Table ] --",
+			"local ${1:Name} = {}",
+			"${1:Name}.__index = ${1:Name}",
+			"",
+			"-- [ Types ] --",
+			"export type ObjectData = {",
+			"",
+			"}",
+			"export type Object = ObjectData & {",
+			"    ",
+			"}",
+			"export type Module = {",
+			"    __index: Module,",
+			"    new: () -> Object",
+			"}",
+			"",
+			"-- [ Private Functions ] --",
+			"",
+			"-- [ Public Functions ] --",
+			"function ${1:Name}.new(): Object",
+			"    local self = setmetatable({} :: any, ${1:Name}) :: Object",
+			"",
+			"    return self",
+			"end",
+			"",
+			"return ${1:Name} :: Module"
+		]
+	},
+
 	"Require Template": {
 		"prefix": "Require",
 		"description": "quick require",
@@ -146,6 +314,7 @@
 			"require(\"${1:ServiceName}\")"
 		]
 	},
+
 	"Type Require Template": {
 		"prefix": "Type Require",
 		"description": "quick require",
@@ -154,4 +323,3 @@
 		]
 	}
 }
-  

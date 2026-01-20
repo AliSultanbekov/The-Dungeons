@@ -80,7 +80,7 @@ function CombatServiceServer.Start(self: Module)
         local Params: {[any]: any} = params or {}
 
         Params.Mode = "FromClient"
-        Params.OnUse = function(params)
+        Params.OnUsed = function(params)
             self._CombatNetworkServer:AbilityUsed(params)
         end
 
@@ -99,7 +99,7 @@ function CombatServiceServer.Start(self: Module)
         local Params: {[any]: any} = params or {}
 
         Params.Mode = "FromClient"
-        Params.OnUse = function(params)
+        Params.OnEnded = function(params)
             self._CombatNetworkServer:AbilityEnded(params)
         end
 
@@ -118,7 +118,7 @@ function CombatServiceServer.Start(self: Module)
         local Params: {[any]: any} = params or {}
 
         Params.Mode = "FromClient"
-        Params.OnUse = function(params)
+        Params.OnHit = function(params)
             self._CombatNetworkServer:AbilityHit(params)
         end
 

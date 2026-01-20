@@ -63,20 +63,10 @@ export type ObjectData = {
     _ActiveUntil: number,
     _FirstHitTime: number?,
     _Combo: number,
-}
-export type ModuleData = {
     AbilityName: string,
 }
-export type Object = ModuleData & ObjectData & AbilityObject & {
-    _IncrementCombo: (self: Object) -> (),
-    _ResetCombo: (self: Object) -> (),
-    _SetupCombo: (self: Object, cb: (comboNumber: number) -> ()) -> (),
-    _IsActive: (self: Object) -> boolean,
-}
-export type Module = ModuleData & {
-    __index: Module,
-    new: (params: New_Params) -> Object
-}
+export type Object = typeof(setmetatable({} :: ObjectData, DefaultBasicAttack))
+export type Module = typeof(DefaultBasicAttack)
 
 -- [ Private Functions ] --
 function DefaultBasicAttack._IncrementCombo(self: Object)

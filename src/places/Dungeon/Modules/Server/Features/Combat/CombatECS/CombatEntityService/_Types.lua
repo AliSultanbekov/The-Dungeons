@@ -6,7 +6,7 @@
 local require = require(script.Parent.Parent.loader).load(script)
 
 -- [ Imports ] --
-local Jecs = require("jecs")
+local Jecs = require("Jecs")
 
 -- [ Constants ] --
 
@@ -44,7 +44,7 @@ export type Components = {
     -- Permanent stats
     Health: Jecs.Id<HealthComponent>,
     Ether: Jecs.Id<EtherComponent>,
-    Positon: Jecs.Id<PositionComponent>,
+    Position: Jecs.Id<PositionComponent>,
 
     -- Combat states
     Blocking: Jecs.Id<BlockingComponent>,

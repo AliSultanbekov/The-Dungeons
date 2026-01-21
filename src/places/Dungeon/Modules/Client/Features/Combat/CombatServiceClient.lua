@@ -103,10 +103,25 @@ function CombatController.Start(self: Module)
         )
     end)
 
+    self._CombatNetworkClient.RemoteEvents.AbilityUsed:Connect(function(params: { [any]: any }?)
+        if not params then
+            return
+        end
+
+        params.Mode = "FromServer"
+
+        local Attacker = params.Attacker
+        local CombatObject = self._CombatObjects[Attacker]
+
+        CombatObject:UseAbility("DefaultBasicAttack", params)
+    end)
+
     self._CombatNetworkClient.RemoteEvents.AbilityHit:Connect(function(params: { [any]: any }?)
         if not params then
             return
         end
+
+        params.Mode = "FromServer"
 
         local Attacker = params.Attacker
         local CombatObject = self._CombatObjects[Attacker]

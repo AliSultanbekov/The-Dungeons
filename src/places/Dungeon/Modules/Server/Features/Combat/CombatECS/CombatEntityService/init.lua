@@ -91,13 +91,12 @@ function CombatEntityService.OnPlayerCharacterAdded(self: Module, maid: Maid.Mai
     World:add(Entity, Tags.Alive)
     World:add(Entity, Tags.Player)
     World:set(Entity, Components.Health, 100)
-    World:set(Entity, Components.Positon, Vector3.new(1,1,1))
+    World:set(Entity, Components.Ether, 100)
+    World:set(Entity, Components.Position, Vector3.new(1,1,1))
     World:set(Entity, Components.PlayerData, {
         Player = Player,
         Character = character
     })
-
-    print(World)
 end
 
 function CombatEntityService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
@@ -108,25 +107,38 @@ function CombatEntityService.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._ServiceBag = assert(serviceBag, "No serviceBag")
     self._PlayerCharacterManager = self._ServiceBag:GetService(require("PlayerCharacterManager"))
 
-    self._World = Jecs.World.new()
     self._Tags = {
         Alive = Jecs.tag(),
 
         Player = Jecs.tag(),
         NPC = Jecs.tag(),
     }
+    self._World = Jecs.World.new()
     self._Components = {
         PlayerData = self._World:component(),
         NPCData = self._World:component(),
 
         Health = self._World:component(),
         Ether = self._World:component(),
-        Positon = self._World:component(),
+        Position = self._World:component(),
 
         Blocking = self._World:component(),
         Dodging = self._World:component(),
         Stunned = self._World:component(),
     }
+
+    self._World:set(self._Tags.Alive, Jecs.Name, "Alive")
+    self._World:set(self._Tags.Player, Jecs.Name, "Player")
+    self._World:set(self._Tags.NPC, Jecs.Name, "NPC")
+
+    self._World:set(self._Components.Health, Jecs.Name, "Health")
+    self._World:set(self._Components.PlayerData, Jecs.Name, "PlayerData")
+    self._World:set(self._Components.NPCData, Jecs.Name, "NPCData")
+    self._World:set(self._Components.Position, Jecs.Name, "Position")
+    self._World:set(self._Components.Ether, Jecs.Name, "Ether")
+    self._World:set(self._Components.Blocking, Jecs.Name, "Blocking")
+    self._World:set(self._Components.Dodging, Jecs.Name, "Dodging")
+    self._World:set(self._Components.Stunned, Jecs.Name, "Stunned")
 
     -- TODO: automate
     self._Systems = {
@@ -144,7 +156,7 @@ function CombatEntityService.Start(self: Module)
 
     Jabby.register({
         applet = Jabby.applets.world,
-        name = "world",
+        name = "Combat",
         configuration = {
             world = self._World
         }

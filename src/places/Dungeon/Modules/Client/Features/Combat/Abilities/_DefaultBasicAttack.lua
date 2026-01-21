@@ -48,6 +48,7 @@ type Use_Params = {
     OnHit: (params: {[any]: any}?) -> (),
     OnUse: (params: {[any]: any}?) -> (),
     OnEnd: (params: {[any]: any}?) -> (),
+    Mode: "FromServer" | "FromClient",
 }
 type Hit_Params = {
     Attacker: Model,
@@ -117,6 +118,7 @@ function DefaultBasicAttack.new(params: New_Params): Object
     
     return self
 end
+
 function DefaultBasicAttack.Use(self: Object, params: Use_Params)
     local Config = self._Config
     local ComboData = Config.Combo
@@ -140,62 +142,64 @@ function DefaultBasicAttack.Use(self: Object, params: Use_Params)
         return
     end
 
-    if self:_IsActive() then
-        return
-    end
-
-    self._ActiveUntil = math.huge
-
-    self:_SetupCombo(function(comboNumber: number)
-        local CurrentAbilityData = ComboData[comboNumber]
-
-        params.OnUse()
-
-        self._ActiveUntil = os.clock() + CurrentAbilityData.Time
-
-        task.spawn(function()
-            local AnimationID = CurrentAbilityData.Animation
-            local AnimationInstance = Instance.new("Animation")
-            AnimationInstance.AnimationId = AnimationID
-
-            local Track = Animator:LoadAnimation(AnimationInstance)
-
-            Track:GetMarkerReachedSignal("Hit"):Connect(function()
-                HitboxClass.new(
-                    {
-                        HitboxType = "Box",
-                        GetCFrame = function()
-                            local BaseCF = Attacker:GetPivot()
-                            local LookVec = BaseCF.LookVector
-                            local FlatLooKVec = Vector3.new(LookVec.X, 0, LookVec.Z)
-
-                            if FlatLooKVec.Magnitude < 1e-6 then
-                                return CFrame.identity
+    if params.Mode == "FromClient" then
+        if self:_IsActive() then
+            return
+        end
+    
+        self._ActiveUntil = math.huge
+    
+        self:_SetupCombo(function(comboNumber: number)
+            local CurrentAbilityData = ComboData[comboNumber]
+    
+            params.OnUse()
+    
+            self._ActiveUntil = os.clock() + CurrentAbilityData.Time
+    
+            task.spawn(function()
+                local AnimationID = CurrentAbilityData.Animation
+                local AnimationInstance = Instance.new("Animation")
+                AnimationInstance.AnimationId = AnimationID
+    
+                local Track = Animator:LoadAnimation(AnimationInstance)
+    
+                Track:GetMarkerReachedSignal("Hit"):Connect(function()
+                    HitboxClass.new(
+                        {
+                            HitboxType = "Box",
+                            GetCFrame = function()
+                                local BaseCF = Attacker:GetPivot()
+                                local LookVec = BaseCF.LookVector
+                                local FlatLooKVec = Vector3.new(LookVec.X, 0, LookVec.Z)
+    
+                                if FlatLooKVec.Magnitude < 1e-6 then
+                                    return CFrame.identity
+                                end
+    
+                                return CFrame.lookAt(BaseCF.Position, BaseCF.Position + FlatLooKVec) * CFrame.new(0, 0, -(HRP.Size.Z/2 + CurrentAbilityData.Range.Z/2))
+                            end,
+                            Size = CurrentAbilityData.Range,
+                            Length = 10,
+                            Ignore = { params.Attacker },
+                            Visualise = true,
+                            Cb = function(hitCharacter: Model)
+                                params.OnHit({ Attacked = hitCharacter, AttackerCFrame = Attacker:GetPivot() })
+                                
+                                self:Hit({
+                                    Attacker = params.Attacker,
+                                    Attacked = hitCharacter
+                                })
                             end
-
-                            return CFrame.lookAt(BaseCF.Position, BaseCF.Position + FlatLooKVec) * CFrame.new(0, 0, -(HRP.Size.Z/2 + CurrentAbilityData.Range.Z/2))
-                        end,
-                        Size = CurrentAbilityData.Range,
-                        Length = 10,
-                        Ignore = { params.Attacker },
-                        Visualise = true,
-                        Cb = function(hitCharacter: Model)
-                            params.OnHit({ Attacked = hitCharacter, AttackerCFrame = Attacker:GetPivot() })
-                            
-                            self:Hit({
-                                Attacker = params.Attacker,
-                                Attacked = hitCharacter
-                            })
-                        end
-                    }
-                ):Trigger()
-
-                params.OnEnd()
+                        }
+                    ):Trigger()
+    
+                    params.OnEnd()
+                end)
+    
+                Track:Play()
             end)
-
-            Track:Play()
         end)
-    end)
+    end
 end
 
 function DefaultBasicAttack.End(self: Object, params: Use_Params)

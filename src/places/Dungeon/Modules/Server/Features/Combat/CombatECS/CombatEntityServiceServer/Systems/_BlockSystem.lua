@@ -11,6 +11,7 @@ local Types = require("../_Types")
 local require = require(script.Parent.Parent.Parent.loader).load(script)
 
 -- [ Imports ] --
+local CombatTypes = require("CombatTypes")
 
 -- [ Constants ] --
 
@@ -32,7 +33,7 @@ function BlockSystem.Update(self: Module, context: Types.SystemContext)
     local Tags = context.Tags
     local Components = context.Components
     for entity in World:query(Tags.Alive, Components.Blocking, Components.Ether) do
-        local Ether = World:get(entity, Components.Ether) :: Types.EtherComponent
+        local Ether = World:get(entity, Components.Ether) :: CombatTypes.EtherComponent
 
         if Ether <= 0 then
             World:remove(entity, Components.Blocking)

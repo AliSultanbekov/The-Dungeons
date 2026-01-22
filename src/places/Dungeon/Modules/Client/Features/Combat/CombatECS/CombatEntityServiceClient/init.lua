@@ -8,7 +8,6 @@ local RunService = game:GetService("RunService")
 
 -- [ Imports ] --
 local Types = require("@self/_Types")
-local BlockSystem = require("@self/Systems/_BlockSystem")
 
 -- [ Require ] --
 local _rbxrequire = require
@@ -92,7 +91,6 @@ function CombatEntityService.OnPlayerCharacterAdded(self: Module, maid: Maid.Mai
     World:add(Entity, Tags.Player)
     World:set(Entity, Components.Health, 100)
     World:set(Entity, Components.Ether, 100)
-    World:set(Entity, Components.Position, Vector3.new(1,1,1))
     World:set(Entity, Components.PlayerData, {
         Player = Player,
         Character = character
@@ -109,7 +107,6 @@ function CombatEntityService.Init(self: Module, serviceBag: ServiceBag.ServiceBa
 
     self._Tags = {
         Alive = Jecs.tag(),
-
         Player = Jecs.tag(),
         NPC = Jecs.tag(),
     }
@@ -120,7 +117,6 @@ function CombatEntityService.Init(self: Module, serviceBag: ServiceBag.ServiceBa
 
         Health = self._World:component(),
         Ether = self._World:component(),
-        Position = self._World:component(),
 
         Blocking = self._World:component(),
         Dodging = self._World:component(),
@@ -134,7 +130,6 @@ function CombatEntityService.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._World:set(self._Components.Health, Jecs.Name, "Health")
     self._World:set(self._Components.PlayerData, Jecs.Name, "PlayerData")
     self._World:set(self._Components.NPCData, Jecs.Name, "NPCData")
-    self._World:set(self._Components.Position, Jecs.Name, "Position")
     self._World:set(self._Components.Ether, Jecs.Name, "Ether")
     self._World:set(self._Components.Blocking, Jecs.Name, "Blocking")
     self._World:set(self._Components.Dodging, Jecs.Name, "Dodging")
@@ -142,7 +137,7 @@ function CombatEntityService.Init(self: Module, serviceBag: ServiceBag.ServiceBa
 
     -- TODO: automate
     self._Systems = {
-        BlockSystem = BlockSystem
+        
     }
 
     -- TODO: if ordered is needed

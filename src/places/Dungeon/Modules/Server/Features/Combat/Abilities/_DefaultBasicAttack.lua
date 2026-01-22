@@ -43,29 +43,35 @@ type Config = {
     }
 }
 type WeaponItemData = ItemTypes.WeaponItemData
-type Use_Params = {
-    OnUse: (params: {[any]: any}?) -> (),
+type Use_Context = {
+    Attacker: Model,
+    OnAbilityStateUpdated: (context: CombatTypes.Context) -> (),
+    OnUse: (context: CombatTypes.Context) -> (),
 }
-type End_Params = {
-    OnEnd: (params: {[any]: any}?) -> (),
+type End_Context = {
+    Attacker: Model,
+    OnAbilityStateUpdated: (context: CombatTypes.Context) -> (),
+    OnEnd: (context: CombatTypes.Context) -> (),
 }
-type Hit_Params = {
+type Hit_Context = {
     Mode: "FromServer",
     Attacker: Model,
     Attacked: Model,
-    OnHit: (params: {[any]: any}?) -> (),
+    OnAbilityStateUpdated: (context: CombatTypes.Context) -> (),
+    OnHit: (context: CombatTypes.Context) -> (),
 } | {
     Mode: "FromClient",
     Attacker: Model,
     Attacked: Model,
     AttackerCFrame: CFrame,
-    OnHit: (params: {[any]: any}?) -> (),
+    OnAbilityStateUpdated: (context: CombatTypes.Context) -> (),
+    OnHit: (context: CombatTypes.Context) -> (),
 }
-type New_Params = {
+type New_Context = {
     ItemData: WeaponItemData,
     PositionHistoryService: PositionHistoryService,
 }
-type AbilityObject = CombatTypes.ServerAbilityObject
+type AbilityObject = CombatTypes.AbilityObject
 export type ObjectData = {
     _WeaponData: WeaponItemData,
     _PositionHistoryService: PositionHistoryService,
@@ -117,23 +123,24 @@ function DefaultBasicAttack.IsActive(self: Object): boolean
 end
 
 -- [ Public Functions ] --
-function DefaultBasicAttack.new(params: New_Params): Object
+function DefaultBasicAttack.new(context: New_Context): Object
     local self = setmetatable({} :: any, DefaultBasicAttack) :: Object
 
-    self._PositionHistoryService = params.PositionHistoryService
+    self._PositionHistoryService = context.PositionHistoryService
 
-    self._WeaponData = params.ItemData
+    self._WeaponData = context.ItemData
     self._Config = WeaponConfig[self._WeaponData.Name].BasicAttack
 
     self._ActiveUntil = 0
-    self._HasEnded = true
     self._FirstHitTime = nil
     self._Combo = 0
+
+    self._HasEnded = true
 
     return self
 end
 
-function DefaultBasicAttack.Use(self: Object, params: Use_Params)
+function DefaultBasicAttack.Use(self: Object, context: Use_Context)
     local Config = self._Config
     local ComboData = Config.Combo
 
@@ -151,9 +158,15 @@ function DefaultBasicAttack.Use(self: Object, params: Use_Params)
         local FALLBACK_BUFFER = 1
         self._ActiveUntil = os.clock() + CurrentAbilityData.Time + FALLBACK_BUFFER
     end)
+
+    context.OnAbilityStateUpdated({
+        Attacker = context.Attacker,
+        AbilityName = self.AbilityName,
+        State = self:GetState()
+    })
 end
 
-function DefaultBasicAttack.End(self: Object, params: End_Params)
+function DefaultBasicAttack.End(self: Object, context: End_Context)
     if not self:IsActive() then
         print("[End] REJECTED - expired", string.format("%.2f", os.clock() - self._ActiveUntil), "s ago")
         return
@@ -161,9 +174,15 @@ function DefaultBasicAttack.End(self: Object, params: End_Params)
     
     self._HasEnded = true
     self._ActiveUntil = os.clock() + CombatConfig.EndGracePeriod
+
+    context.OnAbilityStateUpdated({
+        Attacker = context.Attacker,
+        AbilityName = self.AbilityName,
+        State = self:GetState()
+    })
 end
 
-function DefaultBasicAttack.Hit(self: Object, params: Hit_Params)
+function DefaultBasicAttack.Hit(self: Object, context: Hit_Context)
     if not self:IsActive() then
         warn("[Apply] REJECTED - ability is no longer active")
         return
@@ -173,11 +192,11 @@ function DefaultBasicAttack.Hit(self: Object, params: Hit_Params)
     local Combo = self._Combo
     local CurrentComboData = Config.Combo[Combo]
 
-    if params.Mode == "FromClient" then
+    if context.Mode == "FromClient" then
         if not CombatUtil:ValidateHit({
-            Attacker = params.Attacker,
-            Attacked = params.Attacked,
-            ClientAttackerCFrame = params.AttackerCFrame,
+            Attacker = context.Attacker,
+            Attacked = context.Attacked,
+            ClientAttackerCFrame = context.AttackerCFrame,
             PositionHistoryService = self._PositionHistoryService,
             HitboxSize = CurrentComboData.Range,
             Mode = "FromClient",
@@ -185,15 +204,21 @@ function DefaultBasicAttack.Hit(self: Object, params: Hit_Params)
             return false
         end
 
-        params.OnHit({
-            Attacker = params.Attacker,
-            Attacked = params.Attacked
+        context.OnHit({
+            Attacker = context.Attacker,
+            Attacked = context.Attacked
+        })
+
+        context.OnAbilityStateUpdated({
+            Attacker = context.Attacker,
+            AbilityName = self.AbilityName,
+            State = self:GetState()
         })
     else
         
     end
 
-    local Humanoid = params.Attacked:FindFirstChildOfClass("Humanoid")
+    local Humanoid = context.Attacked:FindFirstChildOfClass("Humanoid")
 
     if not Humanoid then
         return
@@ -204,6 +229,14 @@ function DefaultBasicAttack.Hit(self: Object, params: Hit_Params)
     end
 
     Humanoid.Health -= CurrentComboData.Damage
+end
+
+function DefaultBasicAttack.GetState(self: Object)
+    return {
+        Combo = self._Combo,
+        ActiveUntil = self._ActiveUntil,
+        FirstHitTime = self._FirstHitTime
+    }
 end
 
 return DefaultBasicAttack :: Module

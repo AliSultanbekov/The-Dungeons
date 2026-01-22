@@ -3,7 +3,6 @@
 ]=]
 
 -- [ Roblox Services ] --
-local Players = game:GetService("Players")
 
 -- [ Imports ] --
 
@@ -13,23 +12,26 @@ local require = require(script.Parent.loader).load(script)
 -- [ Imports ] --
 local ServiceBag = require("ServiceBag")
 local Signal = require("Signal")
+local CombatTypes = require("CombatTypes")
 
 -- [ Constants ] --
 
 -- [ Variables ] --
-local Player = Players.LocalPlayer
 
 -- [ Module Table ] --
 local CombatNetworkClient = {}
 
 -- [ Types ] --
+type Context = CombatTypes.Context
+
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
     _NetworkManager: typeof(require("NetworkManager")),
     RemoteEvents: {
-        AbilityUsed: Signal.Signal<{[any]: any}?>,
-        AbilityEnded: Signal.Signal<{[any]: any}?>,
-        AbilityHit: Signal.Signal<{[any]: any}?>,
+        AbilityUsed: Signal.Signal<CombatTypes.AbilityUsedRemotePacket>,
+        AbilityEnded: Signal.Signal<CombatTypes.AbilityEndedRemotePacket>,
+        AbilityHit: Signal.Signal<CombatTypes.AbilityHitRemotePacket>,
+        AbilityStateUpdated: Signal.Signal<CombatTypes.AbilityStateUpdatedRemotePacket>,
     }
 }
 
@@ -38,19 +40,19 @@ export type Module = typeof(CombatNetworkClient) & ModuleData
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function CombatNetworkClient.UseAbility(self: Module, params: {[any]: any}?)
+function CombatNetworkClient.UseAbility(self: Module, packet: CombatTypes.UseAbilityRemotePacket)
     local CombatChannel = self._NetworkManager:GetNetwork("Combat")
-    CombatChannel:FireServer("UseAbility", params)
+    CombatChannel:FireServer("UseAbility", packet)
 end
 
-function CombatNetworkClient.EndAbility(self: Module, params: {[any]: any}?)
+function CombatNetworkClient.EndAbility(self: Module, packet: CombatTypes.EndAbilityRemotePacket)
     local CombatChannel = self._NetworkManager:GetNetwork("Combat")
-    CombatChannel:FireServer("EndAbility", params)
+    CombatChannel:FireServer("EndAbility", packet)
 end
 
-function CombatNetworkClient.HitAbility(self: Module, params: {[any]: any}?)
+function CombatNetworkClient.HitAbility(self: Module, packet: CombatTypes.HitAbilityRemotePacket)
     local CombatChannel = self._NetworkManager:GetNetwork("Combat")
-    CombatChannel:FireServer("HitAbility", params)
+    CombatChannel:FireServer("HitAbility", packet)
 end
 
 function CombatNetworkClient.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
@@ -61,49 +63,30 @@ function CombatNetworkClient.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._ServiceBag = assert(serviceBag, "No serviceBag")
     self._NetworkManager = self._ServiceBag:GetService(require("NetworkManager"))
     self.RemoteEvents = {
-        AbilityUsed = Signal.new() :: any,
-        AbilityEnded = Signal.new() :: any,
-        AbilityHit = Signal.new() :: any
-    }
+        AbilityUsed = Signal.new(),
+        AbilityEnded = Signal.new(),
+        AbilityHit = Signal.new(),
+        AbilityStateUpdated = Signal.new()
+    } :: any
 end
 
 function CombatNetworkClient.Start(self: Module)
     local CombatChannel = self._NetworkManager:GetNetwork("Combat")
 
-    CombatChannel:Connect("AbilityUsed", function(params: {[any]: any}?)
-        if not params then
-            return
-        end
-
-        if params.Attacker == Player.Character then
-            return
-        end
-
-        self.RemoteEvents.AbilityUsed:Fire(params)
+    CombatChannel:Connect("AbilityUsed", function(packet: CombatTypes.AbilityUsedRemotePacket)
+        self.RemoteEvents.AbilityUsed:Fire(packet)
     end)
 
-    CombatChannel:Connect("AbilityEnded", function(params: {[any]: any}?)
-        if not params then
-            return
-        end
-
-        if params.Attacker == Player.Character then
-            return
-        end
-
-        self.RemoteEvents.AbilityEnded:Fire(params)
+    CombatChannel:Connect("AbilityEnded", function(packet: CombatTypes.AbilityEndedRemotePacket)
+        self.RemoteEvents.AbilityEnded:Fire(packet)
     end)
 
-    CombatChannel:Connect("AbilityHit", function(params: {[any]: any}?)
-        if not params then
-            return
-        end
+    CombatChannel:Connect("AbilityHit", function(packet: CombatTypes.AbilityHitRemotePacket)
+        self.RemoteEvents.AbilityHit:Fire(packet)
+    end)
 
-        if params.Attacker == Player.Character then
-            return
-        end
-        
-        self.RemoteEvents.AbilityHit:Fire(params)
+    CombatChannel:Connect("AbilityStateUpdated", function(packet: CombatTypes.AbilityStateUpdatedRemotePacket)
+        self.RemoteEvents.AbilityStateUpdated:Fire(packet)
     end)
 end
 

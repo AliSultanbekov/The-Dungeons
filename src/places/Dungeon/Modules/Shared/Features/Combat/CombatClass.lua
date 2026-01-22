@@ -22,8 +22,9 @@ local CombatClass = {}
 CombatClass.__index = CombatClass
 
 -- [ Types ] --
-type AbilityObject = CombatTypes.ClientAbilityObject
-type AbilityModule = CombatTypes.ClientAbilityModule
+type AbilityObject = CombatTypes.AbilityObject
+type AbilityModule = CombatTypes.AbilityModule
+type Context = CombatTypes.Context
 
 export type ObjectData = {
     _Character: Model,
@@ -32,17 +33,8 @@ export type ObjectData = {
         [string]: AbilityObject
     }
 }
-export type Object = ObjectData & {
-    UseAbility: (self: Object, abilityName: string, params: {[any]: any}?) -> (),
-    EndAbility: (self: Object, abilityName: string, params: {[any]: any}?) -> (),
-    HitAbility: (self: Object, abilityName: string, params: {[any]: any}?) -> (),
-    AddAbility: (self: Object, abilityName: string, params: {[any]: any}?) -> (),
-    RemoveAbility: (self: Object, abilityName: string, params: {[any]: any}?) -> (),
-}
-export type Module = {
-    __index: Module,
-    new: (character: Model, abilityManager: AbilityManager.Object) -> Object
-}
+export type Object = typeof(setmetatable({} :: ObjectData, CombatClass))
+export type Module = typeof(CombatClass)
 
 -- [ Private Functions ] --
 
@@ -57,41 +49,43 @@ function CombatClass.new(character: Model, abilityManager: AbilityManager.Object
     return self
 end
 
-function CombatClass.UseAbility(self: Object, abilityName: string, params: {[any]: any}?)
-    local Params: {[any]: any} = params or {}
-    
-    Params.Attacker = self._Character
-
-    self._Abilities[abilityName]:Use(Params)
-end
-
-function CombatClass.EndAbility(self: Object, abilityName: string, params: {[any]: any}?)
-    local Params: {[any]: any} = params or {}
-    
-    Params.Attacker = self._Character
-
-    self._Abilities[abilityName]:End(Params)
-end
-
-function CombatClass.HitAbility(self: Object, abilityName: string, params: {[any]: any}?)
-    local Params: {[any]: any} = params or {}
-
-    Params.Attacker = self._Character
-
-    self._Abilities[abilityName]:Hit(Params)
-end
-
-function CombatClass.AddAbility(self: Object, abilityName: string, params: {[any]: any}?)
-    local Params: {[any]: any} = params or {}
+function CombatClass.AddAbility(self: Object, abilityName: string, context: Context?)
     local AbilityModule: AbilityModule = self._AbilityManager:Get(abilityName)
-    local AbiltyObject = AbilityModule.new(Params)
+    local AbiltyObject = AbilityModule.new(context)
 
     self._Abilities[abilityName] = AbiltyObject
 end
 
-function CombatClass.RemoveAbility(self: Object, abilityName: string, params: {[any]: any}?)
-    local _Params: {[any]: any} = params or {}
+function CombatClass.RemoveAbility(self: Object, abilityName: string)
     self._Abilities[abilityName] = nil
+end
+
+function CombatClass.UseAbility(self: Object, abilityName: string, context: Context)    
+    context.Attacker = self._Character
+
+    self._Abilities[abilityName]:Use(context)
+end
+
+function CombatClass.EndAbility(self: Object, abilityName: string, context: Context)
+    context.Attacker = self._Character
+
+    self._Abilities[abilityName]:End(context)
+end
+
+function CombatClass.HitAbility(self: Object, abilityName: string, context: Context)
+    context.Attacker = self._Character
+
+    self._Abilities[abilityName]:Hit(context)
+end
+
+function CombatClass.UpdateAbilityState(self: Object, abilityName: string, context: Context)
+    context.Attacker = self._Character
+
+    self._Abilities[abilityName]:UpdateState(context)
+end
+
+function CombatClass.GetAbilityState(self: Object, abilityName: string): Context
+    return self._Abilities[abilityName]:GetState()
 end
 
 return CombatClass :: Module

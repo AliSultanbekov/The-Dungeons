@@ -11,7 +11,6 @@ local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 local ServiceBag = require("ServiceBag")
---local Jecs = require("Jecs")
 
 -- [ Constants ] --
 
@@ -23,7 +22,7 @@ local CombatDamageService = {}
 -- [ Types ] --
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
-    _CombatEntityService: typeof(require("CombatEntityService"))
+    _CombatEntityServiceServer: typeof(require("CombatEntityServiceServer"))
 }
 
 export type Module = typeof(CombatDamageService) & ModuleData
@@ -38,11 +37,11 @@ function CombatDamageService.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     end
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
-    self._CombatEntityService = self._ServiceBag:GetService(require("CombatEntityService"))
+    self._CombatEntityServiceServer = self._ServiceBag:GetService(require("CombatEntityServiceServer"))
 end
 
 function CombatDamageService.Start(self: Module)
-
+    
 end
 
 return CombatDamageService :: Module

@@ -23,7 +23,7 @@ local CombatStateService = {}
 -- [ Types ] --
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
-    _CombatEntityService: typeof(require("CombatEntityService"))
+    _CombatEntityServiceServer: typeof(require("CombatEntityServiceServer"))
 }
 
 export type Module = typeof(CombatStateService) & ModuleData
@@ -32,8 +32,8 @@ export type Module = typeof(CombatStateService) & ModuleData
 
 -- [ Public Functions ] --
 function CombatStateService.StartBlocking(self: Module, entity: Jecs.Entity)
-    local World = self._CombatEntityService:GetWorld()
-    local Components = self._CombatEntityService:GetComponents()
+    local World = self._CombatEntityServiceServer:GetWorld()
+    local Components = self._CombatEntityServiceServer:GetComponents()
 
     if World:has(entity, Components.Stunned) then
         return
@@ -60,7 +60,7 @@ function CombatStateService.Init(self: Module, serviceBag: ServiceBag.ServiceBag
     end
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
-    self._CombatEntityService = self._ServiceBag:GetService(require("CombatEntityService"))
+    self._CombatEntityServiceServer = self._ServiceBag:GetService(require("CombatEntityServiceServer"))
 end
 
 function CombatStateService.Start(self: Module)

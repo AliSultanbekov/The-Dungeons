@@ -31,6 +31,7 @@ type ModuleData = {
         AbilityUsed: Signal.Signal<CombatTypes.AbilityUsedRemotePacket>,
         AbilityEnded: Signal.Signal<CombatTypes.AbilityEndedRemotePacket>,
         AbilityHit: Signal.Signal<CombatTypes.AbilityHitRemotePacket>,
+        EntityStateChanged: Signal.Signal<CombatTypes.EntityStateUpdatedRemotePacket>,
         AbilityStateUpdated: Signal.Signal<CombatTypes.AbilityStateUpdatedRemotePacket>,
     }
 }
@@ -66,6 +67,7 @@ function CombatNetworkClient.Init(self: Module, serviceBag: ServiceBag.ServiceBa
         AbilityUsed = Signal.new(),
         AbilityEnded = Signal.new(),
         AbilityHit = Signal.new(),
+        EntityStateChanged = Signal.new(),
         AbilityStateUpdated = Signal.new()
     } :: any
 end
@@ -83,6 +85,10 @@ function CombatNetworkClient.Start(self: Module)
 
     CombatChannel:Connect("AbilityHit", function(packet: CombatTypes.AbilityHitRemotePacket)
         self.RemoteEvents.AbilityHit:Fire(packet)
+    end)
+
+    CombatChannel:Connect("EntityStateChanged", function(packet: CombatTypes.EntityStateUpdatedRemotePacket)  
+        self.RemoteEvents.EntityStateChanged:Fire(packet)
     end)
 
     CombatChannel:Connect("AbilityStateUpdated", function(packet: CombatTypes.AbilityStateUpdatedRemotePacket)

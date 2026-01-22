@@ -1,9 +1,10 @@
 -- [ Imports ] --
 
 -- [ Require ] --
-local _require = require(script.Parent.loader).load(script)
+local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
+local Jecs = require("Jecs")
 
 -- [ Types ] --
 export type Mode = "FromClient" | "FromServer"
@@ -47,12 +48,24 @@ export type AbilityHitRemotePacket = Context?
 export type AbilityStateUpdatedRemotePacket = Context?
 export type EntityStateUpdatedRemotePacket = {
     Action: "Added",
-    Data: any,
+    Data: {
+        Entity: Jecs.Entity,
+        Component: Jecs.Entity,
+        Value: any
+    },
 } | {
     Action: "Removed",
+    Data: {
+        Entity: Jecs.Entity,
+        Component: Jecs.Entity,
+    },
 } | {
     Action: "Updated",
-    Data: any
+    Data: {
+        Entity: Jecs.Entity,
+        Component: Jecs.Entity,
+        Value: any
+    },
 }
 
 return nil

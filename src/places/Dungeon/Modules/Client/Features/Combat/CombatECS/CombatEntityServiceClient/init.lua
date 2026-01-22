@@ -18,6 +18,7 @@ local ServiceBag = require("ServiceBag")
 local Jecs = require("Jecs")
 local Jabby = require("Jabby")
 local Maid = require("Maid")
+local GetEntityFromCharacter = require("GetEntityFromCharacter")
 
 -- [ Constants ] --
 
@@ -83,18 +84,12 @@ function CombatEntityService.OnPlayerCharacterAdded(self: Module, maid: Maid.Mai
     local Tags = self._Tags
     local Components = self._Components
 
-    local Entity = self._World:entity() 
-
-    character:SetAttribute("Entity", Entity)
+    local Entity = self._World:entity(GetEntityFromCharacter(character))
     
     World:add(Entity, Tags.Alive)
     World:add(Entity, Tags.Player)
     World:set(Entity, Components.Health, 100)
     World:set(Entity, Components.Ether, 100)
-    World:set(Entity, Components.PlayerData, {
-        Player = Player,
-        Character = character
-    })
 end
 
 function CombatEntityService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
@@ -109,12 +104,10 @@ function CombatEntityService.Init(self: Module, serviceBag: ServiceBag.ServiceBa
         Alive = Jecs.tag(),
         Player = Jecs.tag(),
         NPC = Jecs.tag(),
+        Replicated = Jecs.tag()
     }
     self._World = Jecs.World.new()
     self._Components = {
-        PlayerData = self._World:component(),
-        NPCData = self._World:component(),
-
         Health = self._World:component(),
         Ether = self._World:component(),
 
@@ -128,13 +121,17 @@ function CombatEntityService.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._World:set(self._Tags.NPC, Jecs.Name, "NPC")
 
     self._World:set(self._Components.Health, Jecs.Name, "Health")
-    self._World:set(self._Components.PlayerData, Jecs.Name, "PlayerData")
-    self._World:set(self._Components.NPCData, Jecs.Name, "NPCData")
     self._World:set(self._Components.Ether, Jecs.Name, "Ether")
     self._World:set(self._Components.Blocking, Jecs.Name, "Blocking")
     self._World:set(self._Components.Dodging, Jecs.Name, "Dodging")
     self._World:set(self._Components.Stunned, Jecs.Name, "Stunned")
 
+    self._World:add(self._Components.Health, self._Tags.Replicated)
+    self._World:add(self._Components.Ether, self._Tags.Replicated)
+    self._World:add(self._Components.Blocking, self._Tags.Replicated)
+    self._World:add(self._Components.Dodging, self._Tags.Replicated)
+    self._World:add(self._Components.Stunned, self._Tags.Replicated)
+    
     -- TODO: automate
     self._Systems = {
         

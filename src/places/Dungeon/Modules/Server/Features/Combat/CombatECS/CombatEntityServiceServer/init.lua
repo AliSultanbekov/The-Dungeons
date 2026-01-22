@@ -128,6 +128,7 @@ function CombatEntityService.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._World:set(self._Tags.Alive, Jecs.Name, "Alive")
     self._World:set(self._Tags.Player, Jecs.Name, "Player")
     self._World:set(self._Tags.NPC, Jecs.Name, "NPC")
+    self._World:set(self._Tags.Replicated, Jecs.Name, "Replicated")
 
     self._World:set(self._Components.Health, Jecs.Name, "Health")
     self._World:set(self._Components.PlayerData, Jecs.Name, "PlayerData")

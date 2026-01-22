@@ -24,9 +24,9 @@ export type SystemContext = {
 
 export type Tags = {
     Alive: Jecs.Entity,
-
     Player: Jecs.Entity,
-    NPC: Jecs.Entity
+    NPC: Jecs.Entity,
+    Replicated: Jecs.Entity,
 }
 
 export type PlayerDataComponent = {
@@ -41,10 +41,6 @@ export type DodgingComponent = any
 export type StunnedComponent = any
 
 export type Components = {
-    -- Identity
-    PlayerData: Jecs.Id<PlayerDataComponent>,
-    NPCData: Jecs.Id<NPCDataComponent>,
-
     -- Permanent stats
     Health: Jecs.Id<HealthComponent>,
     Ether: Jecs.Id<EtherComponent>,

@@ -1,5 +1,5 @@
 --[=[
-    @class CombatReplicationServiceServer
+    @class CombatEntityReplicationServiceServer
 ]=]
 
 -- [ Roblox Services ] --
@@ -17,7 +17,7 @@ local ServiceBag = require("ServiceBag")
 -- [ Variables ] --
 
 -- [ Module Table ] --
-local CombatReplicationServiceServer = {}
+local CombatEntityReplicationServiceServer = {}
 
 -- [ Types ] --
 type ModuleData = {
@@ -26,12 +26,12 @@ type ModuleData = {
     _CombatNetworkServer: typeof(require("CombatNetworkServer")),
 }
 
-export type Module = typeof(CombatReplicationServiceServer) & ModuleData
+export type Module = typeof(CombatEntityReplicationServiceServer) & ModuleData
 
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function CombatReplicationServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
+function CombatEntityReplicationServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     if self._ServiceBag ~= nil then
         error("Service already initialized")
     end
@@ -41,34 +41,38 @@ function CombatReplicationServiceServer.Init(self: Module, serviceBag: ServiceBa
     self._CombatNetworkServer = self._ServiceBag:GetService(require("CombatNetworkServer"))
 end
 
-function CombatReplicationServiceServer.Start(self: Module)
+function CombatEntityReplicationServiceServer.Start(self: Module)
     local World = self._CombatEntityServiceServer:GetWorld()
     local Tags = self._CombatEntityServiceServer:GetTags()
 
     for component in World:query(Tags.Replicated) do
-        World:added(component, function(e, id, value)
+        World:added(component, function(e, _, value)
             self._CombatNetworkServer:EntityStateUpdated({
                 Action = "Added",
                 Data = {
                     Entity = e,
-                    Component = id,
+                    Component = component,
                     Value = value
                 }
             })
         end)
 
-        World:removed(component, function(e, id)
+        World:removed(component, function(e, _)
             self._CombatNetworkServer:EntityStateUpdated({
                 Action = "Removed",
+                Data = {
+                    Entity = e,
+                    Component = component,
+                }
             })
         end)    
 
-        World:changed(component, function(e, id, value)
+        World:changed(component, function(e, _, value)
             self._CombatNetworkServer:EntityStateUpdated({
                 Action = "Updated",
                 Data = {
                     Entity = e,
-                    Component = id,
+                    Component = component,
                     Value = value
                 }
             })
@@ -76,4 +80,4 @@ function CombatReplicationServiceServer.Start(self: Module)
     end
 end
 
-return CombatReplicationServiceServer :: Module
+return CombatEntityReplicationServiceServer :: Module

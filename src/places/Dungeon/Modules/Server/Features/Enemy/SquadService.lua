@@ -19,6 +19,7 @@ local require = require(script.Parent.loader).load(script)
 local ServiceBag = require("ServiceBag")
 local AssetProvider = require("AssetProvider")
 local EnemyConfigs = require("EnemyConfigs")
+local Brio = require("Brio")
 
 -- [ Constants ] --
 local CONFIG = {
@@ -47,6 +48,7 @@ type Member = Types.Member
 type Config = Types.Config
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
+	_CombatEntityServiceServer: typeof(require("CombatEntityServiceServer")),
 
 	_Config: Config,
 	_Members: { Member },
@@ -84,6 +86,11 @@ function SquadService.InitializeSquad(self: Module)
 
 	-- Spawn Leader
 	local Leader = NPCGroupUtil:CreateMember(0, 0, true, IdCounter, self._Config, self._NPCTemplate, self._NPCFolder)
+	local BrioObject = Brio.new(Leader.Model)
+	local Maid = BrioObject:ToMaid()
+
+	self._CombatEntityServiceServer:OnCharacterAdded(Maid, Leader.Model)
+
 	Leader.RootPart.CFrame = CFrame.new(self._Config.StartPosition)
 	table.insert(self._Members, Leader)
 	self._Leader = Leader
@@ -95,6 +102,9 @@ function SquadService.InitializeSquad(self: Module)
 	for y = 1, self._Config.SquadSizeY do
 		for x = 1, self._Config.SquadSizeX do
 			local Mem = NPCGroupUtil:CreateMember(x, y, false, IdCounter, self._Config, self._NPCTemplate, self._NPCFolder)
+			local BrioObject2 = Brio.new(Mem.Model)
+			local Maid2 = BrioObject2:ToMaid()
+			self._CombatEntityServiceServer:OnCharacterAdded(Maid2, Mem.Model)
 			local SpawnPos = self._Config.StartPosition + Vector3.new(Mem.Offset.X, 0, Mem.Offset.Z)
 			Mem.RootPart.CFrame = CFrame.new(SpawnPos)
 			table.insert(self._Members, Mem)
@@ -301,6 +311,7 @@ function SquadService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     end
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
+	self._CombatEntityServiceServer = self._ServiceBag:GetService(require("CombatEntityServiceServer"))
 
 	self._Config = {
 		StartPosition = Vector3.new(0, 0, 0),

@@ -45,21 +45,6 @@ function CombatNetworkServer.EntityStateUpdated(self: Module, packet: CombatType
     CombatChannel:FireAllClients("EntityStateUpdated", packet)
 end
 
-function CombatNetworkServer.AbilityStateUpdated(self: Module, player: Player, packet: CombatTypes.AbilityStateUpdatedRemotePacket)
-    local CombatChannel = self._NetworkManager:GetNetwork("Combat")
-    CombatChannel:FireClient("AbilityStateUpdated", player, packet)
-end
-
-function CombatNetworkServer.AbilityUsed(self: Module, packet: CombatTypes.AbilityUsedRemotePacket)
-    local CombatChannel = self._NetworkManager:GetNetwork("Combat")
-    CombatChannel:FireAllClients("AbilityUsed", packet)
-end
-
-function CombatNetworkServer.AbilityEnded(self: Module, packet: CombatTypes.AbilityEndedRemotePacket)
-    local CombatChannel = self._NetworkManager:GetNetwork("Combat")
-    CombatChannel:FireAllClients("AbilityEnded", packet)
-end
-
 function CombatNetworkServer.AbilityHit(self: Module, packet: CombatTypes.AbilityHitRemotePacket)
     local CombatChannel = self._NetworkManager:GetNetwork("Combat")
     CombatChannel:FireAllClients("AbilityHit", packet)
@@ -91,9 +76,8 @@ function CombatNetworkServer.Start(self: Module)
     CombatChannel:DeclareEvent("EndAbility")
     CombatChannel:DeclareEvent("HitAbility")
     -- server
-    CombatChannel:DeclareEvent("AbilityUsed")
-    CombatChannel:DeclareEvent("AbilityEnded")
     CombatChannel:DeclareEvent("AbilityHit")
+    CombatChannel:DeclareEvent("EntityStateUpdated")
 
     CombatChannel:Connect("UseAbility", function(player: Player, packet: CombatTypes.UseAbilityRemotePacket)
         self.RemoteEvents.UseAbility:Fire(player, packet)

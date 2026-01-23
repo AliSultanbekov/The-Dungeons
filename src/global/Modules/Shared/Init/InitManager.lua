@@ -42,25 +42,32 @@ function InitControllerClient.Init(self: Module, serviceBag: ServiceBag.ServiceB
     end
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
-
+    print("Is yielded 1")
     local Modules = InitUtil:GetContextModules(ModulesFolder, PlaceConstants.PlaceIDToPlaceName[game.PlaceId])
 
+    print("Is yielded 2")
     for _, module in Modules do
+        print("========================")
+        print("Working on " .. module.Name)
         self._ServiceBag:GetService(module)
+        print("Finished " .. module.Name)
+        print("========================")
     end
 end
 
 function InitControllerClient.Start(self: Module)
-    if RunService:IsClient() then
-        local client = Jabby.obtain_client()
-    
-        local function create_widget(_, state: Enum.UserInputState)
-            if state ~= Enum.UserInputState.Begin then return end
-            client.spawn_app((client.apps.home) :: any, nil)
-        end
+    task.spawn(function()
+        if RunService:IsClient() then
+            local client = Jabby.obtain_client()
         
-        ContextActionService:BindAction("Open Jabby Home", create_widget, false, Enum.KeyCode.F4)
-    end
+            local function create_widget(_, state: Enum.UserInputState)
+                if state ~= Enum.UserInputState.Begin then return end
+                client.spawn_app((client.apps.home) :: any, nil)
+            end
+            
+            ContextActionService:BindAction("Open Jabby Home", create_widget, false, Enum.KeyCode.F4)
+        end
+    end)
 end
 
 return InitControllerClient :: Module

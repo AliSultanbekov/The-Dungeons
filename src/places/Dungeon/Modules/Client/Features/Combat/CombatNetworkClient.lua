@@ -28,11 +28,8 @@ type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
     _NetworkManager: typeof(require("NetworkManager")),
     RemoteEvents: {
-        AbilityUsed: Signal.Signal<CombatTypes.AbilityUsedRemotePacket>,
-        AbilityEnded: Signal.Signal<CombatTypes.AbilityEndedRemotePacket>,
         AbilityHit: Signal.Signal<CombatTypes.AbilityHitRemotePacket>,
-        EntityStateChanged: Signal.Signal<CombatTypes.EntityStateUpdatedRemotePacket>,
-        AbilityStateUpdated: Signal.Signal<CombatTypes.AbilityStateUpdatedRemotePacket>,
+        EntityStateUpdated: Signal.Signal<CombatTypes.EntityStateUpdatedRemotePacket>,
     }
 }
 
@@ -64,35 +61,20 @@ function CombatNetworkClient.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._ServiceBag = assert(serviceBag, "No serviceBag")
     self._NetworkManager = self._ServiceBag:GetService(require("NetworkManager"))
     self.RemoteEvents = {
-        AbilityUsed = Signal.new(),
-        AbilityEnded = Signal.new(),
         AbilityHit = Signal.new(),
-        EntityStateChanged = Signal.new(),
-        AbilityStateUpdated = Signal.new()
+        EntityStateUpdated = Signal.new(),
     } :: any
 end
 
 function CombatNetworkClient.Start(self: Module)
     local CombatChannel = self._NetworkManager:GetNetwork("Combat")
 
-    CombatChannel:Connect("AbilityUsed", function(packet: CombatTypes.AbilityUsedRemotePacket)
-        self.RemoteEvents.AbilityUsed:Fire(packet)
-    end)
-
-    CombatChannel:Connect("AbilityEnded", function(packet: CombatTypes.AbilityEndedRemotePacket)
-        self.RemoteEvents.AbilityEnded:Fire(packet)
-    end)
-
     CombatChannel:Connect("AbilityHit", function(packet: CombatTypes.AbilityHitRemotePacket)
         self.RemoteEvents.AbilityHit:Fire(packet)
     end)
 
-    CombatChannel:Connect("EntityStateChanged", function(packet: CombatTypes.EntityStateUpdatedRemotePacket)  
-        self.RemoteEvents.EntityStateChanged:Fire(packet)
-    end)
-
-    CombatChannel:Connect("AbilityStateUpdated", function(packet: CombatTypes.AbilityStateUpdatedRemotePacket)
-        self.RemoteEvents.AbilityStateUpdated:Fire(packet)
+    CombatChannel:Connect("EntityStateUpdated", function(packet: CombatTypes.EntityStateUpdatedRemotePacket)  
+        self.RemoteEvents.EntityStateUpdated:Fire(packet)
     end)
 end
 

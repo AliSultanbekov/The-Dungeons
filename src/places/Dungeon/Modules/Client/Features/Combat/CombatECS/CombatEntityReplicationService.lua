@@ -45,7 +45,7 @@ end
 function CombatEntityReplicationServiceClient.Start(self: Module)
     local World = self._CombatEntityServiceClient:GetWorld()
 
-    self._CombatNetworkClient.RemoteEvents.EntityStateChanged:Connect(function(packet: CombatTypes.EntityStateUpdatedRemotePacket)
+    self._CombatNetworkClient.RemoteEvents.EntityStateUpdated:Connect(function(packet: CombatTypes.EntityStateUpdatedRemotePacket)
         if not packet then
             return
         end

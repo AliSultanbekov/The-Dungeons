@@ -7,8 +7,10 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 -- [ Imports ] --
-local Types = require("@self/_Types")
+local Types = require("./_Types")
 local BlockSystem = require("@self/Systems/_BlockSystem")
+local AbilitySystem = require("@self/Systems/_AbilitySystem")
+local HealthSystem = require("@self/Systems/_HealthSystem")
 
 -- [ Require ] --
 local _rbxrequire = require
@@ -48,6 +50,48 @@ type ModuleData = {
 export type Module = typeof(CombatEntityService) & ModuleData
 
 -- [ Private Functions ] --
+function CombatEntityService.OnCharacterAdded(self: Module, maid: Maid.Maid, character: Model)
+    local Player = Players:GetPlayerFromCharacter(character)
+
+    local Humanoid = character:FindFirstChildOfClass("Humanoid")
+
+    if not Humanoid then
+        return
+    end
+
+    local World = self._World
+    local Tags = self._Tags
+    local Components = self._Components
+
+    local Entity = self._World:entity() 
+
+    character:SetAttribute("Entity", Entity)
+
+    if Player then
+        World:add(Entity, Tags.Alive)
+        World:add(Entity, Tags.Player)
+        World:set(Entity, Components.Health, 100)
+        World:set(Entity, Components.Ether, 100)
+        World:set(Entity, Components.PlayerData, {
+            Player = Player,
+            Character = character,
+            Humanoid = Humanoid,
+        })
+    else
+        World:add(Entity, Tags.Alive)
+        World:add(Entity, Tags.NPC)
+        World:set(Entity, Components.Health, 100)
+        World:set(Entity, Components.Ether, 100)
+        World:set(Entity, Components.NPCData, {
+            Character = character,
+            Humanoid = Humanoid,
+        })
+    end
+
+    maid:Add(function()
+        World:delete(Entity)
+    end)
+end
 
 -- [ Public Functions ] --
 function CombatEntityService.GetComponents(self: Module): Types.Components
@@ -74,28 +118,7 @@ function CombatEntityService.Update(self: Module, dt: number)
 end
 
 function CombatEntityService.OnPlayerCharacterAdded(self: Module, maid: Maid.Maid, character: Model)
-    local Player = Players:GetPlayerFromCharacter(character)
-
-    if not Player then
-        return
-    end
-
-    local World = self._World
-    local Tags = self._Tags
-    local Components = self._Components
-
-    local Entity = self._World:entity() 
-
-    character:SetAttribute("Entity", Entity)
-    
-    World:add(Entity, Tags.Alive)
-    World:add(Entity, Tags.Player)
-    World:set(Entity, Components.Health, 100)
-    World:set(Entity, Components.Ether, 100)
-    World:set(Entity, Components.PlayerData, {
-        Player = Player,
-        Character = character
-    })
+    self:OnCharacterAdded(maid, character)
 end
 
 function CombatEntityService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
@@ -114,15 +137,16 @@ function CombatEntityService.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     }
     self._World = Jecs.World.new()
     self._Components = {
+        -- Shared
         PlayerData = self._World:component(),
         NPCData = self._World:component(),
-
         Health = self._World:component(),
         Ether = self._World:component(),
-
         Blocking = self._World:component(),
         Dodging = self._World:component(),
         Stunned = self._World:component(),
+        CurrentAbility = self._World:component(),
+        PreviousAbility = self._World:component(),
     }
 
     self._World:set(self._Tags.Alive, Jecs.Name, "Alive")
@@ -137,6 +161,8 @@ function CombatEntityService.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._World:set(self._Components.Blocking, Jecs.Name, "Blocking")
     self._World:set(self._Components.Dodging, Jecs.Name, "Dodging")
     self._World:set(self._Components.Stunned, Jecs.Name, "Stunned")
+    self._World:set(self._Components.CurrentAbility, Jecs.Name, "CurrentAbility")
+    self._World:set(self._Components.PreviousAbility, Jecs.Name, "PreviousAbility")
 
     self._World:add(self._Components.Health, self._Tags.Replicated)
     self._World:add(self._Components.Ether, self._Tags.Replicated)
@@ -146,7 +172,9 @@ function CombatEntityService.Init(self: Module, serviceBag: ServiceBag.ServiceBa
 
     -- TODO: automate
     self._Systems = {
-        BlockSystem = BlockSystem
+        BlockSystem = BlockSystem,
+        AbilitySystem = AbilitySystem,
+        HealthSystem = HealthSystem,
     }
 
     -- TODO: if ordered is needed

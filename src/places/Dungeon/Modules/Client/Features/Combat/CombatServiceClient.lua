@@ -16,6 +16,7 @@ local ServiceBag = require("ServiceBag")
 local Maid = require("Maid")
 local AbilityManager = require("AbilityManager")
 local CombatClass = require("CombatClass")
+local CombatTypes = require("CombatTypes")
 
 -- [ Constants ] --
 
@@ -90,27 +91,66 @@ function CombatController.Start(self: Module)
         CombatObject:UseAbility("DefaultBasicAttack",
             {
                 Mode = "FromClient",
-                OnUse = function(params: {[any]: any}?)
-                    self._CombatNetworkClient:UseAbility(params)
+                OnUse = function(context: CombatTypes.Context)
+                    self._CombatNetworkClient:UseAbility(context)
                 end,
-                OnEnd = function(params: {[any]: any}?)
-                    self._CombatNetworkClient:EndAbility(params)
+                OnEnd = function(context: CombatTypes.Context)
+                    self._CombatNetworkClient:EndAbility(context)
                 end,
-                OnHit = function(params: {[any]: any}?)
-                    self._CombatNetworkClient:HitAbility(params)
+                OnHit = function(context: CombatTypes.Context)
+                    self._CombatNetworkClient:HitAbility(context)
                 end,
             }
         )
     end)
 
-    self._CombatNetworkClient.RemoteEvents.AbilityHit:Connect(function(params: { [any]: any }?)
-        if not params then
+    self._CombatNetworkClient.RemoteEvents.AbilityUsed:Connect(function(context: CombatTypes.Context?)
+        if not context then
             return
         end
 
-        local Attacker = params.Attacker
+        if context.Attacker == Player.Character then
+            return
+        end
+
+        context.Mode = "FromServer"
+
+        local Attacker = context.Attacker
         local CombatObject = self._CombatObjects[Attacker]
-        CombatObject:HitAbility("DefaultBasicAttack", params)
+
+        CombatObject:UseAbility("DefaultBasicAttack", context)
+    end)
+
+    self._CombatNetworkClient.RemoteEvents.AbilityHit:Connect(function(context: CombatTypes.Context?)
+        if not context then
+            return
+        end
+
+        if context.Attacker == Player.Character then
+            return
+        end
+
+        context.Mode = "FromServer"
+
+        local Attacker = context.Attacker
+        local CombatObject = self._CombatObjects[Attacker]
+        CombatObject:HitAbility("DefaultBasicAttack", context)
+    end)
+
+    self._CombatNetworkClient.RemoteEvents.AbilityStateUpdated:Connect(function(context: CombatTypes.Context?)
+        if not context then
+            return
+        end
+
+        local Character = Player.Character
+
+        if not Character then
+            return
+        end
+
+        local CombatObject = self._CombatObjects[Character]
+
+        CombatObject:UpdateAbilityState(context.AbilityName, context)
     end)
 end
 

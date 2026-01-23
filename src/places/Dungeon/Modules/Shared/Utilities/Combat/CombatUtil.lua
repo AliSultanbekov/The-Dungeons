@@ -23,7 +23,7 @@ local WALKSPEED = 16
 local CombatUtil = {}
 
 -- [ Types ] --
-type ValidateHit_Params = {
+type ValidateHit_Context = {
     Attacker: Model,
     Attacked: Model,
     HitboxSize: Vector3,
@@ -42,13 +42,13 @@ export type Module = typeof(CombatUtil)
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function CombatUtil.ValidateHit(self: Module, params: ValidateHit_Params): boolean
-    local Attacker = params.Attacker
-    local Attacked = params.Attacked
+function CombatUtil.ValidateHit(self: Module, context: ValidateHit_Context): boolean
+    local Attacker = context.Attacker
+    local Attacked = context.Attacked
 
     local AttackerHitbox = Attacker:FindFirstChild("Hitbox") :: BasePart?
     local AttackedHitbox = Attacked:FindFirstChild("Hitbox") :: BasePart?
-    local HitboxSize = params.HitboxSize
+    local HitboxSize = context.HitboxSize
 
     if not AttackerHitbox or not AttackedHitbox then
         return false
@@ -87,7 +87,7 @@ function CombatUtil.ValidateHit(self: Module, params: ValidateHit_Params): boole
         return true
     end
     
-    if params.Mode == "FromClient" then
+    if context.Mode == "FromClient" then
         local Player = Players:GetPlayerFromCharacter(Attacker)
 
         if not Player then
@@ -96,10 +96,10 @@ function CombatUtil.ValidateHit(self: Module, params: ValidateHit_Params): boole
 
         local Ping = CombatConfig.PingAdditionalDelay + (Player:GetNetworkPing()/2)
         
-        local ClientAttackerCFrame = params.ClientAttackerCFrame
+        local ClientAttackerCFrame = context.ClientAttackerCFrame
 
         local CurrentAttackerCFrame = Attacker:GetPivot()
-        local RewoundAttackedCFrame = params.PositionHistoryService:GetCFrameAt(Attacked, os.clock() - Ping) or Attacked:GetPivot()
+        local RewoundAttackedCFrame = context.PositionHistoryService:GetCFrameAt(Attacked, os.clock() - Ping) or Attacked:GetPivot()
 
         local AttackerCFrameForValidation: CFrame
         if ClientAttackerCFrame then
@@ -113,7 +113,7 @@ function CombatUtil.ValidateHit(self: Module, params: ValidateHit_Params): boole
         end
 
         return true
-    elseif params.Mode == "FromServer" then
+    elseif context.Mode == "FromServer" then
         if not validateHitbox(Attacker:GetPivot(), Attacked:GetPivot()) then
             return false
         end

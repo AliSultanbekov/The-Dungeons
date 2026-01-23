@@ -22,20 +22,15 @@ local AbilityManager = {}
 AbilityManager.__index = AbilityManager
 
 -- [ Types ] --
-type AbilityModule = CombatTypes.ClientAbilityModule
+type AbilityModule = CombatTypes.AbilityModule
 export type ObjectData = {
     _Abilties: {
         [string]: AbilityModule
     }
 }
-export type Object = ObjectData & {
-    _LoadAbilities: (self: Object, abilityFolder: Folder) -> (),
-    Get: (self: Object, abilityName: string) -> AbilityModule,
-}
-export type Module = {
-    __index: Module,
-    new: (abilityFolder: Folder) -> Object
-}
+export type Object = typeof(setmetatable({} :: ObjectData, AbilityManager))
+export type Module = typeof(AbilityManager)
+
 
 -- [ Private Functions ] --
 function AbilityManager._LoadAbilities(self: Object, abilityFolder: Folder)

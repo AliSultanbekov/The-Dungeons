@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 --[=[
     @class CombatServiceServer
 ]=]
@@ -14,6 +15,7 @@ local ServiceBag = require("ServiceBag")
 local Maid = require("Maid")
 local AbilityManager = require("AbilityManager")
 local CombatClass = require("CombatClass")
+local CombatTypes = require("CombatTypes")
 
 -- [ Constants ] --
 
@@ -68,7 +70,24 @@ end
 function CombatServiceServer.Start(self: Module)
     self._PlayerCharacterManager:RegisterModule(self)
 
-    self._CombatNetworkServer.RemoteEvents.UseAbility:Connect(function(player: Player, params: {[any]: any}?)
+    local function onAbilityStateUpdated(context: CombatTypes.Context)
+        local Player = Players:GetPlayerFromCharacter(context.Attacker)
+
+        if not Player then
+            return
+        end
+        
+        self._CombatNetworkServer:AbilityStateUpdated(Player, {
+            AbilityName = context.AbilityName,
+            State = context.State 
+        })
+    end
+
+    self._CombatNetworkServer.RemoteEvents.UseAbility:Connect(function(player: Player, context: CombatTypes.Context?)
+        if not context then
+            return
+        end
+
         local Character = player.Character
 
         if not Character then
@@ -77,17 +96,22 @@ function CombatServiceServer.Start(self: Module)
 
         local CombatObject = self._CombatObjects[Character]
 
-        local Params: {[any]: any} = params or {}
-
-        Params.Mode = "FromClient"
-        Params.OnUsed = function(params)
-            self._CombatNetworkServer:AbilityUsed(params)
+        context.Mode = "FromClient"
+        context.OnAbilityStateUpdated = function(context)
+            onAbilityStateUpdated(context)
+        end
+        context.OnUsed = function(context)
+            self._CombatNetworkServer:AbilityUsed(context)
         end
 
-        CombatObject:UseAbility("DefaultBasicAttack", params)
+        CombatObject:UseAbility(context.AbilityName, context)
     end)
 
-    self._CombatNetworkServer.RemoteEvents.EndAbility:Connect(function(player: Player, params: {[any]: any}?)
+    self._CombatNetworkServer.RemoteEvents.EndAbility:Connect(function(player: Player, context: CombatTypes.Context?)
+        if not context then
+            return
+        end
+        
         local Character = player.Character
 
         if not Character then
@@ -96,17 +120,22 @@ function CombatServiceServer.Start(self: Module)
 
         local CombatObject = self._CombatObjects[Character]
 
-        local Params: {[any]: any} = params or {}
-
-        Params.Mode = "FromClient"
-        Params.OnEnded = function(params)
-            self._CombatNetworkServer:AbilityEnded(params)
+        context.Mode = "FromClient"
+        context.OnAbilityStateUpdated = function(context)
+            onAbilityStateUpdated(context)
+        end
+        context.OnEnded = function(context)
+            self._CombatNetworkServer:AbilityEnded(context)
         end
 
-        CombatObject:EndAbility("DefaultBasicAttack", params)
+        CombatObject:EndAbility(context.AbilityName, context)
     end)
 
-    self._CombatNetworkServer.RemoteEvents.HitAbility:Connect(function(player: Player, params: {[any]: any}?)
+    self._CombatNetworkServer.RemoteEvents.HitAbility:Connect(function(player: Player, context: CombatTypes.Context?)
+        if not context then
+            return
+        end
+
         local Character = player.Character
 
         if not Character then
@@ -115,14 +144,15 @@ function CombatServiceServer.Start(self: Module)
 
         local CombatObject = self._CombatObjects[Character]
 
-        local Params: {[any]: any} = params or {}
-
-        Params.Mode = "FromClient"
-        Params.OnHit = function(params)
-            self._CombatNetworkServer:AbilityHit(params)
+        context.Mode = "FromClient"
+        context.OnAbilityStateUpdated = function(context)
+            onAbilityStateUpdated(context)
+        end
+        context.OnHit = function(context)
+            self._CombatNetworkServer:AbilityHit(context)
         end
 
-        CombatObject:HitAbility("DefaultBasicAttack", Params)
+        CombatObject:HitAbility(context.AbilityName, context)
     end)
 end
 

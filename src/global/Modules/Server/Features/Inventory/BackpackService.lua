@@ -168,7 +168,7 @@ function BackpackController.Start(self: Module)
             return
         end
 
-        self:RemoveItem(packet.Player, packet.ItemData)
+        self:AddItem(packet.Player, packet.ItemData)
     end)
 
     self._EventBus:Subscribe(TopicConstants.Inventory.ItemUpdated, function(packet: { Player: Player, ItemData: ItemData })

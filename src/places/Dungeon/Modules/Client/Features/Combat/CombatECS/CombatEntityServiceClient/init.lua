@@ -7,7 +7,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 -- [ Imports ] --
-local Types = require("@self/_Types")
+local Types = require("./_Types")
 
 -- [ Require ] --
 local _rbxrequire = require
@@ -81,6 +81,12 @@ function CombatEntityService.OnPlayerCharacterAdded(self: Module, maid: Maid.Mai
         return
     end
 
+    local Humanoid = character:FindFirstChildOfClass("Humanoid")
+
+    if not Humanoid then
+        return
+    end
+
     local World = self._World
     local Tags = self._Tags
     local Components = self._Components
@@ -91,6 +97,15 @@ function CombatEntityService.OnPlayerCharacterAdded(self: Module, maid: Maid.Mai
     World:add(Entity, Tags.Player)
     World:set(Entity, Components.Health, 100)
     World:set(Entity, Components.Ether, 100)
+    World:set(Entity, Components.PlayerData, {
+        Player = Player,
+        Character = character,
+        Humanoid = Humanoid,
+    })
+
+    maid:Add(function()
+        World:delete(Entity)
+    end)
 end
 
 function CombatEntityService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
@@ -109,12 +124,16 @@ function CombatEntityService.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     }
     self._World = GeneralGameConstants.WORLD_ENTITY
     self._Components = {
+        -- Shared
+        PlayerData = self._World:component(),
+        NPCData = self._World:component(),
         Health = self._World:component(),
         Ether = self._World:component(),
-
         Blocking = self._World:component(),
         Dodging = self._World:component(),
         Stunned = self._World:component(),
+        CurrentAbility = self._World:component(),
+        PreviousAbility = self._World:component(),
     }
 
     self._World:set(self._Tags.Alive, Jecs.Name, "Alive")
@@ -126,16 +145,20 @@ function CombatEntityService.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._World:set(self._Components.Blocking, Jecs.Name, "Blocking")
     self._World:set(self._Components.Dodging, Jecs.Name, "Dodging")
     self._World:set(self._Components.Stunned, Jecs.Name, "Stunned")
+    self._World:set(self._Components.CurrentAbility, Jecs.Name, "CurrentAbility")
+    self._World:set(self._Components.PreviousAbility, Jecs.Name, "PreviousAbility")
 
     self._World:add(self._Components.Health, self._Tags.Replicated)
     self._World:add(self._Components.Ether, self._Tags.Replicated)
     self._World:add(self._Components.Blocking, self._Tags.Replicated)
     self._World:add(self._Components.Dodging, self._Tags.Replicated)
     self._World:add(self._Components.Stunned, self._Tags.Replicated)
+    self._World:add(self._Components.CurrentAbility, self._Tags.Replicated)
+    self._World:add(self._Components.PreviousAbility, self._Tags.Replicated)
     
     -- TODO: automate
     self._Systems = {
-        
+
     }
 
     -- TODO: if ordered is needed

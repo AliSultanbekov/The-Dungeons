@@ -45,6 +45,8 @@ function CombatEntityReplicationServiceServer.Start(self: Module)
     local World = self._CombatEntityServiceServer:GetWorld()
     local Tags = self._CombatEntityServiceServer:GetTags()
 
+    -- TODO: setup optimization
+
     for component in World:query(Tags.Replicated) do
         World:added(component, function(e, _, value)
             self._CombatNetworkServer:EntityStateUpdated({

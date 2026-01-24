@@ -4,8 +4,6 @@
 
 -- [ Roblox Services ] --
 local HttpService = game:GetService("HttpService")
-local ServerScriptService = game:GetService("ServerScriptService")
-local _InventoryEquipment = require(ServerScriptService.Game.Modules.Global.Client.Features.Core.Camera.Presets._InventoryEquipment)
 
 -- [ Imports ] --
 
@@ -41,9 +39,9 @@ type ModuleData = {
     _EventBus: typeof(require("EventBus")),
     
     PublicSignals: {
-        ItemEquipped: Signal.Signal<(player: Player, itemData: ItemData)>,
-        ItemUnequipped: Signal.Signal<(player: Player, itemData: ItemData)>,
-    }
+        ItemEquipped: Signal.Signal<Player, ItemData>,
+        ItemUnequipped: Signal.Signal<Player, ItemData>,
+    },
 
     _EquippedWeapon: ItemData?,
 }

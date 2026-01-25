@@ -27,6 +27,7 @@ export type StatConfig = {
 
 export type RawStats = {
     Health : number,
+    MaxHealth : number,
     HealthBubble : number,
     Mana : number,
     CriticalRating : number,

@@ -39,7 +39,7 @@ local ConfigsByEnemyName = {
         PrimaryStats = {
             Vitality = 15,
             Strength = 10,
-            Dexterity = 8,
+            Dexterity = 50,
             Intelligence = 5,
             Focus = 12,
         },

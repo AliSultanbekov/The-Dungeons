@@ -10,6 +10,7 @@ local RunService = game:GetService("RunService")
 local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] -- 
+local ComponentConstants = require("ComponentConstants")
 local GeneralGameConstants = require("GeneralGameConstants")
 local EnemyConfigs = require("EnemyConfigs")
 local Jecs = require("Jecs")
@@ -48,17 +49,13 @@ function NPCHelperUtil.new(): Object
     local self = setmetatable({} :: any, NPCHelperUtil) :: Object
     self._World = GeneralGameConstants.WORLD_ENTITY
     
-    local characterStats = self._World:component()
-    local name = self._World:component()
-    local npcPrefab = self._World:component()
-    
-    self._nameComp = name
-    self._characterStatsComp = characterStats
-    self._npcPrefabComp = npcPrefab
+    self._nameComp = ComponentConstants.Name
+    self._characterStatsComp = ComponentConstants.CombatStats
+    self._npcPrefabComp = ComponentConstants.Prefab
 
     RunService.Heartbeat:Connect(function(a0: number)  
         for entity, prefab, stats in self._World:query(self._npcPrefabComp, self._characterStatsComp) do 
-            (prefab.Humanoid :: Humanoid).MaxHealth = stats.RawStats.Health;
+            (prefab.Humanoid :: Humanoid).MaxHealth = stats.RawStats.MaxHealth;
             (prefab.Humanoid :: Humanoid).Health = stats.RawStats.Health;
         end
     end)
@@ -79,7 +76,15 @@ function NPCHelperUtil.CreateNewNPCEntity(self : Object, npcName : string, prefa
 
     --/3d prefab of the actual entity. 
     self._World:set(entity, self._npcPrefabComp, prefab)
-
+    task.delay(5, function()
+     
+     self._World:set(entity, ComponentConstants.DamageOverTimeEffect, {
+         Duration = 5,
+         EffectTime = 0,
+         Ticks = 5,
+         EffectAmount = 2,
+     })   
+    end)
     return entity
 end
 

@@ -17,7 +17,8 @@ local _require = require(script.Parent.loader).load(script)
 ---For primary stats, we have base multipliers that effect raw stats. So, if the player has 10 vitality, we multi that by 3 to get 30 raw stats.
 local BasePrimaryStatsMultipliers = {
     Vitality = {
-        Health = 50,
+        Health = 2,
+        MaxHealth = 50,
         HealthRegen = 5,
         PhysicalMitigation = 2,
         IncomingHealing = 2,
@@ -31,7 +32,7 @@ local BasePrimaryStatsMultipliers = {
     Dexterity = {
         CriticalRating = 1.5,
         ManaRegen = 2.5,
-        HealthRegen = 2.5
+        HealthRegen = 1.5,
     },
     Intelligence = {
         TacticalMastery = 5,

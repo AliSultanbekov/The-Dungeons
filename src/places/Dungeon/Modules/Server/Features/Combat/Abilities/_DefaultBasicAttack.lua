@@ -81,19 +81,6 @@ export type Object = typeof(setmetatable({} :: ObjectData, DefaultBasicAttack))
 export type Module = typeof(DefaultBasicAttack)
 
 -- [ Private Functions ] --
-function DefaultBasicAttack.IsActive(self: Object): boolean
-    local CurrentAbility = self._CombatEntityStateService:GetCurrentAbility(self._Attacker) :: AbilityState?
-
-    if not CurrentAbility then
-        return false
-    end
-
-    if CurrentAbility.Name ~= self.AbilityName then
-        return false
-    end
-
-    return true
-end
 
 -- [ Public Functions ] --
 function DefaultBasicAttack.new(context: New_Context): Object
@@ -107,6 +94,20 @@ function DefaultBasicAttack.new(context: New_Context): Object
     self._Config = WeaponConfig[self._WeaponData.Name].BasicAttack
 
     return self
+end
+
+function DefaultBasicAttack.IsActive(self: Object): boolean
+    local CurrentAbility = self._CombatEntityStateService:GetCurrentAbility(self._Attacker) :: AbilityState?
+
+    if not CurrentAbility then
+        return false
+    end
+
+    if CurrentAbility.Name ~= self.AbilityName then
+        return false
+    end
+
+    return true
 end
 
 function DefaultBasicAttack.Use(self: Object, context: Use_Context)

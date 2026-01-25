@@ -19,6 +19,7 @@ local ServiceBag = require("ServiceBag")
 local Jecs = require("Jecs")
 local Jabby = require("Jabby")
 local Maid = require("Maid")
+local GeneralGameConstants = require("GeneralGameConstants")
 
 -- [ Constants ] --
 
@@ -112,7 +113,7 @@ function CombatEntityService.Init(self: Module, serviceBag: ServiceBag.ServiceBa
         NPC = Jecs.tag(),
         Replicated = Jecs.tag()
     }
-    self._World = Jecs.World.new()
+    self._World = GeneralGameConstants.WORLD_ENTITY
     self._Components = {
         PlayerData = self._World:component(),
         NPCData = self._World:component(),

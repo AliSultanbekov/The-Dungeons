@@ -7,7 +7,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local PathfindingService = game:GetService("PathfindingService")
 local RunService = game:GetService("RunService")
-
 -- [ Imports ] --
 local NPCGroupUtil = require("./_NPCGroupUtil")
 local Types = require("./_Types")
@@ -16,9 +15,9 @@ local Types = require("./_Types")
 local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
+local GeneralGameConstants = require("GeneralGameConstants")
 local ServiceBag = require("ServiceBag")
 local AssetProvider = require("AssetProvider")
-local EnemyConfigs = require("EnemyConfigs")
 
 -- [ Constants ] --
 local CONFIG = {
@@ -62,7 +61,7 @@ type ModuleData = {
 
 	_Heartbeat: RBXScriptConnection?,
 	_Leader: Member?,
-	_SquadStats : any
+	_NPCHelper : typeof(NPCHelper),
 }
 
 export type Module = typeof(SquadService) & ModuleData
@@ -78,29 +77,27 @@ end
 function SquadService.InitializeSquad(self: Module)
 	self._NPCFolder:ClearAllChildren()
 	self._Members = {}
-	self._SquadStats = {}
 
-	local IdCounter = 1
 
 	-- Spawn Leader
-	local Leader = NPCGroupUtil:CreateMember(0, 0, true, IdCounter, self._Config, self._NPCTemplate, self._NPCFolder)
+	local Leader = NPCGroupUtil:CreateMember(0, 0, true, 0, self._Config, self._NPCTemplate, self._NPCFolder)
 	Leader.RootPart.CFrame = CFrame.new(self._Config.StartPosition)
 	table.insert(self._Members, Leader)
 	self._Leader = Leader
-	IdCounter += 1
 
-	self._SquadStats[Leader] = EnemyConfigs.EliteEnemy
+	Leader.ID = self._NPCHelper:CreateNewNPCEntity("EliteEnemy", Leader)
+	
 
 	-- Spawn Squad
 	for y = 1, self._Config.SquadSizeY do
 		for x = 1, self._Config.SquadSizeX do
-			local Mem = NPCGroupUtil:CreateMember(x, y, false, IdCounter, self._Config, self._NPCTemplate, self._NPCFolder)
+			local Mem = NPCGroupUtil:CreateMember(x, y, false, 0, self._Config, self._NPCTemplate, self._NPCFolder)
 			local SpawnPos = self._Config.StartPosition + Vector3.new(Mem.Offset.X, 0, Mem.Offset.Z)
 			Mem.RootPart.CFrame = CFrame.new(SpawnPos)
 			table.insert(self._Members, Mem)
-			IdCounter += 1
+			
 
-			self._SquadStats[Mem] = EnemyConfigs.Basic
+			Mem.ID = self._NPCHelper:CreateNewNPCEntity("Basic", Mem)
 		end
 	end
 
@@ -325,6 +322,7 @@ function SquadService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
 	self._FormationCFrame = CFrame.new(CONFIG.StartPosition)
 	self._NPCFolder = self._CreateSquadFolder()
 	self._NPCTemplate = AssetProvider:Get("Objects/NPC") :: NPC
+	self._NPCHelper = GeneralGameConstants.NPC_HELPER
 end
 
 function SquadService.Start(self: Module)

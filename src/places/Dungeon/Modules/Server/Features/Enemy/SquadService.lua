@@ -15,9 +15,9 @@ local Types = require("./_Types")
 local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
-local GeneralGameConstants = require("GeneralGameConstants")
 local ServiceBag = require("ServiceBag")
 local AssetProvider = require("AssetProvider")
+local NPCHelper = require("NPCHelper")
 
 -- [ Constants ] --
 local CONFIG = {
@@ -61,7 +61,6 @@ type ModuleData = {
 
 	_Heartbeat: RBXScriptConnection?,
 	_Leader: Member?,
-	_NPCHelper : typeof(NPCHelper),
 }
 
 export type Module = typeof(SquadService) & ModuleData
@@ -85,7 +84,7 @@ function SquadService.InitializeSquad(self: Module)
 	table.insert(self._Members, Leader)
 	self._Leader = Leader
 
-	Leader.ID = self._NPCHelper:CreateNewNPCEntity("EliteEnemy", Leader)
+	Leader.ID = NPCHelper.Get():CreateNewNPCEntity("EliteEnemy", Leader)
 	
 
 	-- Spawn Squad
@@ -97,7 +96,7 @@ function SquadService.InitializeSquad(self: Module)
 			table.insert(self._Members, Mem)
 			
 
-			Mem.ID = self._NPCHelper:CreateNewNPCEntity("Basic", Mem)
+			Mem.ID = NPCHelper.Get():CreateNewNPCEntity("Basic", Mem)
 		end
 	end
 
@@ -322,7 +321,6 @@ function SquadService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
 	self._FormationCFrame = CFrame.new(CONFIG.StartPosition)
 	self._NPCFolder = self._CreateSquadFolder()
 	self._NPCTemplate = AssetProvider:Get("Objects/NPC") :: NPC
-	self._NPCHelper = GeneralGameConstants.NPC_HELPER
 end
 
 function SquadService.Start(self: Module)

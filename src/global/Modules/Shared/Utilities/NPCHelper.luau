@@ -17,6 +17,7 @@ local Jecs = require("Jecs")
 -- [ Constants ] --
 
 -- [ Variables ] --
+local _instance: Object? = nil
 
 -- [ Module Table ] --
 local NPCHelperUtil = {}
@@ -32,11 +33,12 @@ export type Object = ObjectData & {
     _characterStatsComp : Jecs.Id<any>,
     _npcPrefabComp : Jecs.Id<Instance>,
     
-    CreateNewNPCEntity: (self: Object, npcName: string, prefab: Instance) -> number,
+    CreateNewNPCEntity: (self: Object, npcName: string, prefab: any) -> number,
 }
 export type Module = {
     __index: Module,
-    new: () -> Object 
+    new: () -> Object,
+    Get: () -> Object 
 }
 
 -- [ Private Functions ] --
@@ -56,14 +58,15 @@ function NPCHelperUtil.new(): Object
 
     RunService.Heartbeat:Connect(function(a0: number)  
         for entity, prefab, stats in self._World:query(self._npcPrefabComp, self._characterStatsComp) do 
-            warn("NPC Entity:", entity, "Prefab:", prefab, "Stats:", stats)
+            (prefab.Humanoid :: Humanoid).MaxHealth = stats.RawStats.Health;
+            (prefab.Humanoid :: Humanoid).Health = stats.RawStats.Health;
         end
     end)
     
     return self
 end
 
-function NPCHelperUtil.CreateNewNPCEntity(self : Object, npcName : string, prefab : Instance)    
+function NPCHelperUtil.CreateNewNPCEntity(self : Object, npcName : string, prefab : any)    
     assert(EnemyConfigs[npcName], "NPC Config does not exist for "..npcName)
 
     local entity = self._World:entity()
@@ -78,6 +81,14 @@ function NPCHelperUtil.CreateNewNPCEntity(self : Object, npcName : string, prefa
     self._World:set(entity, self._npcPrefabComp, prefab)
 
     return entity
+end
+
+-- Singleton getter
+function NPCHelperUtil.Get(): Object
+    if not _instance then
+        _instance = NPCHelperUtil.new()
+    end
+    return _instance :: Object
 end
 
 return NPCHelperUtil :: Module

@@ -26,6 +26,14 @@ local ProfileConfig = {
         Equipped = {
             Toolbar = {},
             Equipment = {},
+        },
+
+        PrimaryStats = {
+            Vitality = 0,
+            Strength = 0,
+            Dexterity = 0,
+            Intelligence = 0,
+            Focus = 0,
         }
     },
     Leaderstats = {"Coins"}

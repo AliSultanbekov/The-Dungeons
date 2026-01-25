@@ -29,7 +29,6 @@ type AbilityState = {
     Combo: number,
     Duration: number,
 }
-type PositionHistoryService = typeof(require("PositionHistoryService"))
 type CombatEntityStateService = typeof(require("CombatEntityStateServiceServer"))
 type Config = {
     AbilityName: string,
@@ -48,11 +47,12 @@ type WeaponItemData = ItemTypes.WeaponItemData
 type New_Context = {
     Attacker: Model,
     ItemData: WeaponItemData,
-    PositionHistoryService: PositionHistoryService,
     CombatEntityStateService: CombatEntityStateService,
 }
 export type ObjectData = {
-    
+    _Attacker: Model,
+    _WeaponData: WeaponItemData,
+    _CombatEntityStateService: CombatEntityStateService
 }
 export type Object = typeof(setmetatable({} :: ObjectData, Block))
 export type Module = typeof(Block)
@@ -62,6 +62,10 @@ export type Module = typeof(Block)
 -- [ Public Functions ] --
 function Block.new(context: New_Context): Object
     local self = setmetatable({} :: any, Block) :: Object
+
+    self._Attacker = context.Attacker
+    self._WeaponData = context.ItemData
+    self._CombatEntityStateService = context.CombatEntityStateService
 
     return self
 end

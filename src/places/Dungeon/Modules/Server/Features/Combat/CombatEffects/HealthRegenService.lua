@@ -56,7 +56,7 @@ function HealthRegenService.Start(self: Module)
             local healthRegenRate = rawStats.HealthRegen
             local currentHealth = rawStats.Health
 
-            local healthToRegen = ((healthRegenRate) * dt * .025)
+            local healthToRegen = ((healthRegenRate) * dt)
             local newHealth = math.clamp(currentHealth + healthToRegen, 0, maxHealth)
 
             if self._JecsWorld:has(entityId, ComponentConstants.InCombatComponent) then 

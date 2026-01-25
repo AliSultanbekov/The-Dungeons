@@ -70,4 +70,38 @@ function Block.new(context: New_Context): Object
     return self
 end
 
+function Block.IsActive(self: Object): boolean
+    local CurrentAbility = self._CombatEntityStateService:GetCurrentAbility(self._Attacker) :: AbilityState?
+
+    if not CurrentAbility then
+        return false
+    end
+
+    if CurrentAbility.Name ~= self.AbilityName then
+        return false
+    end
+
+    return true
+end
+
+function Block.Use(self: Object)
+    if self:IsActive() then
+        return
+    end
+    
+    if not self._CombatEntityStateService:StartBlocking(self._Attacker) then
+        return
+    end
+
+    self._CombatEntityStateService:SetCurrentAbility(self._Attacker, {
+        AbilityName = "Block",
+        StartTime = os.clock(),
+        Duration = 5,
+    })
+end
+
+function Block.End()
+    
+end
+
 return Block :: Module

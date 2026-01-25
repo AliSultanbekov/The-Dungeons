@@ -1,3 +1,5 @@
+local AccountService = game:GetService("AccountService")
+local ServerScriptService = game:GetService("ServerScriptService")
 --[=[
     @class CombatEntityStateServiceServer
 ]=]
@@ -5,6 +7,7 @@
 -- [ Roblox Services ] --
 
 -- [ Imports ] --
+local Duration = require(ServerScriptService.Game.node_modules["@quentystudios"].Cmdr.BuiltInTypes.Duration)
 local Types = require("./_Types")
 
 -- [ Require ] --
@@ -142,10 +145,6 @@ function CombatEntityStateServiceServer.StartBlocking(self: Module, character: M
     if Ether <= 0 then
         return false
     end
-
-    World:set(Entity, Components.Blocking, {
-        StartTime = os.clock()
-    })
 
     return true
 end

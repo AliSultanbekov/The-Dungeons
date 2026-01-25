@@ -33,6 +33,10 @@ type ModuleData = {
 
 export type Module = typeof(HealthRegenService) & ModuleData
 
+export type InCombatComponent = {
+    Duration : number,
+    CurrentDuration : number,
+}
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
@@ -64,6 +68,14 @@ function HealthRegenService.Start(self: Module)
             end
             
             rawStats.Health = newHealth
+        end
+
+        for entityId, combatComponent : InCombatComponent in self._JecsWorld:query(ComponentConstants.InCombatComponent) do
+            if combatComponent.CurrentDuration < combatComponent.Duration then
+                combatComponent.CurrentDuration = combatComponent.CurrentDuration + dt
+            else
+                self._JecsWorld:remove(entityId, ComponentConstants.InCombatComponent)
+            end
         end
     end)
 end

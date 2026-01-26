@@ -11,6 +11,7 @@ local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 local ItemTypes = require("ItemTypes")
+local CombatTypes = require("CombatTypes")
 
 -- [ Constants ] --
 
@@ -23,27 +24,16 @@ local Block = {
 Block.__index = Block
 
 -- [ Types ] --
-type AbilityState = {
-    Name: string,
-    StartTime: number,
-    Combo: number,
-    Duration: number,
-}
-type CombatEntityStateService = typeof(require("CombatEntityStateServiceServer"))
-type Config = {
-    AbilityName: string,
-    MaxDelay: number,
-    Combo: { 
-        [number]: {
-            Animation: string,
-            Damage: number,
-            Range: Vector3,
-            Angle: number,
-            Time: number
-        }
-    }
-}
+type CombatEntityStateService = typeof(require("CombatEntityStateServiceClient"))
 type WeaponItemData = ItemTypes.WeaponItemData
+type Use_Context = {
+    Attacker: Model,
+    Mode: "FromServer" | "FromClient",
+
+    OnUse: (context: CombatTypes.Context) -> (),
+    OnEnd: (context: CombatTypes.Context) -> (),
+    OnHit: (context: CombatTypes.Context) -> (),
+}
 type New_Context = {
     Attacker: Model,
     ItemData: WeaponItemData,
@@ -70,36 +60,12 @@ function Block.new(context: New_Context): Object
     return self
 end
 
-function Block.IsActive(self: Object): boolean
-    local CurrentAbility = self._CombatEntityStateService:GetCurrentAbility(self._Attacker) :: AbilityState?
-
-    if not CurrentAbility then
-        return false
+function Block.Use(self: Object, context: Use_Context)
+    if context.Mode == "FromClient" then
+        context.OnUse({
+            AbilityName = self.AbilityName
+        })
     end
-
-    if CurrentAbility.Name ~= self.AbilityName then
-        return false
-    end
-
-    return true
-end
-
-function Block.Use(self: Object)
-    if self:IsActive() then
-        return
-    end
-    
-    if self._CombatEntityStateService:TryUseAbility(self._Attacker, {
-        AbilityName = "Block",
-        StartTime = os.clock(),
-        Duration = 5,
-    }) then
-        print("Blocked")
-    end
-end
-
-function Block.End()
-    
 end
 
 return Block :: Module

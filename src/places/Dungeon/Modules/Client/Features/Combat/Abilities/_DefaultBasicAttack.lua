@@ -130,7 +130,6 @@ function DefaultBasicAttack.Use(self: Object, context: Use_Context)
     end
 
     if context.Mode == "FromClient" then
-        print("Used at: " .. os.clock())
         local PreviousAbility = self._CombatEntityStateService:GetPreviousAbility(self._Attacker) :: AbilityState?
 
         if self:IsActive() then

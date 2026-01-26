@@ -49,6 +49,9 @@ function CombatServiceServer.OnPlayerCharacterAdded(self: Module, maid: Maid.Mai
         ItemData = { Name = "Wooden Sword" },
         PositionHistoryService = self._PositionHistoryService,
     })
+    CombatObject:AddAbility("Block", { 
+        ItemData = { Name = "Wooden Sword" },
+    })
 
     self._CombatObjects[character] = CombatObject
 

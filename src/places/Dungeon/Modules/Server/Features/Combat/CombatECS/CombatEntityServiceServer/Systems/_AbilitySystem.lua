@@ -33,8 +33,12 @@ function BlockSystem.Update(self: Module, context: Types.SystemContext)
     local Components = context.Components
     for entity, _, currentAbility in World:query(Tags.Alive, Components.CurrentAbility) do
         if currentAbility.StartTime + currentAbility.Duration < os.clock() then
-            World:remove(entity, Components.CurrentAbility)
             World:set(entity, Components.PreviousAbility, table.clone(currentAbility))
+            World:remove(entity, Components.CurrentAbility)
+
+            if currentAbility.AbilityName == "Block" then
+                World:remove(entity, Components.Blocking)
+            end
         end
     end
 end

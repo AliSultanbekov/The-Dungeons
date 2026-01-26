@@ -53,6 +53,9 @@ function CombatController.OnPlayerCharacterAdded(self: Module, maid: Maid.Maid, 
     CombatObject:AddAbility("DefaultBasicAttack", { 
         ItemData = { Name = "Wooden Sword" },
     })
+    CombatObject:AddAbility("Block", { 
+        ItemData = { Name = "Wooden Sword" },
+    })
 
     self._CombatObjects[character] = CombatObject
 
@@ -96,6 +99,35 @@ function CombatController.Start(self: Module)
         local CombatObject = self._CombatObjects[Character]
 
         CombatObject:UseAbility("DefaultBasicAttack",
+            {
+                Mode = "FromClient",
+                OnUse = function(context: CombatTypes.Context)
+                    self._CombatNetworkClient:UseAbility(context)
+                end,
+                OnEnd = function(context: CombatTypes.Context)
+                    self._CombatNetworkClient:EndAbility(context)
+                end,
+                OnHit = function(context: CombatTypes.Context)
+                    self._CombatNetworkClient:HitAbility(context)
+                end,
+            }
+        )
+    end)
+
+    self._UserInputManager:RegisterKeymapAction(Actions.SPECIAL_ATTACK, KeyMaps[Actions.SPECIAL_ATTACK], function(data)
+        if data.InputState ~= Enum.UserInputState.Begin then
+            return
+        end
+
+        local Character = Player.Character
+
+        if not Character then
+            return
+        end
+
+        local CombatObject = self._CombatObjects[Character]
+
+        CombatObject:UseAbility("Block",
             {
                 Mode = "FromClient",
                 OnUse = function(context: CombatTypes.Context)

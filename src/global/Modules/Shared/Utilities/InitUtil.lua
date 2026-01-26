@@ -31,7 +31,7 @@ export type Module = typeof(InitUtil)
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function InitUtil.GetContextModules(self: Module, modulesFolder: any, placeName: string): { Module }
+function InitUtil.GetContextModules(self: Module, modulesFolder: any, placeName: string): { ModuleScript }
     local ModulesFolderArray = {
         modulesFolder:FindFirstChild("Global"),
         modulesFolder:FindFirstChild(placeName)

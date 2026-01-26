@@ -16,6 +16,7 @@ local ItemTypes = require("ItemTypes")
 local Table = require("Table")
 local ItemConstants = require("ItemConstants")
 local TopicConstants = require("TopicConstants")
+local Signal = require("Signal")
 
 -- [ Constants ] --
 
@@ -36,6 +37,11 @@ type ModuleData = {
     _DataManager: typeof(require("DataManager")),
     _NetworkManager: typeof(require("NetworkManager")),
     _EventBus: typeof(require("EventBus")),
+    
+    PublicSignals: {
+        ItemEquipped: Signal.Signal<Player, ItemData>,
+        ItemUnequipped: Signal.Signal<Player, ItemData>,
+    },
 
     _EquippedWeapon: ItemData?,
 }
@@ -131,7 +137,7 @@ function InventoryController.Equip(self: Module, player: Player, itemData: ItemD
         end
     end)
 
-    self._EventBus:Publish(TopicConstants.Inventory.ItemEquipped, { Player = player, ItemData = itemData })
+    self.PublicSignals.ItemEquipped:Fire(player, itemData)
 
     self._InventoryNetworkServer:ItemUpdated(player, itemData)
 end
@@ -162,7 +168,7 @@ function InventoryController.Unequip(self: Module, player: Player, itemData: Ite
         end
     end)
 
-    self._EventBus:Publish(TopicConstants.Inventory.ItemUnequipped, { Player = player, ItemData = itemData })
+    self.PublicSignals.ItemUnequipped:Fire(player, itemData)
 
     self._InventoryNetworkServer:ItemUpdated(player, itemData)
 end
@@ -386,6 +392,11 @@ function InventoryController.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._DataManager = self._ServiceBag:GetService(require("DataManager"))
     self._NetworkManager = self._ServiceBag:GetService(require("NetworkManager"))
     self._EventBus = self._ServiceBag:GetService(require("EventBus"))
+
+    self.PublicSignals = {
+        ItemEquipped = Signal.new(),
+        ItemUnequipped = Signal.new(),
+    } :: any
 
     self._EquippedWeapon = nil
 end

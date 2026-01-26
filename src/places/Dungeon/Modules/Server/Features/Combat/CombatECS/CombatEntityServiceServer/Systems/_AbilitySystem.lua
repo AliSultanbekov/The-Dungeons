@@ -31,10 +31,14 @@ function BlockSystem.Update(self: Module, context: Types.SystemContext)
     local World = context.World
     local Tags = context.Tags
     local Components = context.Components
-    for entity in World:query(Tags.Alive) do
-        local Ether = World:get(entity, Components.Ether) :: Types.EtherComponent
-        if Ether <= 0 then
-            World:remove(entity, Components.Blocking)
+    for entity, _, currentAbility in World:query(Tags.Alive, Components.CurrentAbility) do
+        if currentAbility.StartTime + currentAbility.Duration < os.clock() then
+            World:set(entity, Components.PreviousAbility, table.clone(currentAbility))
+            World:remove(entity, Components.CurrentAbility)
+
+            if currentAbility.AbilityName == "Block" then
+                World:remove(entity, Components.Blocking)
+            end
         end
     end
 end

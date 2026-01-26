@@ -165,7 +165,7 @@ function DataController.GetData(self: Module, player: Player, path: string): (bo
 end
 
 function DataController.GetProfile(self: Module, player: Player): Profile
-    local Deadline = os.clock() + 10
+    local Deadline = os.clock() + 60
 
     while self._Profiles[player] == nil and os.clock() < Deadline do
         task.wait(0.05)

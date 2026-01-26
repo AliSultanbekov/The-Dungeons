@@ -1,4 +1,3 @@
-local Players = game:GetService("Players")
 --[=[
     @class CombatServiceServer
 ]=]
@@ -31,6 +30,7 @@ type ModuleData = {
     _CombatNetworkServer: typeof(require("CombatNetworkServer")),
     _PlayerCharacterManager: typeof(require("PlayerCharacterManager")),
     _PositionHistoryService: typeof(require("PositionHistoryService")),
+    _CombatEntityStateServiceServer: typeof(require("CombatEntityStateServiceServer")),
     _AbilityManager: AbilityManager.Object,
     _CombatObjects: { [Model]: CombatObject},
 }
@@ -41,10 +41,16 @@ export type Module = typeof(CombatServiceServer) & ModuleData
 
 -- [ Public Functions ] --
 function CombatServiceServer.OnPlayerCharacterAdded(self: Module, maid: Maid.Maid, character: Model)
-    local CombatObject = CombatClass.new(character, self._AbilityManager)
+    local CombatObject = CombatClass.new(character, {
+        AbilityManager = self._AbilityManager,
+        CombatEntityStateService = self._CombatEntityStateServiceServer,
+    })
     CombatObject:AddAbility("DefaultBasicAttack", { 
-        ItemData = { Name = "Wooden Sword" }, 
-        PositionHistoryService = self._PositionHistoryService
+        ItemData = { Name = "Wooden Sword" },
+        PositionHistoryService = self._PositionHistoryService,
+    })
+    CombatObject:AddAbility("Block", { 
+        ItemData = { Name = "Wooden Sword" },
     })
 
     self._CombatObjects[character] = CombatObject
@@ -63,25 +69,13 @@ function CombatServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._CombatNetworkServer = self._ServiceBag:GetService(require("CombatNetworkServer"))
     self._PlayerCharacterManager = self._ServiceBag:GetService(require("PlayerCharacterManager"))
     self._PositionHistoryService = self._ServiceBag:GetService(require("PositionHistoryService"))
+    self._CombatEntityStateServiceServer = self._ServiceBag:GetService(require("CombatEntityStateServiceServer"))
     self._AbilityManager = AbilityManager.new(script.Parent.Abilities)
     self._CombatObjects = {}
 end
 
 function CombatServiceServer.Start(self: Module)
     self._PlayerCharacterManager:RegisterModule(self)
-
-    local function onAbilityStateUpdated(context: CombatTypes.Context)
-        local Player = Players:GetPlayerFromCharacter(context.Attacker)
-
-        if not Player then
-            return
-        end
-        
-        self._CombatNetworkServer:AbilityStateUpdated(Player, {
-            AbilityName = context.AbilityName,
-            State = context.State 
-        })
-    end
 
     self._CombatNetworkServer.RemoteEvents.UseAbility:Connect(function(player: Player, context: CombatTypes.Context?)
         if not context then
@@ -97,12 +91,6 @@ function CombatServiceServer.Start(self: Module)
         local CombatObject = self._CombatObjects[Character]
 
         context.Mode = "FromClient"
-        context.OnAbilityStateUpdated = function(context)
-            onAbilityStateUpdated(context)
-        end
-        context.OnUsed = function(context)
-            self._CombatNetworkServer:AbilityUsed(context)
-        end
 
         CombatObject:UseAbility(context.AbilityName, context)
     end)
@@ -121,12 +109,6 @@ function CombatServiceServer.Start(self: Module)
         local CombatObject = self._CombatObjects[Character]
 
         context.Mode = "FromClient"
-        context.OnAbilityStateUpdated = function(context)
-            onAbilityStateUpdated(context)
-        end
-        context.OnEnded = function(context)
-            self._CombatNetworkServer:AbilityEnded(context)
-        end
 
         CombatObject:EndAbility(context.AbilityName, context)
     end)
@@ -145,9 +127,6 @@ function CombatServiceServer.Start(self: Module)
         local CombatObject = self._CombatObjects[Character]
 
         context.Mode = "FromClient"
-        context.OnAbilityStateUpdated = function(context)
-            onAbilityStateUpdated(context)
-        end
         context.OnHit = function(context)
             self._CombatNetworkServer:AbilityHit(context)
         end

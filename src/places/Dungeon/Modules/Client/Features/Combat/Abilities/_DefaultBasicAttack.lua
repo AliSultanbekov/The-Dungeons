@@ -14,7 +14,6 @@ local CombatTypes = require("CombatTypes")
 local HitboxClass = require("HitboxClass")
 local ItemTypes = require("ItemTypes")
 local WeaponConfig = require("WeaponConfig")
-local Table = require("Table")
 local AssetProvider = require("AssetProvider")
 
 -- [ Constants ] --
@@ -28,6 +27,13 @@ local DefaultBasicAttack = {
 DefaultBasicAttack.__index = DefaultBasicAttack
 
 -- [ Types ] --
+type AbilityState = {
+    Name: string,
+    StartTime: number,
+    Combo: number,
+    Duration: number,
+}
+type CombatEntityStateService = typeof(require("CombatEntityStateServiceClient"))
 type Config = {
     AbilityName: string,
     MaxDelay: number,
@@ -58,66 +64,44 @@ type Hit_Context = {
     Attacked: Model,
 }
 type New_Context = {
-    ItemData: WeaponItemData
+    Attacker: Model,
+    ItemData: WeaponItemData,
+    CombatEntityStateService: CombatEntityStateService,
 }
 type AbilityObject = CombatTypes.ClientAbilityObject
 export type ObjectData = {
+    _CombatEntityStateService: CombatEntityStateService,
+    _Attacker: Model,
     _WeaponData: WeaponItemData,
     _Config: Config,
-    _ActiveUntil: number,
-    _FirstHitTime: number?,
-    _Combo: number,
     AbilityName: string,
 }
 export type Object = typeof(setmetatable({} :: ObjectData, DefaultBasicAttack))
 export type Module = typeof(DefaultBasicAttack)
 
 -- [ Private Functions ] --
-function DefaultBasicAttack._IncrementCombo(self: Object)
-    if self._Combo == 0 then
-        self._FirstHitTime = os.clock()
+function DefaultBasicAttack.IsActive(self: Object): boolean
+    local CurrentAbility = self._CombatEntityStateService:GetCurrentAbility(self._Attacker) :: AbilityState?
+
+    if not CurrentAbility then
+        return false
     end
 
-    self._Combo += 1
-end
-
-function DefaultBasicAttack._ResetCombo(self: Object)
-    self._Combo = 0
-    self._FirstHitTime = nil
-end
-
-function DefaultBasicAttack._SetupCombo(self: Object, cb: (comboNumber: number) -> ())
-    local Config = self._Config
-    local MaxDelay = Config.MaxDelay
-
-    if self._Combo == Table.count(Config.Combo) then
-        self:_ResetCombo()
+    if CurrentAbility.Name ~= self.AbilityName then
+        return false
     end
 
-    if self._FirstHitTime then
-        if self._FirstHitTime + (MaxDelay * self._Combo) < os.clock() then
-            self:_ResetCombo()
-        end
-    end
-
-    self:_IncrementCombo()
-
-    cb(self._Combo)
-end
-
-function DefaultBasicAttack._IsActive(self: Object): boolean
-    return self._ActiveUntil >= os.clock()
+    return true
 end
 -- [ Public Functions ] --
 function DefaultBasicAttack.new(context: New_Context): Object
     local self = setmetatable({} :: any, DefaultBasicAttack) :: Object
+    
+    self._CombatEntityStateService = context.CombatEntityStateService
+
+    self._Attacker = context.Attacker
     self._WeaponData = context.ItemData
     self._Config = WeaponConfig[self._WeaponData.Name].BasicAttack
-
-    self._ActiveUntil = 0
-
-    self._FirstHitTime = nil
-    self._Combo = 0
     
     return self
 end
@@ -126,7 +110,7 @@ function DefaultBasicAttack.Use(self: Object, context: Use_Context)
     local Config = self._Config
     local ComboData = Config.Combo
 
-    local Attacker = context.Attacker
+    local Attacker = self._Attacker
     local Humanoid = Attacker:FindFirstChildOfClass("Humanoid")
     
     if not Humanoid then
@@ -146,78 +130,92 @@ function DefaultBasicAttack.Use(self: Object, context: Use_Context)
     end
 
     if context.Mode == "FromClient" then
-        if self:_IsActive() then
+        local PreviousAbility = self._CombatEntityStateService:GetPreviousAbility(self._Attacker) :: AbilityState?
+
+        if self:IsActive() then
             return
         end
     
-        self._ActiveUntil = math.huge
-    
-        self:_SetupCombo(function(comboNumber: number)
-            print(comboNumber)
-            local CurrentAbilityData = ComboData[comboNumber]
-    
-            context.OnUse({
+        local Combo = 1
+
+        if PreviousAbility 
+        and PreviousAbility.Name == self.AbilityName 
+        and PreviousAbility.StartTime + PreviousAbility.Duration + Config.MaxDelay >= os.clock() 
+        and PreviousAbility.Combo < #ComboData then
+            Combo += PreviousAbility.Combo
+            self._CombatEntityStateService:SetCurrentAbility(self._Attacker, {
+                Name = self.AbilityName,
+                StartTime = os.clock(),
+                Duration = ComboData[Combo].Time,
+                Combo = Combo,
+            })
+        else
+            self._CombatEntityStateService:SetCurrentAbility(self._Attacker, {
+                Name = self.AbilityName,
+                StartTime = os.clock(),
+                Duration = ComboData[Combo].Time,
+                Combo = Combo,
+            })
+        end
+
+        context.OnUse({
+            AbilityName = self.AbilityName,
+        })
+
+        local CurrentAbilityData = ComboData[Combo]
+        local AnimationID = CurrentAbilityData.Animation
+        local AnimationInstance = Instance.new("Animation"); AnimationInstance.AnimationId = AnimationID
+        local Track = Animator:LoadAnimation(AnimationInstance)
+        Track.Priority = Enum.AnimationPriority.Action
+        Track:Play(0, 1, 1)
+        Track:GetMarkerReachedSignal("Hit"):Connect(function()
+            HitboxClass.new(
+                {
+                    HitboxType = "Box",
+                    GetCFrame = function()
+                        local BaseCF = Attacker:GetPivot()
+                        local LookVec = BaseCF.LookVector
+                        local FlatLooKVec = Vector3.new(LookVec.X, 0, LookVec.Z)
+
+                        if FlatLooKVec.Magnitude < 1e-6 then
+                            return CFrame.identity
+                        end
+
+                        return CFrame.lookAt(BaseCF.Position, BaseCF.Position + FlatLooKVec) * CFrame.new(0, 0, -(HRP.Size.Z/2 + CurrentAbilityData.Range.Z/2))
+                    end,
+                    Size = CurrentAbilityData.Range,
+                    Length = 4,
+                    Ignore = { self._Attacker },
+                    Visualise = true,
+                    Cb = function(hitCharacter: Model)
+                        context.OnHit({ 
+                            AbilityName = self.AbilityName,
+                            Attacked = hitCharacter, 
+                            AttackerCFrame = Attacker:GetPivot() 
+                        })
+                        
+                        self:Hit({
+                            Attacker = self._Attacker,
+                            Attacked = hitCharacter
+                        })
+                    end
+                }
+            ):Trigger()
+        end)
+
+        Track:Play()
+
+        task.delay(CurrentAbilityData.Time, function()
+            context.OnEnd({
                 AbilityName = self.AbilityName,
             })
-    
-            self._ActiveUntil = math.huge
-    
-            task.spawn(function()
-                local AnimationID = CurrentAbilityData.Animation
-                local AnimationInstance = Instance.new("Animation")
-                AnimationInstance.AnimationId = AnimationID
-    
-                local Track = Animator:LoadAnimation(AnimationInstance)
-    
-                Track:GetMarkerReachedSignal("Hit"):Connect(function()
-                    HitboxClass.new(
-                        {
-                            HitboxType = "Box",
-                            GetCFrame = function()
-                                local BaseCF = Attacker:GetPivot()
-                                local LookVec = BaseCF.LookVector
-                                local FlatLooKVec = Vector3.new(LookVec.X, 0, LookVec.Z)
-    
-                                if FlatLooKVec.Magnitude < 1e-6 then
-                                    return CFrame.identity
-                                end
-    
-                                return CFrame.lookAt(BaseCF.Position, BaseCF.Position + FlatLooKVec) * CFrame.new(0, 0, -(HRP.Size.Z/2 + CurrentAbilityData.Range.Z/2))
-                            end,
-                            Size = CurrentAbilityData.Range,
-                            Length = 4,
-                            Ignore = { context.Attacker },
-                            Visualise = true,
-                            Cb = function(hitCharacter: Model)
-                                context.OnHit({ 
-                                    AbilityName = self.AbilityName,
-                                    Attacked = hitCharacter, 
-                                    AttackerCFrame = Attacker:GetPivot() 
-                                })
-                                
-                                self:Hit({
-                                    Attacker = context.Attacker,
-                                    Attacked = hitCharacter
-                                })
-                            end
-                        }
-                    ):Trigger()
-    
-                    context.OnEnd({
-                        AbilityName = self.AbilityName,
-                    })
-
-                    self:End()
-                end)
-    
-                Track:Play()
-            end)
+            self:End()
         end)
     end
 end
 
 function DefaultBasicAttack.End(self: Object, context: any)
-    self._ActiveUntil = 0
+    self._CombatEntityStateService:SetCurrentAbility(self._Attacker, nil)
 end
 
 function DefaultBasicAttack.Hit(self: Object, context: Hit_Context)
@@ -232,12 +230,6 @@ function DefaultBasicAttack.Hit(self: Object, context: Hit_Context)
             Effect:Emit(1)
         end
     end
-end
-
-function DefaultBasicAttack.UpdateState(self: Object, context: UpdateState_Context)
-    self._ActiveUntil = context.State.ActiveUntil
-    self._Combo = context.State.Combo
-    self._FirstHitTime = context.State.FirstHitTime
 end
 
 return DefaultBasicAttack :: Module

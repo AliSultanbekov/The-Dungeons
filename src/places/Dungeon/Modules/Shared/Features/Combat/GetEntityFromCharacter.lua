@@ -18,7 +18,7 @@ local Jecs = require("Jecs")
 
 -- [ Module Table ] --
 local GetEntityFromCharact = function(character: Model)
-    local Entity = character:GetAttribute("EntityID") :: Jecs.Entity
+    local Entity = character:GetAttribute("Entity") :: Jecs.Entity
     
     if not Entity then
         error("[CombatEntityService] Entity not found on character")

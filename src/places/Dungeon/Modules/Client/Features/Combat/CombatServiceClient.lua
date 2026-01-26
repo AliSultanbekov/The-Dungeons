@@ -33,6 +33,7 @@ type ModuleData = {
     _PlayerCharacterManager: typeof(require("PlayerCharacterManager")),
     _UserInputManager: typeof(require("UserInputManager")),
     _CombatNetworkClient: typeof(require("CombatNetworkClient")),
+    _CombatEntityStateServiceClient: typeof(require("CombatEntityStateServiceClient")),
     _AbilityManager: AbilityManager.Object,
     _CombatObjects: {
         [Model]: CombatObject
@@ -45,8 +46,16 @@ export type Module = typeof(CombatController) & ModuleData
 
 -- [ Public Functions ] --
 function CombatController.OnPlayerCharacterAdded(self: Module, maid: Maid.Maid, character: Model)
-    local CombatObject = CombatClass.new(character, self._AbilityManager)
-    CombatObject:AddAbility("DefaultBasicAttack", { ItemData = { Name = "Wooden Sword" } })
+    local CombatObject = CombatClass.new(character, {
+        AbilityManager = self._AbilityManager,
+        CombatEntityStateService = self._CombatEntityStateServiceClient,
+    })
+    CombatObject:AddAbility("DefaultBasicAttack", { 
+        ItemData = { Name = "Wooden Sword" },
+    })
+    CombatObject:AddAbility("Block", { 
+        ItemData = { Name = "Wooden Sword" },
+    })
 
     self._CombatObjects[character] = CombatObject
 
@@ -64,6 +73,7 @@ function CombatController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     self._PlayerCharacterManager = self._ServiceBag:GetService(require("PlayerCharacterManager"))
     self._UserInputManager = self._ServiceBag:GetService(require("UserInputManager"))
     self._CombatNetworkClient = self._ServiceBag:GetService(require("CombatNetworkClient"))
+    self._CombatEntityStateServiceClient = self._ServiceBag:GetService(require("CombatEntityStateServiceClient"))
 
     self._AbilityManager = AbilityManager.new(script.Parent.Abilities)
     self._CombatObjects = {}
@@ -104,21 +114,33 @@ function CombatController.Start(self: Module)
         )
     end)
 
-    self._CombatNetworkClient.RemoteEvents.AbilityUsed:Connect(function(context: CombatTypes.Context?)
-        if not context then
+    self._UserInputManager:RegisterKeymapAction(Actions.SPECIAL_ATTACK, KeyMaps[Actions.SPECIAL_ATTACK], function(data)
+        if data.InputState ~= Enum.UserInputState.Begin then
             return
         end
 
-        if context.Attacker == Player.Character then
+        local Character = Player.Character
+
+        if not Character then
             return
         end
 
-        context.Mode = "FromServer"
+        local CombatObject = self._CombatObjects[Character]
 
-        local Attacker = context.Attacker
-        local CombatObject = self._CombatObjects[Attacker]
-
-        CombatObject:UseAbility("DefaultBasicAttack", context)
+        CombatObject:UseAbility("Block",
+            {
+                Mode = "FromClient",
+                OnUse = function(context: CombatTypes.Context)
+                    self._CombatNetworkClient:UseAbility(context)
+                end,
+                OnEnd = function(context: CombatTypes.Context)
+                    self._CombatNetworkClient:EndAbility(context)
+                end,
+                OnHit = function(context: CombatTypes.Context)
+                    self._CombatNetworkClient:HitAbility(context)
+                end,
+            }
+        )
     end)
 
     self._CombatNetworkClient.RemoteEvents.AbilityHit:Connect(function(context: CombatTypes.Context?)
@@ -135,22 +157,6 @@ function CombatController.Start(self: Module)
         local Attacker = context.Attacker
         local CombatObject = self._CombatObjects[Attacker]
         CombatObject:HitAbility("DefaultBasicAttack", context)
-    end)
-
-    self._CombatNetworkClient.RemoteEvents.AbilityStateUpdated:Connect(function(context: CombatTypes.Context?)
-        if not context then
-            return
-        end
-
-        local Character = Player.Character
-
-        if not Character then
-            return
-        end
-
-        local CombatObject = self._CombatObjects[Character]
-
-        CombatObject:UpdateAbilityState(context.AbilityName, context)
     end)
 end
 

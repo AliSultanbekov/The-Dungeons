@@ -46,6 +46,7 @@ type Member = Types.Member
 type Config = Types.Config
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
+	_CombatEntityServiceServer: typeof(require("CombatEntityServiceServer")),
 
 	_Config: Config,
 	_Members: { Member },
@@ -297,6 +298,7 @@ function SquadService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     end
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
+	self._CombatEntityServiceServer = self._ServiceBag:GetService(require("CombatEntityServiceServer"))
 
 	self._Config = {
 		StartPosition = Vector3.new(0, 0, 0),

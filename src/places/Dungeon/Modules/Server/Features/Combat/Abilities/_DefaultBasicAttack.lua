@@ -126,14 +126,14 @@ function DefaultBasicAttack.Use(self: Object, context: Use_Context)
     and PreviousAbility.StartTime + PreviousAbility.Duration + Config.MaxDelay >= os.clock() 
     and PreviousAbility.Combo < #ComboData then
         Combo += PreviousAbility.Combo
-        self._CombatEntityStateService:SetCurrentAbility(self._Attacker, {
+        self._CombatEntityStateService:TryUseAbility(self._Attacker, {
             Name = self.AbilityName,
             StartTime = os.clock(),
             Duration = ComboData[Combo].Time,
             Combo = Combo,
         })
     else
-        self._CombatEntityStateService:SetCurrentAbility(self._Attacker, {
+        self._CombatEntityStateService:TryUseAbility(self._Attacker, {
             Name = self.AbilityName,
             StartTime = os.clock(),
             Duration = ComboData[Combo].Time,
@@ -147,7 +147,7 @@ function DefaultBasicAttack.End(self: Object, context: End_Context)
         return
     end
 
-    self._CombatEntityStateService:SetCurrentAbility(self._Attacker, nil)
+    self._CombatEntityStateService:TryEndAbility(self._Attacker, self.AbilityName)
 end
 
 function DefaultBasicAttack.Hit(self: Object, context: Hit_Context)

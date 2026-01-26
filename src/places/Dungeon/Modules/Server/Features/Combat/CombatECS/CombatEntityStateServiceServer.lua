@@ -1,5 +1,3 @@
-local AccountService = game:GetService("AccountService")
-local ServerScriptService = game:GetService("ServerScriptService")
 --[=[
     @class CombatEntityStateServiceServer
 ]=]
@@ -7,7 +5,6 @@ local ServerScriptService = game:GetService("ServerScriptService")
 -- [ Roblox Services ] --
 
 -- [ Imports ] --
-local Duration = require(ServerScriptService.Game.node_modules["@quentystudios"].Cmdr.BuiltInTypes.Duration)
 local Types = require("./_Types")
 
 -- [ Require ] --
@@ -15,7 +12,6 @@ local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 local ServiceBag = require("ServiceBag")
---local Jecs = require("Jecs")
 local GetEntityFromCharacter = require("GetEntityFromCharacter")
 
 -- [ Constants ] --
@@ -79,7 +75,7 @@ function CombatEntityStateServiceServer.GetPreviousAbility(self: Module, charact
 
     local PreviousAbility = World:get(Entity, Components.PreviousAbility) :: Types.PreviousAbilityComponent
 
-    return table.clone(PreviousAbility)
+    return PreviousAbility
 end
 
 function CombatEntityStateServiceServer.GetCurrentAbility(self: Module, character: Model): { [string]: any }?
@@ -93,26 +89,62 @@ function CombatEntityStateServiceServer.GetCurrentAbility(self: Module, characte
 
     local CurrentAbility = World:get(Entity, Components.CurrentAbility) :: Types.CurrentAbilityComponent
 
-    return table.clone(CurrentAbility)
+    return CurrentAbility
 end
 
-function CombatEntityStateServiceServer.SetCurrentAbility(self: Module, character: Model, data: { [string]: any }?)
+function CombatEntityStateServiceServer.TryUseAbility(self: Module, character: Model, abilityData: { [string]: any })
     local Entity = GetEntityFromCharacter(character)
     local World = self._CombatEntityServiceServer:GetWorld()
+    --local Tag = self._CombatEntityServiceServer:GetTags()
     local Components = self._CombatEntityServiceServer:GetComponents()
 
-    if data then
-        World:set(Entity, Components.CurrentAbility, data)
-    else
-        local CurrentAbility = World:get(Entity, Components.CurrentAbility)
-
-        if not CurrentAbility then
-            return
-        end
-
-        World:set(Entity, Components.PreviousAbility, table.clone(CurrentAbility))
-        World:remove(Entity, Components.CurrentAbility)
+    if World:has(Entity, Components.Stunned) then
+        return false
     end
+
+    if World:has(Entity, Components.CurrentAbility) then
+        return false
+    end
+
+    local Ether = World:get(Entity, Components.Ether)
+
+    if not Ether or Ether <= 0 then
+        return false
+    end
+
+    World:set(Entity, Components.CurrentAbility, abilityData)
+
+    if abilityData.AbilityName == "Block" then
+        World:add(Entity, Components.Blocking)
+    end
+
+    return true
+end
+
+function CombatEntityStateServiceServer.TryEndAbility(self: Module, character, abilityName: string?): boolean
+    local Entity = GetEntityFromCharacter(character)
+    local World = self._CombatEntityServiceServer:GetWorld()
+    --local Tag = self._CombatEntityServiceServer:GetTags()
+    local Components = self._CombatEntityServiceServer:GetComponents()
+
+    local CurrentAbility = World:get(Entity, Components.CurrentAbility)
+
+    if not CurrentAbility then
+        return false
+    end
+
+    if abilityName and CurrentAbility.AbilityName ~= abilityName then
+        return false
+    end
+
+    World:set(Entity, table.clone(Components.PreviousAbility))
+    World:remove(Entity, Components.CurrentAbility)
+
+    if CurrentAbility.AbilityName == "Block" then
+        World:remove(Entity, Components.Blocking)
+    end
+
+    return true
 end
 
 function CombatEntityStateServiceServer.IsStunned(self: Module, character: Model): boolean

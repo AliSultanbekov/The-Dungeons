@@ -40,11 +40,6 @@ type ModuleData = {
 export type Module = typeof(CombatNetworkServer) & ModuleData
 
 -- [ Private Functions ] --
-function CombatNetworkServer.EntityStateUpdated(self: Module, packet: CombatTypes.EntityStateUpdatedRemotePacket)
-    local CombatChannel = self._NetworkManager:GetNetwork("Combat")
-    CombatChannel:FireAllClients("EntityStateUpdated", packet)
-end
-
 function CombatNetworkServer.AbilityHit(self: Module, packet: CombatTypes.AbilityHitRemotePacket)
     local CombatChannel = self._NetworkManager:GetNetwork("Combat")
     CombatChannel:FireAllClients("AbilityHit", packet)

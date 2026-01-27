@@ -1,5 +1,5 @@
 --[=[
-    @class CombatEntityReplicationServiceServer
+    @class EntityReplicationServiceServer
 ]=]
 
 -- [ Roblox Services ] --
@@ -17,39 +17,38 @@ local ServiceBag = require("ServiceBag")
 -- [ Variables ] --
 
 -- [ Module Table ] --
-local CombatEntityReplicationServiceServer = {}
+local EntityReplicationServiceServer = {}
 
 -- [ Types ] --
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
-    _CombatEntityServiceServer: typeof(require("CombatEntityServiceServer")),
-    _CombatNetworkServer: typeof(require("CombatNetworkServer")),
+    _EntityServiceServer: typeof(require("EntityServiceServer")),
+    _EntityNetworkServer: typeof(require("EntityNetworkServer")),
 }
 
-export type Module = typeof(CombatEntityReplicationServiceServer) & ModuleData
+export type Module = typeof(EntityReplicationServiceServer) & ModuleData
 
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function CombatEntityReplicationServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
+function EntityReplicationServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     if self._ServiceBag ~= nil then
         error("Service already initialized")
     end
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
-    self._CombatEntityServiceServer = self._ServiceBag:GetService(require("CombatEntityServiceServer"))
-    self._CombatNetworkServer = self._ServiceBag:GetService(require("CombatNetworkServer"))
+    self._EntityServiceServer = self._ServiceBag:GetService(require("EntityServiceServer"))
+    self._EntityNetworkServer = self._ServiceBag:GetService(require("EntityNetworkServer"))
 end
 
-function CombatEntityReplicationServiceServer.Start(self: Module)
-    local World = self._CombatEntityServiceServer:GetWorld()
-    local Tags = self._CombatEntityServiceServer:GetTags()
+function EntityReplicationServiceServer.Start(self: Module)
+    local World = self._EntityServiceServer:GetWorld()
+    local Tags = self._EntityServiceServer:GetTags()
 
     -- TODO: setup optimization
-
     for component in World:query(Tags.Replicated) do
         World:added(component, function(e, _, value)
-            self._CombatNetworkServer:EntityStateUpdated({
+            self._EntityNetworkServer:ReplicateComponentChange({
                 Action = "Added",
                 Data = {
                     Entity = e,
@@ -60,7 +59,7 @@ function CombatEntityReplicationServiceServer.Start(self: Module)
         end)
 
         World:removed(component, function(e, _)
-            self._CombatNetworkServer:EntityStateUpdated({
+            self._EntityNetworkServer:ReplicateComponentChange({
                 Action = "Removed",
                 Data = {
                     Entity = e,
@@ -70,7 +69,7 @@ function CombatEntityReplicationServiceServer.Start(self: Module)
         end)    
 
         World:changed(component, function(e, _, value)
-            self._CombatNetworkServer:EntityStateUpdated({
+            self._EntityNetworkServer:ReplicateComponentChange({
                 Action = "Updated",
                 Data = {
                     Entity = e,
@@ -82,4 +81,4 @@ function CombatEntityReplicationServiceServer.Start(self: Module)
     end
 end
 
-return CombatEntityReplicationServiceServer :: Module
+return EntityReplicationServiceServer :: Module

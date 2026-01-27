@@ -22,12 +22,13 @@ local CombatClass = {}
 CombatClass.__index = CombatClass
 
 -- [ Types ] --
-type CombatEntityStateService = {
-    GetPreviousAbility: (self: any, character: Model) -> { [string]: any }?,
-    GetCurrentAbility: (self: any, character: Model) -> { [string]: any }?,
-    SetCurrentAbility: (self: any, character: Model, data: { [string]: any }?) -> (),
-    IsStunned: (self: any, character: Model) -> boolean,
-    StartBlocking: (self: any, character: Model) -> boolean,
+type CreatureService = {
+    DamageCreature: (self: CreatureService, attacker: Model, attacked: Model, damageCount: number) -> boolean,
+    GetCurrentAbility: (self: CreatureService, character: Model) -> Context?,
+    GetPreviousAbility: (self: CreatureService, character: Model) -> Context?,
+    IsStunned: (self: CreatureService, character: Model) -> boolean,
+    TryUseAbility: (self: CreatureService, character: Model, abilityData: Context) -> boolean,
+    TryEndAbility: (self: CreatureService, character: Model, abilityName: string?) -> boolean,
 }
 type AbilityObject = CombatTypes.AbilityObject
 type AbilityModule = CombatTypes.AbilityModule
@@ -36,7 +37,7 @@ type Context = CombatTypes.Context
 export type ObjectData = {
     _Character: Model,
     _AbilityManager: AbilityManager.Object,
-    _CombatEntityStateService: CombatEntityStateService,
+    _CreatureService: CreatureService,
     _Abilities: {
         [string]: AbilityObject
     }
@@ -47,12 +48,12 @@ export type Module = typeof(CombatClass)
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function CombatClass.new(character: Model, context: {AbilityManager: AbilityManager.Object, CombatEntityStateService: CombatEntityStateService}): Object
+function CombatClass.new(character: Model, context: {AbilityManager: AbilityManager.Object, CreatureService: CreatureService}): Object
     local self = setmetatable({} :: any, CombatClass) :: Object
 
     self._Character = character
     self._AbilityManager = context.AbilityManager
-    self._CombatEntityStateService = context.CombatEntityStateService
+    self._CreatureService = context.CreatureService
     self._Abilities = {}
 
     return self
@@ -61,7 +62,7 @@ end
 function CombatClass.AddAbility(self: Object, abilityName: string, context: Context)
     local AbilityModule: AbilityModule = self._AbilityManager:Get(abilityName)
 
-    context.CombatEntityStateService = self._CombatEntityStateService
+    context.CreatureService = self._CreatureService
     context.Attacker = self._Character
 
     local AbiltyObject = AbilityModule.new(context)
@@ -74,13 +75,11 @@ function CombatClass.RemoveAbility(self: Object, abilityName: string)
 end
 
 function CombatClass.UseAbility(self: Object, abilityName: string, context: Context)
-    if self._CombatEntityStateService:GetCurrentAbility(self._Character) then
+    if self._CreatureService:GetCurrentAbility(self._Character) then
         return
     end
 
-    print(self._CombatEntityStateService:IsStunned(self._Character))
-
-    if self._CombatEntityStateService:IsStunned(self._Character) then
+    if self._CreatureService:IsStunned(self._Character) then
         return
     end
 
@@ -88,7 +87,7 @@ function CombatClass.UseAbility(self: Object, abilityName: string, context: Cont
 end
 
 function CombatClass.EndAbility(self: Object, abilityName: string, context: Context)
-    if not self._CombatEntityStateService:GetCurrentAbility(self._Character) then
+    if not self._CreatureService:GetCurrentAbility(self._Character) then
         return
     end
 
@@ -96,7 +95,7 @@ function CombatClass.EndAbility(self: Object, abilityName: string, context: Cont
 end
 
 function CombatClass.HitAbility(self: Object, abilityName: string, context: Context)
-    if not self._CombatEntityStateService:GetCurrentAbility(self._Character) then
+    if not self._CreatureService:GetCurrentAbility(self._Character) then
         return
     end
 

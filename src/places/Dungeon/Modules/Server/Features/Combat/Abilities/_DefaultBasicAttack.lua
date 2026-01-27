@@ -26,14 +26,14 @@ local DefaultBasicAttack = {
 DefaultBasicAttack.__index = DefaultBasicAttack
 
 -- [ Types ] --
-type AbilityState = {
+type AbilityComponent = {
     Name: string,
     StartTime: number,
     Combo: number,
     Duration: number,
 }
 type PositionHistoryService = typeof(require("PositionHistoryService"))
-type CombatEntityStateService = typeof(require("CombatEntityStateServiceServer"))
+type CreatureServiceServer = typeof(require("CreatureServiceServer"))
 type Config = {
     AbilityName: string,
     MaxDelay: number,
@@ -66,12 +66,12 @@ type New_Context = {
     Attacker: Model,
     ItemData: WeaponItemData,
     PositionHistoryService: PositionHistoryService,
-    CombatEntityStateService: CombatEntityStateService,
+    CreatureService: CreatureServiceServer,
 }
 type AbilityObject = CombatTypes.AbilityObject
 export type ObjectData = {
     _PositionHistoryService: PositionHistoryService,
-    _CombatEntityStateService: CombatEntityStateService,
+    _CreatureServiceServer: CreatureServiceServer,
     _Attacker: Model,
     _WeaponData: WeaponItemData,
     _Config: Config,
@@ -87,7 +87,7 @@ function DefaultBasicAttack.new(context: New_Context): Object
     local self = setmetatable({} :: any, DefaultBasicAttack) :: Object
 
     self._PositionHistoryService = context.PositionHistoryService
-    self._CombatEntityStateService = context.CombatEntityStateService
+    self._CreatureServiceServer = context.CreatureService
 
     self._Attacker = context.Attacker
     self._WeaponData = context.ItemData
@@ -97,7 +97,7 @@ function DefaultBasicAttack.new(context: New_Context): Object
 end
 
 function DefaultBasicAttack.IsActive(self: Object): boolean
-    local CurrentAbility = self._CombatEntityStateService:GetCurrentAbility(self._Attacker) :: AbilityState?
+    local CurrentAbility = self._CreatureServiceServer:GetCurrentAbility(self._Attacker) :: AbilityComponent?
 
     if not CurrentAbility then
         return false
@@ -111,7 +111,7 @@ function DefaultBasicAttack.IsActive(self: Object): boolean
 end
 
 function DefaultBasicAttack.Use(self: Object, context: Use_Context)
-    local PreviousAbility = self._CombatEntityStateService:GetPreviousAbility(self._Attacker) :: AbilityState?
+    local PreviousAbility = self._CreatureServiceServer:GetPreviousAbility(self._Attacker) :: AbilityComponent?
 
     if self:IsActive() then
         return
@@ -126,15 +126,15 @@ function DefaultBasicAttack.Use(self: Object, context: Use_Context)
     and PreviousAbility.StartTime + PreviousAbility.Duration + Config.MaxDelay >= os.clock() 
     and PreviousAbility.Combo < #ComboData then
         Combo += PreviousAbility.Combo
-        self._CombatEntityStateService:TryUseAbility(self._Attacker, {
-            Name = self.AbilityName,
+        self._CreatureServiceServer:TryUseAbility(self._Attacker, {
+            AbilityName = self.AbilityName,
             StartTime = os.clock(),
             Duration = ComboData[Combo].Time,
             Combo = Combo,
         })
     else
-        self._CombatEntityStateService:TryUseAbility(self._Attacker, {
-            Name = self.AbilityName,
+        self._CreatureServiceServer:TryUseAbility(self._Attacker, {
+            AbilityName = self.AbilityName,
             StartTime = os.clock(),
             Duration = ComboData[Combo].Time,
             Combo = Combo,
@@ -147,11 +147,11 @@ function DefaultBasicAttack.End(self: Object, context: End_Context)
         return
     end
 
-    self._CombatEntityStateService:TryEndAbility(self._Attacker, self.AbilityName)
+    self._CreatureServiceServer:TryEndAbility(self._Attacker, self.AbilityName)
 end
 
 function DefaultBasicAttack.Hit(self: Object, context: Hit_Context)
-    local CurrentAbility = self._CombatEntityStateService:GetCurrentAbility(self._Attacker) :: AbilityState?
+    local CurrentAbility = self._CreatureServiceServer:GetCurrentAbility(self._Attacker) :: AbilityComponent?
 
     if not self:IsActive() or not CurrentAbility then
         return
@@ -187,7 +187,7 @@ function DefaultBasicAttack.Hit(self: Object, context: Hit_Context)
         return
     end
 
-    self._CombatEntityStateService:DamageEntity(self._Attacker, context.Attacked, CurrentComboData.Damage)
+    self._CreatureServiceServer:DamageCreature(self._Attacker, context.Attacked, CurrentComboData.Damage)
 end
 
 return DefaultBasicAttack :: Module

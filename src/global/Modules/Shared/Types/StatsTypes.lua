@@ -26,33 +26,33 @@ export type StatConfig = {
 }
 
 export type RawStats = {
-    Health : number,
-    MaxHealth : number,
-    HealthBubble : number,
-    Mana : number,
-    CriticalRating : number,
-    PhysicalMitigation : number,
-    TacticalMitigation : number,
-    CriticalDefense : number,
-    ManaRegen : number,
-    HealthRegen : number,
-    OutgoingHealing : number,
-    IncomingHealing : number,
-    TacticalMastery : number,
-    PhysicalMastery : number,
+    Health: number,
+    MaxHealth: number,
+    HealthBubble: number,
+    Mana: number,
+    CriticalRating: number,
+    PhysicalMitigation: number,
+    TacticalMitigation: number,
+    CriticalDefense: number,
+    ManaRegen: number,
+    HealthRegen: number,
+    OutgoingHealing: number,
+    IncomingHealing: number,
+    TacticalMastery: number,
+    PhysicalMastery: number,
 }
 
 export type PrimaryStats = {
-    Strength : number,
-    Dexterity : number,
-    Intelligence : number,
-    Vitality : number,
-    Focus : number,
+    Strength: number,
+    Dexterity: number,
+    Intelligence: number,
+    Vitality: number,
+    Focus: number,
 }
     
 export type PlayerStats = {
-    RawStats : RawStats,
-    PrimaryStats : PrimaryStats,
+    RawStats: RawStats,
+    PrimaryStats: PrimaryStats,
 }
 
 return {}

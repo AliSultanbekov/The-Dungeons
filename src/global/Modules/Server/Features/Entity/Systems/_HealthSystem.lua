@@ -1,59 +1,46 @@
 --[=[
-    @class HealthRegenService
+    @class TestSystem
 ]=]
 
 -- [ Roblox Services ] --
-local RunService = game:GetService("RunService")
 
 -- [ Imports ] --
 
 -- [ Require ] --
-local require = require(script.Parent.loader).load(script)
+local _require = require(script.Parent.Parent.loader).load(script)
 
 -- [ Imports ] --
-local Jecs = require("Jecs")
-local ComponentConstants = require("ComponentConstants")
-
-local GeneralGameConstants = require("GeneralGameConstants")
-local ServiceBag = require("ServiceBag")
+local EntityTypesServer = require("EntityTypesServer")
 
 -- [ Constants ] --
 
 -- [ Variables ] --
 
 -- [ Module Table ] --
-local HealthRegenService = {}
+local HealthSystem = {}
 
 -- [ Types ] --
-type ModuleData = {
-    _ServiceBag: ServiceBag.ServiceBag,
-    _JecsWorld: Jecs.World,
-}
+type ModuleData = {}
 
+export type Module = typeof(HealthSystem) & ModuleData
 
-export type Module = typeof(HealthRegenService) & ModuleData
-
-export type InCombatComponent = {
-    Duration : number,
-    CurrentDuration : number,
-}
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function HealthRegenService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
-    if self._ServiceBag ~= nil then
-        error("Service already initialized")
+function HealthSystem.Update(self: Module, context: EntityTypesServer.SystemModuleUpdateContext)
+    local World = context.World
+    local Tags = context.Tags
+    local Components = context.Components
+    for entity, _, character, health in World:query(Tags.Alive, Components.Character, Components.Health) do
+
+        if character.Humanoid.Health == nil then
+            return
+        end
+
+        character.Humanoid.Health = health
     end
 
-    warn("HealthRegenService Init called")
-    
-
-    self._JecsWorld = GeneralGameConstants.WORLD_ENTITY
-    self._ServiceBag = assert(serviceBag, "No serviceBag")
-end
-
-function HealthRegenService.Start(self: Module)
-    RunService.Heartbeat:Connect(function(dt: number)
+    --[[RunService.Heartbeat:Connect(function(dt: number)
         for entityId, combatStats in self._JecsWorld:query(ComponentConstants.CombatStats) do
             local rawStats = combatStats.RawStats
             local maxHealth = rawStats.MaxHealth
@@ -77,7 +64,7 @@ function HealthRegenService.Start(self: Module)
                 self._JecsWorld:remove(entityId, ComponentConstants.InCombatComponent)
             end
         end
-    end)
+    end)]]
 end
 
-return HealthRegenService :: Module
+return HealthSystem :: Module

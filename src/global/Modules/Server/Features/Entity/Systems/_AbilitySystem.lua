@@ -5,29 +5,29 @@
 -- [ Roblox Services ] --
 
 -- [ Imports ] --
-local Types = require("../../_Types")
 
 -- [ Require ] --
-local _require = require(script.Parent.Parent.Parent.loader).load(script)
+local _require = require(script.Parent.Parent.loader).load(script)
 
 -- [ Imports ] --
+local EntityTypesServer = require("EntityTypesServer")
 
 -- [ Constants ] --
 
 -- [ Variables ] --
 
 -- [ Module Table ] --
-local BlockSystem = {}
+local AbilitySystem = {}
 
 -- [ Types ] --
 type ModuleData = {}
 
-export type Module = typeof(BlockSystem) & ModuleData
+export type Module = typeof(AbilitySystem) & ModuleData
 
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function BlockSystem.Update(self: Module, context: Types.SystemContext)
+function AbilitySystem.Update(self: Module, context: EntityTypesServer.SystemModuleUpdateContext)
     local World = context.World
     local Tags = context.Tags
     local Components = context.Components
@@ -43,4 +43,4 @@ function BlockSystem.Update(self: Module, context: Types.SystemContext)
     end
 end
 
-return BlockSystem :: Module
+return AbilitySystem :: Module

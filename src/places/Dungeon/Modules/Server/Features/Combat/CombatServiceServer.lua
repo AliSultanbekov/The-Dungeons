@@ -30,7 +30,7 @@ type ModuleData = {
     _CombatNetworkServer: typeof(require("CombatNetworkServer")),
     _PlayerCharacterManager: typeof(require("PlayerCharacterManager")),
     _PositionHistoryService: typeof(require("PositionHistoryService")),
-    _CombatEntityStateServiceServer: typeof(require("CombatEntityStateServiceServer")),
+    _CreatureServiceServer: typeof(require("CreatureServiceServer")),
     _AbilityManager: AbilityManager.Object,
     _CombatObjects: { [Model]: CombatObject},
 }
@@ -43,7 +43,7 @@ export type Module = typeof(CombatServiceServer) & ModuleData
 function CombatServiceServer.OnPlayerCharacterAdded(self: Module, maid: Maid.Maid, character: Model)
     local CombatObject = CombatClass.new(character, {
         AbilityManager = self._AbilityManager,
-        CombatEntityStateService = self._CombatEntityStateServiceServer,
+        CreatureService = self._CreatureServiceServer,
     })
     CombatObject:AddAbility("DefaultBasicAttack", { 
         ItemData = { Name = "Wooden Sword" },
@@ -69,7 +69,7 @@ function CombatServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._CombatNetworkServer = self._ServiceBag:GetService(require("CombatNetworkServer"))
     self._PlayerCharacterManager = self._ServiceBag:GetService(require("PlayerCharacterManager"))
     self._PositionHistoryService = self._ServiceBag:GetService(require("PositionHistoryService"))
-    self._CombatEntityStateServiceServer = self._ServiceBag:GetService(require("CombatEntityStateServiceServer"))
+    self._CreatureServiceServer = self._ServiceBag:GetService(require("CreatureServiceServer"))
     self._AbilityManager = AbilityManager.new(script.Parent.Abilities)
     self._CombatObjects = {}
 end

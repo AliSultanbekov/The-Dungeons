@@ -5,12 +5,12 @@
 -- [ Roblox Services ] --
 
 -- [ Imports ] --
-local Types = require("../../_Types")
 
 -- [ Require ] --
-local _require = require(script.Parent.Parent.Parent.loader).load(script)
+local _require = require(script.Parent.Parent.loader).load(script)
 
 -- [ Imports ] --
+local EntityTypesServer = require("EntityTypesServer")
 
 -- [ Constants ] --
 
@@ -27,12 +27,12 @@ export type Module = typeof(BlockSystem) & ModuleData
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function BlockSystem.Update(self: Module, context: Types.SystemContext)
+function BlockSystem.Update(self: Module, context: EntityTypesServer.SystemModuleUpdateContext)
     local World = context.World
     local Tags = context.Tags
     local Components = context.Components
     for entity in World:query(Tags.Alive) do
-        local Ether = World:get(entity, Components.Ether) :: Types.EtherComponent
+        local Ether = World:get(entity, Components.Ether) :: EntityTypesServer.EtherComponent
         if Ether <= 0 then
             World:remove(entity, Components.Blocking)
         end

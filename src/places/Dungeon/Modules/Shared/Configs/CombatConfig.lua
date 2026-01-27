@@ -21,9 +21,6 @@ local CombatConfig = {
     AnglePer100ms = math.rad(30),
     DistanceTolerance = 4,
     EndGracePeriod = 0.12,
-
-    
-
 }
 
 -- [ Types ] --

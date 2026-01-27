@@ -29,7 +29,6 @@ type ModuleData = {
     _NetworkManager: typeof(require("NetworkManager")),
     RemoteEvents: {
         AbilityHit: Signal.Signal<CombatTypes.AbilityHitRemotePacket>,
-        EntityStateUpdated: Signal.Signal<CombatTypes.EntityStateUpdatedRemotePacket>,
     }
 }
 
@@ -62,7 +61,6 @@ function CombatNetworkClient.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._NetworkManager = self._ServiceBag:GetService(require("NetworkManager"))
     self.RemoteEvents = {
         AbilityHit = Signal.new(),
-        EntityStateUpdated = Signal.new(),
     } :: any
 end
 
@@ -71,10 +69,6 @@ function CombatNetworkClient.Start(self: Module)
 
     CombatChannel:Connect("AbilityHit", function(packet: CombatTypes.AbilityHitRemotePacket)
         self.RemoteEvents.AbilityHit:Fire(packet)
-    end)
-
-    CombatChannel:Connect("EntityStateUpdated", function(packet: CombatTypes.EntityStateUpdatedRemotePacket)  
-        self.RemoteEvents.EntityStateUpdated:Fire(packet)
     end)
 end
 

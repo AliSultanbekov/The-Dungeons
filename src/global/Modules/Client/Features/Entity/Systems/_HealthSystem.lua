@@ -10,7 +10,7 @@
 local require = require(script.Parent.Parent.loader).load(script)
 
 -- [ Imports ] --
-local EntityTypesServer = require("EntityTypesServer")
+local EntityTypesServer = require("EntityTypesClient")
 
 -- [ Constants ] --
 
@@ -32,6 +32,7 @@ function HealthSystem.Update(self: Module, context: EntityTypesServer.SystemModu
     local Tags = context.Tags
     local Components = context.Components
     for entity, _, character, health in World:query(Tags.Alive, Components.Character, Components.Health) do
+
         if character.Humanoid.Health == nil then
             return
         end

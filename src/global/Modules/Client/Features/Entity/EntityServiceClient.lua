@@ -15,6 +15,7 @@ local require = require(script.Parent.loader).load(script)
 local ServiceBag = require("ServiceBag")
 local Jecs = require("Jecs")
 local EntityTypesClient = require("EntityTypesClient")
+local Jabby = require("Jabby")
 
 -- [ Constants ] --
 
@@ -38,10 +39,6 @@ export type Module = typeof(EntityServiceClient) & ModuleData
 -- [ Private Functions ] --
 function EntityServiceClient._GatherAllSystems(self: Module): { EntityTypesClient.SystemModule }
     local Systems = {}
-
-    if not SystemsFolder then
-        return Systems
-    end
 
     for _, instance in SystemsFolder:GetDescendants() do
         if not instance:IsA("ModuleScript") then
@@ -78,13 +75,13 @@ function EntityServiceClient.Init(self: Module, serviceBag: ServiceBag.ServiceBa
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
 
-    self._World = Jecs.World.new()
     self._Tags = {
         Alive = Jecs.tag(),
         Player = Jecs.tag(),
         NPC = Jecs.tag(),
         Replicated = Jecs.tag(),
     }
+    self._World = Jecs.World.new()
     self._Components = {
         Character = self._World:component(),
         Player = self._World:component(),
@@ -130,6 +127,14 @@ function EntityServiceClient.Start(self: Module)
             })
         end
     end)
+
+    Jabby.register({
+        applet = Jabby.applets.world,
+        name = "world",
+        configuration = {
+            world = self._World
+        }
+    })
 end
 
 return EntityServiceClient :: Module

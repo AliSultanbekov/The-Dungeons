@@ -15,28 +15,44 @@ local require = require(script.Parent.loader).load(script)
 local ServiceBag = require("ServiceBag")
 local Jecs = require("Jecs")
 local EntityTypesServer = require("EntityTypesServer")
+local Jabby = require("Jabby")
+local Signal = require("Signal")
 
 -- [ Constants ] --
 
 -- [ Variables ] --
-local SystemsFolder = script.Parent.Systems
 
 -- [ Module Table ] --
 local EntityServiceServer = {}
 
 -- [ Types ] --
+type EntityCreationData = {
+    Tags: { string },
+    Components: { [string]: any },
+    Replicated: boolean,
+}
+type EntityDeletionData = {
+    Entity: Jecs.Entity,
+    Replicated: boolean
+}
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
     _World: Jecs.World,
     _Tags: EntityTypesServer.Tags,
     _Components: EntityTypesServer.Components,
-    _Systems: { EntityTypesServer.SystemModule }
+    _Systems: { EntityTypesServer.SystemModule },
+    ReplicationSignals: {
+        EntityCreated: Signal.Signal<EntityTypesServer.EntityCreatedSignalPacket>,
+        EntityDeleted: Signal.Signal<EntityTypesServer.EntityDeletedSignalPacket>,
+    }
 }
 
 export type Module = typeof(EntityServiceServer) & ModuleData
 
 -- [ Private Functions ] --
 function EntityServiceServer._GatherAllSystems(self: Module): { EntityTypesServer.SystemModule }
+    local SystemsFolder = script.Parent:FindFirstChild("Systems")
+
     local Systems = {}
 
     for _, instance in SystemsFolder:GetDescendants() do
@@ -44,17 +60,53 @@ function EntityServiceServer._GatherAllSystems(self: Module): { EntityTypesServe
             continue
         end
 
-        if not instance.Name:lower():find("System") then
+        if not instance.Name:lower():find("system") then
             continue
         end
 
         Systems[instance.Name] = rbxrequire(instance)
     end
 
-    return Systems 
+    return Systems
 end
 
 -- [ Public Functions ] --
+function EntityServiceServer.CreateEntity(self: Module, EntityData: EntityCreationData): Jecs.Entity
+    local World = self._World
+    local Entity = World:entity()
+
+    for _, tagName in EntityData.Tags do
+        World:add(Entity, self._Tags[tagName])
+    end
+
+    for componentName, data in EntityData.Components do
+        World:set(Entity, self._Components[componentName], data)
+    end
+
+    if EntityData.Replicated then
+        self.ReplicationSignals.EntityCreated:Fire({
+            Entity = Entity,
+            Tags = EntityData.Tags,
+            Components = EntityData.Components,
+        })
+    end
+
+    return Entity
+end
+
+function EntityServiceServer.DeleteEntity(self: Module, EntityData: EntityDeletionData)
+    local Entity = EntityData.Entity
+    local World = self._World
+
+    World:delete(Entity)
+
+    if EntityData.Replicated then
+        self.ReplicationSignals.EntityDeleted:Fire({
+            Entity = Entity
+        })
+    end
+end
+
 function EntityServiceServer.GetComponents(self: Module): EntityTypesServer.Components
     return self._Components
 end
@@ -74,13 +126,13 @@ function EntityServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBa
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
 
-    self._World = Jecs.World.new()
     self._Tags = {
         Alive = Jecs.tag(),
         Player = Jecs.tag(),
         NPC = Jecs.tag(),
         Replicated = Jecs.tag(),
     }
+    self._World = Jecs.World.new()
     self._Components = {
         Name = self._World:component(),
         Stats = self._World:component(),
@@ -169,6 +221,11 @@ function EntityServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._World:add(self._Components.PreviousAbility, self._Tags.Replicated)
 
     self._Systems = self:_GatherAllSystems()
+
+    self.ReplicationSignals = {
+        EntityCreated = Signal.new(),
+        EntityDeleted = Signal.new(),
+    } :: any
 end
 
 function EntityServiceServer.Start(self: Module)
@@ -182,6 +239,14 @@ function EntityServiceServer.Start(self: Module)
             })
         end
     end)
+
+    Jabby.register({
+        applet = Jabby.applets.world,
+        name = "Combat",
+        configuration = {
+            world = self._World
+        }
+    })
 end
 
 return EntityServiceServer :: Module

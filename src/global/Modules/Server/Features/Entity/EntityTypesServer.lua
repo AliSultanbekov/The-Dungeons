@@ -114,6 +114,15 @@ export type SystemModuleUpdateContext = {
 export type SystemModule = {
     Update: (self: SystemModule, context: SystemModuleUpdateContext) -> ()
 }
+export type EntityCreatedSignalPacket = {
+    Entity: Jecs.Entity,
+    Tags: { string },
+    Components: { [string]: any },
+}
+
+export type EntityDeletedSignalPacket = {
+    Entity: Jecs.Entity,
+}
 
 -- [ Private Functions ] --
 

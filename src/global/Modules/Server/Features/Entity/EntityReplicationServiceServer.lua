@@ -1,3 +1,5 @@
+local ServerScriptService = game:GetService("ServerScriptService")
+local _WeaponUIBehavior = require(ServerScriptService.Game.Modules.Global.Client.Features.Inventory.InventoryUIService.ItemUIClass.Behaviors.UI._WeaponUIBehavior)
 --[=[
     @class EntityReplicationServiceServer
 ]=]
@@ -11,6 +13,7 @@ local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 local ServiceBag = require("ServiceBag")
+local EntityTypesServer = require("EntityTypesServer")
 
 -- [ Constants ] --
 
@@ -29,6 +32,34 @@ type ModuleData = {
 export type Module = typeof(EntityReplicationServiceServer) & ModuleData
 
 -- [ Private Functions ] --
+function EntityReplicationServiceServer.EntityCreated(self: Module, EntityData: EntityTypesServer.EntityCreatedSignalPacket)
+    local Entity = EntityData.Entity
+    local World = self._EntityServiceServer:GetWorld()
+    local Tags = self._EntityServiceServer:GetTags()
+    local Components = self._EntityServiceServer:GetComponents()
+
+    local ReplicationValidData = {
+        Entity = Entity,
+        Tags = EntityData.Tags,
+        Components = {},
+    }
+
+    for componentName, data in EntityData.Components do
+        local Component = Components[componentName]
+
+        if not World:has(Component, Tags.Replicated) then
+            return
+        end
+
+        ReplicationValidData.Components[componentName] = data
+    end
+
+    self._EntityNetworkServer:EntityCreated(ReplicationValidData)
+end
+
+function EntityReplicationServiceServer.EntityDeleted(self: Module, EntityData: EntityTypesServer.EntityDeletedSignalPacket)
+    self._EntityNetworkServer:EntityDeleted(EntityData)
+end
 
 -- [ Public Functions ] --
 function EntityReplicationServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
@@ -46,9 +77,17 @@ function EntityReplicationServiceServer.Start(self: Module)
     local Tags = self._EntityServiceServer:GetTags()
 
     -- TODO: setup optimization
+    self._EntityServiceServer.ReplicationSignals.EntityCreated:Connect(function(packet: EntityTypesServer.EntityCreatedSignalPacket)  
+        self:EntityCreated(packet)
+    end)
+
+    self._EntityServiceServer.ReplicationSignals.EntityDeleted:Connect(function(packet: EntityTypesServer.EntityDeletedSignalPacket)
+        self:EntityDeleted(packet)
+    end)
+
     for component in World:query(Tags.Replicated) do
         World:added(component, function(e, _, value)
-            self._EntityNetworkServer:ReplicateComponentChange({
+            self._EntityNetworkServer:EntityUpdated({
                 Action = "Added",
                 Data = {
                     Entity = e,
@@ -59,7 +98,7 @@ function EntityReplicationServiceServer.Start(self: Module)
         end)
 
         World:removed(component, function(e, _)
-            self._EntityNetworkServer:ReplicateComponentChange({
+            self._EntityNetworkServer:EntityUpdated({
                 Action = "Removed",
                 Data = {
                     Entity = e,
@@ -69,7 +108,7 @@ function EntityReplicationServiceServer.Start(self: Module)
         end)    
 
         World:changed(component, function(e, _, value)
-            self._EntityNetworkServer:ReplicateComponentChange({
+            self._EntityNetworkServer:EntityUpdated({
                 Action = "Updated",
                 Data = {
                     Entity = e,

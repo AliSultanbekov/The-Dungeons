@@ -7,7 +7,7 @@
 -- [ Imports ] --
 
 -- [ Require ] --
-local _require = require(script.Parent.Parent.loader).load(script)
+local require = require(script.Parent.Parent.loader).load(script)
 
 -- [ Imports ] --
 local EntityTypesServer = require("EntityTypesServer")

@@ -11,9 +11,9 @@ local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 local ServiceBag = require("ServiceBag")
-local Brio = require("Brio")
 local GetEntityFromCharacter = require("GetEntityFromCharacter")
 local EntityTypesServer = require("EntityTypesServer")
+local Maid = require("Maid")
 
 -- [ Constants ] --
 
@@ -25,7 +25,9 @@ local CreatureServiceServer = {}
 -- [ Types ] --
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
-    _EntityServiceServer: typeof(require("EntityServiceServer"))
+    _EntityServiceServer: typeof(require("EntityServiceServer")),
+    _EntityReplicationServiceServer: typeof(require("EntityReplicationServiceServer")),
+    _PlayerCharacterManager: typeof(require("PlayerCharacterManager"))
 }
 
 export type Module = typeof(CreatureServiceServer) & ModuleData
@@ -33,64 +35,6 @@ export type Module = typeof(CreatureServiceServer) & ModuleData
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function CreatureServiceServer.CreateNPC(self: Module, character: Model)
-    local World = self._EntityServiceServer:GetWorld()
-    local Tags = self._EntityServiceServer:GetTags()
-    local Components = self._EntityServiceServer:GetComponents()
-
-    local Humanoid = character:FindFirstChildOfClass("Humanoid")
-
-    if not Humanoid then
-        return
-    end
-
-    local BrioObject = Brio.new(character)
-    local MaidObject = BrioObject:ToMaid()
-
-    local Entity = World:entity()
-    World:add(Entity, Tags.Alive)
-    World:add(Entity, Tags.NPC)
-    World:set(Entity, Components.Health, 100)
-    World:set(Entity, Components.Ether, 100)
-    World:set(Entity, Components.Character, {
-        Character = character,
-        Humanoid = Humanoid
-    })
-
-    MaidObject:Add(function()
-        World:delete(Entity)
-    end)
-end
-
-function CreatureServiceServer.CreatePlayer(self: Module, character: Model)
-    local World = self._EntityServiceServer:GetWorld()
-    local Tags = self._EntityServiceServer:GetTags()
-    local Components = self._EntityServiceServer:GetComponents()
-
-    local Humanoid = character:FindFirstChildOfClass("Humanoid")
-
-    if not Humanoid then
-        return
-    end
-
-    local BrioObject = Brio.new(character)
-    local MaidObject = BrioObject:ToMaid()
-
-    local Entity = World:entity()
-    World:add(Entity, Tags.Alive)
-    World:add(Entity, Tags.Player)
-    World:set(Entity, Components.Health, 100)
-    World:set(Entity, Components.Ether, 100)
-    World:set(Entity, Components.Character, {
-        Character = character,
-        Humanoid = Humanoid
-    })
-    
-    MaidObject:Add(function()
-        World:delete(Entity)
-    end)
-end
-
 function CreatureServiceServer.DamageCreature(self: Module, attacker: Model, attacked: Model, damageCount: number): boolean
     local AttackerEntity = GetEntityFromCharacter(attacker)
     local AttackedEntity = GetEntityFromCharacter(attacked)
@@ -204,7 +148,88 @@ function CreatureServiceServer.TryEndAbility(self: Module, character: Model, abi
         World:remove(Entity, Components.Blocking)
     end
 
+    World:children()
+
     return true
+end
+
+function CreatureServiceServer.CreateNPC(self: Module, character: Model)
+    local World = self._EntityServiceServer:GetWorld()
+    local Tags = self._EntityServiceServer:GetTags()
+    local Components = self._EntityServiceServer:GetComponents()
+
+    local Humanoid = character:FindFirstChildOfClass("Humanoid")
+
+    if not Humanoid then
+        return
+    end
+
+    local Entity = World:entity()
+    World:add(Entity, Tags.Alive)
+    World:add(Entity, Tags.NPC)
+    World:set(Entity, Components.Name, character.Name)
+    World:set(Entity, Components.Health, 100)
+    World:set(Entity, Components.Ether, 100)
+    World:set(Entity, Components.Character, {
+        Character = character,
+        Humanoid = Humanoid
+    })
+
+    character:SetAttribute("Entity", Entity)
+
+    character.Destroying:Once(function()
+        World:delete(Entity)
+    end)
+end
+
+function CreatureServiceServer.CreatePlayer(self: Module, character: Model)
+    local World = self._EntityServiceServer:GetWorld()
+    local Tags = self._EntityServiceServer:GetTags()
+    local Components = self._EntityServiceServer:GetComponents()
+
+    local Humanoid = character:FindFirstChildOfClass("Humanoid")
+
+    if not Humanoid then
+        return
+    end
+
+    local Entity = World:entity()
+    World:add(Entity, Tags.Alive)
+    World:add(Entity, Tags.Player)
+    World:set(Entity, Components.Name, character.Name)
+    World:set(Entity, Components.Health, 100)
+    World:set(Entity, Components.Ether, 100)
+    World:set(Entity, Components.Character, {
+        Character = character,
+        Humanoid = Humanoid
+    })
+
+    character:SetAttribute("Entity", Entity)
+
+    character.Destroying:Once(function()
+        World:delete(Entity)
+    end)
+
+    self._EntityReplicationServiceServer:EntityCreated({
+        Entity = Entity,
+        Tags = {
+            "Alive",
+            "Player"
+        },
+        Components = {
+            ["Name"] = character.Name,
+            ["Health"] = 100,
+            ["Ether"] = 100,
+            ["Character"] = {
+                Character = character,
+                Humanoid = Humanoid
+            }
+        }
+    })
+end
+
+function CreatureServiceServer.OnPlayerCharacterAdded(self: Module, maid: Maid.Maid, character: Model)
+    self:CreatePlayer(character)
 end
 
 function CreatureServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
@@ -214,10 +239,12 @@ function CreatureServiceServer.Init(self: Module, serviceBag: ServiceBag.Service
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
     self._EntityServiceServer = self._ServiceBag:GetService(require("EntityServiceServer"))
+    self._EntityReplicationServiceServer = self._ServiceBag:GetService(require("EntityReplicationServiceServer"))
+    self._PlayerCharacterManager = self._ServiceBag:GetService(require("PlayerCharacterManager"))
 end
 
 function CreatureServiceServer.Start(self: Module)
-    
+    self._PlayerCharacterManager:RegisterModule(self)
 end
 
 return CreatureServiceServer :: Module

@@ -19,7 +19,7 @@ local Jecs = require("Jecs")
 -- [ Module Table ] --
 
 -- [ Types ] --
-export type ReplicateComponentChangeRemotePacket = {
+export type EntityUpdatedRemotePacket = {
     Action: "Added",
     Data: {
         Entity: Jecs.Entity,
@@ -39,6 +39,16 @@ export type ReplicateComponentChangeRemotePacket = {
         Component: Jecs.Entity,
         Value: any
     },
+}
+
+export type EntityCreatedRemotePacket = {
+    Entity: Jecs.Entity,
+    Tags: { string },
+    Components: { [string]: any },
+}
+
+export type EntityDeletedRemotePacket = {
+    Entity: Jecs.Entity,
 }
 
 -- [ Private Functions ] --

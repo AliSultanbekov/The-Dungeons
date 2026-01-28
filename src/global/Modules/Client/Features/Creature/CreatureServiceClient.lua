@@ -13,6 +13,7 @@ local require = require(script.Parent.loader).load(script)
 local ServiceBag = require("ServiceBag")
 local GetEntityFromCharacter = require("GetEntityFromCharacter")
 local EntityTypesClient = require("EntityTypesClient")
+local Maid = require("Maid")
 
 -- [ Constants ] --
 
@@ -25,6 +26,7 @@ local CreatureServiceClient = {}
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
     _EntityServiceClient: typeof(require("EntityServiceClient")),
+    _PlayerCharacterManager: typeof(require("PlayerCharacterManager"))
 }
 
 export type Module = typeof(CreatureServiceClient) & ModuleData
@@ -148,6 +150,66 @@ function CreatureServiceClient.TryEndAbility(self: Module, character: Model, abi
     return true
 end
 
+function CreatureServiceClient.CreatePlayer(self: Module, character: Model)
+    local World = self._EntityServiceClient:GetWorld()
+    local Tags = self._EntityServiceClient:GetTags()
+    local Components = self._EntityServiceClient:GetComponents()
+
+    local Humanoid = character:FindFirstChildOfClass("Humanoid")
+
+    if not Humanoid then
+        return
+    end
+
+    local Entity = World:entity()
+    World:add(Entity, Tags.Alive)
+    World:add(Entity, Tags.Player)
+    World:set(Entity, Components.Health, 100)
+    World:set(Entity, Components.Ether, 100)
+    World:set(Entity, Components.Character, {
+        Character = character,
+        Humanoid = Humanoid,
+    })
+
+    character:SetAttribute("Entity", Entity)
+    
+    character.Destroying:Once(function()
+        World:delete(Entity)
+    end)
+end
+
+function CreatureServiceClient.CreateNPC(self: Module, character: Model)
+    local World = self._EntityServiceClient:GetWorld()
+    local Tags = self._EntityServiceClient:GetTags()
+    local Components = self._EntityServiceClient:GetComponents()
+
+    local Humanoid = character:FindFirstChildOfClass("Humanoid")
+
+    if not Humanoid then
+        return
+    end
+
+    local Entity = World:entity()
+    World:add(Entity, Tags.Alive)
+    World:add(Entity, Tags.NPC)
+    World:set(Entity, Components.Health, 100)
+    World:set(Entity, Components.Ether, 100)
+    World:set(Entity, Components.Character, {
+        Character = character,
+        Humanoid = Humanoid,
+    })
+
+    character:SetAttribute("Entity", Entity)
+
+    character.Destroying:Once(function()
+        World:delete(Entity)
+    end)
+end
+
+function CreatureServiceClient.OnPlayerCharacterAdded(self: Module, maid: Maid.Maid, character: Model)
+    self:CreatePlayer(character)
+end
+
 function CreatureServiceClient.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     if self._ServiceBag ~= nil then
         error("Service already initialized")
@@ -155,10 +217,11 @@ function CreatureServiceClient.Init(self: Module, serviceBag: ServiceBag.Service
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
     self._EntityServiceClient = self._ServiceBag:GetService(require("EntityServiceClient"))
+    self._PlayerCharacterManager = self._ServiceBag:GetService(require("PlayerCharacterManager"))
 end
 
 function CreatureServiceClient.Start(self: Module)
-
+    self._PlayerCharacterManager:RegisterModule(self)
 end
 
 return CreatureServiceClient :: Module

@@ -29,7 +29,6 @@ export type Tags = {
 export type CharacterComponent = {
     Character: Model,
     Humanoid: Humanoid,
-    RootPart: BasePart,
 }
 
 export type PlayerComponent = {
@@ -46,6 +45,7 @@ export type CurrentAbilityComponent = {
     AbilityName: string,
     StartTime: number,
     Duration: number,
+    [string]: number,
 }
 
 export type PreviousAbilityComponent = CurrentAbilityComponent

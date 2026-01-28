@@ -27,7 +27,7 @@ DefaultBasicAttack.__index = DefaultBasicAttack
 
 -- [ Types ] --
 type AbilityComponent = {
-    Name: string,
+    AbilityName: string,
     StartTime: number,
     Combo: number,
     Duration: number,
@@ -103,7 +103,7 @@ function DefaultBasicAttack.IsActive(self: Object): boolean
         return false
     end
 
-    if CurrentAbility.Name ~= self.AbilityName then
+    if CurrentAbility.AbilityName ~= self.AbilityName then
         return false
     end
 
@@ -122,7 +122,7 @@ function DefaultBasicAttack.Use(self: Object, context: Use_Context)
     local Combo = 1
     
     if PreviousAbility 
-    and PreviousAbility.Name == self.AbilityName 
+    and PreviousAbility.AbilityName == self.AbilityName 
     and PreviousAbility.StartTime + PreviousAbility.Duration + Config.MaxDelay >= os.clock() 
     and PreviousAbility.Combo < #ComboData then
         Combo += PreviousAbility.Combo
@@ -157,6 +157,7 @@ function DefaultBasicAttack.Hit(self: Object, context: Hit_Context)
         return
     end
 
+    local OnHit:(CombatTypes.Context) -> () = context.OnHit
     local Config = self._Config
     local Combo = CurrentAbility.Combo
     local CurrentComboData = Config.Combo[Combo]
@@ -170,24 +171,21 @@ function DefaultBasicAttack.Hit(self: Object, context: Hit_Context)
             HitboxSize = CurrentComboData.Range,
             Mode = "FromClient",
         }) then
-            return false
+            return
         end
-
-        context.OnHit({
-            Attacker = self._Attacker,
-            Attacked = context.Attacked
-        })
     else
         
     end
 
-    local Humanoid = context.Attacked:FindFirstChildOfClass("Humanoid")
-
-    if not Humanoid then
+    if not self._CreatureServiceServer:DamageCreature(self._Attacker, context.Attacked, CurrentComboData.Damage) then
+        print("NOOOOO")
         return
     end
 
-    self._CreatureServiceServer:DamageCreature(self._Attacker, context.Attacked, CurrentComboData.Damage)
+    OnHit({
+        Attacker = self._Attacker,
+        Attacked = context.Attacked
+    })
 end
 
 return DefaultBasicAttack :: Module

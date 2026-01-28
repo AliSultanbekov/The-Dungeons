@@ -1,5 +1,9 @@
+local require = require(script.Parent.loader).load(script)
+
+local Jecs = require("Jecs")
+
 export type Member = {
-    ID: number,
+    ID: Jecs.Id,
     Model: Model,
     Humanoid: Humanoid,
     RootPart: BasePart,

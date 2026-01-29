@@ -30,7 +30,8 @@ type ModuleData = {
     RemoteEvents: {
         EntityCreated: Signal.Signal<EntityTypesShared.EntityCreatedRemotePacket>,
         EntityDeleted: Signal.Signal<EntityTypesShared.EntityDeletedRemotePacket>,
-        EntityUpdated: Signal.Signal<EntityTypesShared.EntityUpdatedRemotePacket>
+        EntityUpdated: Signal.Signal<EntityTypesShared.EntityUpdatedRemotePacket>,
+        EntitySync: Signal.Signal<EntityTypesShared.EntitySyncRemotePacket>,
     },
     RemoteFunctions: {}
 }
@@ -52,6 +53,7 @@ function EntityNetworkClient.Init(self: Module, serviceBag: ServiceBag.ServiceBa
         EntityCreated = Signal.new(),
         EntityDeleted = Signal.new(),
         EntityUpdated = Signal.new(),
+        EntitySync = Signal.new(),
     } :: any
 
     self.RemoteFunctions = {
@@ -62,7 +64,20 @@ end
 function EntityNetworkClient.Start(self: Module)
     local EntityChannel = self._NetworkManager:GetNetwork("Entity")
 
-    EntityChannel:Connect("EntityUpdated", function(...)  
+    EntityChannel:Connect("EntityCreated", function(packet: EntityTypesShared.EntityCreatedRemotePacket)
+        self.RemoteEvents.EntityCreated:Fire(packet)
+    end)
+
+    EntityChannel:Connect("EntityDeleted", function(packet: EntityTypesShared.EntityDeletedRemotePacket)
+        self.RemoteEvents.EntityDeleted:Fire(packet)
+    end)
+
+    EntityChannel:Connect("EntityUpdated", function(packet: EntityTypesShared.EntityUpdatedRemotePacket)
+        self.RemoteEvents.EntityUpdated:Fire(packet)
+    end)
+
+    EntityChannel:Connect("EntitySync", function(packet: EntityTypesShared.EntitySyncRemotePacket)  
+        self.RemoteEvents.EntitySync:Fire(packet)
     end)
 end
 

@@ -42,16 +42,10 @@ function InitControllerClient.Init(self: Module, serviceBag: ServiceBag.ServiceB
     end
 
     self._ServiceBag = assert(serviceBag, "No serviceBag")
-    print("Is yielded 1")
     local Modules = InitUtil:GetContextModules(ModulesFolder, PlaceConstants.PlaceIDToPlaceName[game.PlaceId])
 
-    print("Is yielded 2")
     for _, module in Modules do
-        print("========================")
-        print("Working on " .. module.Name)
         self._ServiceBag:GetService(module)
-        print("Finished " .. module.Name)
-        print("========================")
     end
 end
 

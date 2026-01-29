@@ -24,7 +24,7 @@ local Block = {
 Block.__index = Block
 
 -- [ Types ] --
-type CombatEntityStateService = typeof(require("CombatEntityStateServiceClient"))
+type CreatureServiceClient = typeof(require("CreatureServiceClient"))
 type WeaponItemData = ItemTypes.WeaponItemData
 type Use_Context = {
     Attacker: Model,
@@ -37,12 +37,12 @@ type Use_Context = {
 type New_Context = {
     Attacker: Model,
     ItemData: WeaponItemData,
-    CombatEntityStateService: CombatEntityStateService,
+    CreatureService: CreatureServiceClient,
 }
 export type ObjectData = {
     _Attacker: Model,
     _WeaponData: WeaponItemData,
-    _CombatEntityStateService: CombatEntityStateService
+    _CreatureServiceClient: CreatureServiceClient
 }
 export type Object = typeof(setmetatable({} :: ObjectData, Block))
 export type Module = typeof(Block)
@@ -55,7 +55,7 @@ function Block.new(context: New_Context): Object
 
     self._Attacker = context.Attacker
     self._WeaponData = context.ItemData
-    self._CombatEntityStateService = context.CombatEntityStateService
+    self._CreatureServiceClient = context.CreatureService
 
     return self
 end

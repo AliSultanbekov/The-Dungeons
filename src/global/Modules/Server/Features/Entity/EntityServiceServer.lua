@@ -29,11 +29,11 @@ local EntityServiceServer = {}
 type EntityCreationData = {
     Tags: { string },
     Components: { [string]: any },
-    Replicated: boolean,
+    Replicated: boolean?,
 }
 type EntityDeletionData = {
     Entity: Jecs.Entity,
-    Replicated: boolean
+    Replicated: boolean?,
 }
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
@@ -41,7 +41,7 @@ type ModuleData = {
     _Tags: EntityTypesServer.Tags,
     _Components: EntityTypesServer.Components,
     _Systems: { EntityTypesServer.SystemModule },
-    ReplicationSignals: {
+    PublicSignals: {
         EntityCreated: Signal.Signal<EntityTypesServer.EntityCreatedSignalPacket>,
         EntityDeleted: Signal.Signal<EntityTypesServer.EntityDeletedSignalPacket>,
     }
@@ -83,13 +83,16 @@ function EntityServiceServer.CreateEntity(self: Module, EntityData: EntityCreati
         World:set(Entity, self._Components[componentName], data)
     end
 
-    if EntityData.Replicated then
-        self.ReplicationSignals.EntityCreated:Fire({
-            Entity = Entity,
-            Tags = EntityData.Tags,
-            Components = EntityData.Components,
-        })
+    if EntityData.Replicated == true then
+        World:add(Entity, self._Tags.ReplicatedEntity)
     end
+
+    self.PublicSignals.EntityCreated:Fire({
+        Entity = Entity,
+        Tags = EntityData.Tags,
+        Components = EntityData.Components,
+        Replicated = EntityData.Replicated
+    })
 
     return Entity
 end
@@ -98,13 +101,20 @@ function EntityServiceServer.DeleteEntity(self: Module, EntityData: EntityDeleti
     local Entity = EntityData.Entity
     local World = self._World
 
-    World:delete(Entity)
-
-    if EntityData.Replicated then
-        self.ReplicationSignals.EntityDeleted:Fire({
-            Entity = Entity
-        })
+    local Components = {}
+    for componentName, component in pairs(self._Components) do
+        if World:has(Entity, component) then
+            Components[componentName] = World:get(Entity, component)
+        end
     end
+
+    self.PublicSignals.EntityDeleted:Fire({
+        Entity = Entity,
+        Components = Components,
+        Replicated = EntityData.Replicated,
+    })
+
+    World:delete(Entity)
 end
 
 function EntityServiceServer.GetComponents(self: Module): EntityTypesServer.Components
@@ -130,25 +140,29 @@ function EntityServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBa
         Alive = Jecs.tag(),
         Player = Jecs.tag(),
         NPC = Jecs.tag(),
-        Replicated = Jecs.tag(),
+
+        -- Replication
+        ReplicatedEntity = Jecs.tag(),
+        ReplicatedComponent = Jecs.tag(),
     }
     self._World = Jecs.World.new()
     self._Components = {
+        -- Shared
         Name = self._World:component(),
         Stats = self._World:component(),
         Character = self._World:component(),
-        Prefab = self._World:component(),
-
         Health = self._World:component(),
         Ether = self._World:component(),
-
-        InCombat = self._World:component(),
-
+            -- Combat
         Blocking = self._World:component(),
         Dodging = self._World:component(),
         Stunned = self._World:component(),
         CurrentAbility = self._World:component(),
         PreviousAbility = self._World:component(),
+        InCombat = self._World:component(),
+
+        -- Private
+        Prefab = self._World:component(),
 
         HealthBuff = self._World:component(),
         DamageBuff = self._World:component(),
@@ -177,7 +191,8 @@ function EntityServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._World:set(self._Tags.Alive, Jecs.Name, "Alive")
     self._World:set(self._Tags.Player, Jecs.Name, "Player")
     self._World:set(self._Tags.NPC, Jecs.Name, "NPC")
-    self._World:set(self._Tags.Replicated, Jecs.Name, "Replicated")
+    self._World:set(self._Tags.ReplicatedEntity, Jecs.Name, "ReplicatedEntity")
+    self._World:set(self._Tags.ReplicatedComponent, Jecs.Name, "ReplicatedComponent")
 
     -- Component Names
     self._World:set(self._Components.Name, Jecs.Name, "Name")
@@ -212,17 +227,21 @@ function EntityServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._World:set(self._Components.FearEffect, Jecs.Name, "FearEffect")
 
     -- Replicated Components
-    self._World:add(self._Components.Health, self._Tags.Replicated)
-    self._World:add(self._Components.Ether, self._Tags.Replicated)
-    self._World:add(self._Components.Blocking, self._Tags.Replicated)
-    self._World:add(self._Components.Dodging, self._Tags.Replicated)
-    self._World:add(self._Components.Stunned, self._Tags.Replicated)
-    self._World:add(self._Components.CurrentAbility, self._Tags.Replicated)
-    self._World:add(self._Components.PreviousAbility, self._Tags.Replicated)
+    self._World:add(self._Components.Name, self._Tags.ReplicatedComponent)
+    self._World:add(self._Components.Stats, self._Tags.ReplicatedComponent)
+    self._World:add(self._Components.Character, self._Tags.ReplicatedComponent)
+    self._World:add(self._Components.Health, self._Tags.ReplicatedComponent)
+    self._World:add(self._Components.Ether, self._Tags.ReplicatedComponent)
+    self._World:add(self._Components.Blocking, self._Tags.ReplicatedComponent)
+    self._World:add(self._Components.Dodging, self._Tags.ReplicatedComponent)
+    self._World:add(self._Components.Stunned, self._Tags.ReplicatedComponent)
+    self._World:add(self._Components.CurrentAbility, self._Tags.ReplicatedComponent)
+    self._World:add(self._Components.PreviousAbility, self._Tags.ReplicatedComponent)
+    self._World:add(self._Components.InCombat, self._Tags.ReplicatedComponent)
 
     self._Systems = self:_GatherAllSystems()
 
-    self.ReplicationSignals = {
+    self.PublicSignals = {
         EntityCreated = Signal.new(),
         EntityDeleted = Signal.new(),
     } :: any

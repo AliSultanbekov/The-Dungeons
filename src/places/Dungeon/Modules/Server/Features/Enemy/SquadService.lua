@@ -17,7 +17,6 @@ local require = require(script.Parent.loader).load(script)
 -- [ Imports ] --
 local ServiceBag = require("ServiceBag")
 local AssetProvider = require("AssetProvider")
-local GetEntityFromCharacter = require("GetEntityFromCharacter")
 
 -- [ Constants ] --
 local CONFIG = {
@@ -85,8 +84,8 @@ function SquadService.InitializeSquad(self: Module)
 	table.insert(self._Members, Leader)
 	self._Leader = Leader
 
-	self._CreatureServiceServer:CreateNPC(Leader.Model)
-	Leader.ID = GetEntityFromCharacter(Leader.Model)
+	self._CreatureServiceServer:RegisterNPC(Leader.Model)
+	Leader.ID = self._CreatureServiceServer:GetEntityFromCharacter(Leader.Model)
 	
 
 	-- Spawn Squad
@@ -98,8 +97,8 @@ function SquadService.InitializeSquad(self: Module)
 			table.insert(self._Members, Mem)
 			
 
-			self._CreatureServiceServer:CreateNPC(Mem.Model)
-			Mem.ID = GetEntityFromCharacter(Mem.Model)
+			self._CreatureServiceServer:RegisterNPC(Mem.Model)
+			Mem.ID = self._CreatureServiceServer:GetEntityFromCharacter(Mem.Model)
 		end
 	end
 
@@ -110,8 +109,6 @@ function SquadService.InitializeSquad(self: Module)
 			self:UpdateScanningBehavior()
 		end
 	end)
-
-	print("Tactical Squad Initialized")
 end
 
 function SquadService.UpdateScanningBehavior(self: Module)
@@ -329,6 +326,8 @@ end
 
 function SquadService.Start(self: Module)
 	task.spawn(function()
+		task.wait(1)
+
 		self:InitializeSquad()
 
 		while true do
@@ -337,7 +336,6 @@ function SquadService.Start(self: Module)
 				-- Pick a random point
 				local target = self._Config.StartPosition + Vector3.new(-100, 0, 100)
 
-				print("Squad Moving to:", target)
 				self:MoveTo(target)
 				break
 			end

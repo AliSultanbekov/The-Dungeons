@@ -480,7 +480,6 @@ function InventoryUIService.Start(self: Module)
 
         self._InventoryNetworkClient.RemoteEvents.ItemsRemoved:Connect(function(itemsData)
             for _, itemData in itemsData do
-                print(itemData)
                 self:RemoveItem(itemData)
             end
         end)

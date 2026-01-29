@@ -29,7 +29,7 @@ type AbilityState = {
     Combo: number,
     Duration: number,
 }
-type CombatEntityStateService = typeof(require("CombatEntityStateServiceServer"))
+type CreatureServiceServer = typeof(require("CreatureServiceServer"))
 type Config = {
     AbilityName: string,
     MaxDelay: number,
@@ -47,12 +47,12 @@ type WeaponItemData = ItemTypes.WeaponItemData
 type New_Context = {
     Attacker: Model,
     ItemData: WeaponItemData,
-    CombatEntityStateService: CombatEntityStateService,
+    CreatureService: CreatureServiceServer,
 }
 export type ObjectData = {
     _Attacker: Model,
     _WeaponData: WeaponItemData,
-    _CombatEntityStateService: CombatEntityStateService
+    _CreatureServiceServer: CreatureServiceServer
 }
 export type Object = typeof(setmetatable({} :: ObjectData, Block))
 export type Module = typeof(Block)
@@ -65,13 +65,13 @@ function Block.new(context: New_Context): Object
 
     self._Attacker = context.Attacker
     self._WeaponData = context.ItemData
-    self._CombatEntityStateService = context.CombatEntityStateService
+    self._CreatureServiceServer = context.CreatureService
 
     return self
 end
 
 function Block.IsActive(self: Object): boolean
-    local CurrentAbility = self._CombatEntityStateService:GetCurrentAbility(self._Attacker) :: AbilityState?
+    local CurrentAbility = self._CreatureServiceServer:GetCurrentAbility(self._Attacker) :: AbilityState?
 
     if not CurrentAbility then
         return false
@@ -89,7 +89,7 @@ function Block.Use(self: Object)
         return
     end
     
-    if self._CombatEntityStateService:TryUseAbility(self._Attacker, {
+    if self._CreatureServiceServer:TryUseAbility(self._Attacker, {
         AbilityName = "Block",
         StartTime = os.clock(),
         Duration = 5,

@@ -48,6 +48,11 @@ function EntityNetworkServer.EntityUpdated(self: Module, packet: EntityTypesShar
     EntityChannel:FireAllClients("EntityUpdated", packet)
 end
 
+function EntityNetworkServer.EntitySync(self: Module, packet: EntityTypesShared.EntitySyncRemotePacket)
+    local EntityChannel = self._NetworkManager:GetNetwork("Entity")
+    EntityChannel:FireAllClients("EntitySync", packet)
+end
+
 -- [ Public Functions ] --
 function EntityNetworkServer.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     if self._ServiceBag ~= nil then
@@ -67,12 +72,13 @@ function EntityNetworkServer.Init(self: Module, serviceBag: ServiceBag.ServiceBa
 end
 
 function EntityNetworkServer.Start(self: Module)
-    local EntityChannel = self._NetworkManager:GetNetwork("ChannelName")
+    local EntityChannel = self._NetworkManager:GetNetwork("Entity")
 
     -- Server
     EntityChannel:DeclareEvent("EntityCreated")
     EntityChannel:DeclareEvent("EntityDeleted")
     EntityChannel:DeclareEvent("EntityUpdated")
+    EntityChannel:DeclareEvent("EnitytSync")
 end
 
 return EntityNetworkServer :: Module

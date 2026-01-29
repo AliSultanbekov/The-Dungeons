@@ -42,7 +42,7 @@ function CreatureSpawnService.SpawnNPC(self: Module, creatureName: string, posit
     Character:PivotTo(CFrame.new(position))
     Character.Parent = workspace
 
-    self._CreatureServiceServer:CreateNPC(Character)
+    self._CreatureServiceServer:RegisterPlayer(Character)
 
     return Character
 end

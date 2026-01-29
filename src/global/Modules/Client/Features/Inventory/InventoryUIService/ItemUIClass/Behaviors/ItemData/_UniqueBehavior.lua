@@ -118,9 +118,8 @@ function UniqueBehavior.Mark(self: Object, itemData: ItemData)
 
     self._NonMarkedBag[itemData.ID] = nil
     self._MarkedBag[itemData.ID] = itemData
-    
+
     self._MarkedCount:Add(1)
-    print("Marked")
 end
 
 function UniqueBehavior.Unmark(self: Object, itemData: ItemData)

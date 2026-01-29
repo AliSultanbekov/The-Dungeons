@@ -54,7 +54,6 @@ function StatsNetworkServer.Init(self: Module, serviceBag: ServiceBag.ServiceBag
 end
 
 function StatsNetworkServer.Start(self: Module)
-    print("Trreiied")
     local CombatChannel = self._NetworkManager:GetNetwork("Stats")
 
     -- client

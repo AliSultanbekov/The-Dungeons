@@ -12,6 +12,7 @@ local require = require(script.Parent.loader).load(script)
 -- [ Imports ] --
 local ServiceBag = require("ServiceBag")
 local EntityTypesShared = require("EntityTypesShared")
+local Jecs = require("Jecs")
 
 -- [ Constants ] --
 
@@ -25,6 +26,9 @@ type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
     _EntityServiceClient: typeof(require("EntityServiceClient")),
     _EntityNetworkClient: typeof(require("EntityNetworkClient")),
+    _ServerToClientEntity: {
+        [Jecs.Entity]: Jecs.Entity
+    }
 }
 
 export type Module = typeof(EntityReplicationServiceClient) & ModuleData
@@ -40,23 +44,98 @@ function EntityReplicationServiceClient.Init(self: Module, serviceBag: ServiceBa
     self._ServiceBag = assert(serviceBag, "No serviceBag")
     self._EntityServiceClient = self._ServiceBag:GetService(require("EntityServiceClient"))
     self._EntityNetworkClient = self._ServiceBag:GetService(require("EntityNetworkClient"))
+    self._ServerToClientEntity = {}
 end
 
 function EntityReplicationServiceClient.Start(self: Module)
     local World = self._EntityServiceClient:GetWorld()
 
-    self._EntityNetworkClient:SetOnReplicateComponentChange(function(packet: EntityTypesShared.ReplicateComponentChangeRemotePacket)
+    self._EntityNetworkClient.RemoteEvents.EntitySync:Connect(function(packet: EntityTypesShared.EntitySyncRemotePacket)
+        for _, data in packet do
+            if self._ServerToClientEntity[data.Entity] then
+                continue
+            end
+
+            local Entity = self._EntityServiceClient:CreateEntity({
+                Tags = data.Tags,
+                Components = data.Components,
+            })
+
+            self._ServerToClientEntity[data.Entity] = Entity
+        end
+    end)
+
+    self._EntityNetworkClient.RemoteEvents.EntityCreated:Connect(function(packet: EntityTypesShared.EntityCreatedRemotePacket)
+        if self._ServerToClientEntity[packet.Entity] then
+            return
+        end
+
+        local Entity = self._EntityServiceClient:CreateEntity({
+            Tags = packet.Tags,
+            Components = packet.Components,
+        })
+
+        self._ServerToClientEntity[packet.Entity] = Entity
+    end)
+
+    self._EntityNetworkClient.RemoteEvents.EntityDeleted:Connect(function(packet: EntityTypesShared.EntityDeletedRemotePacket)
+        local ClientEntity = self._ServerToClientEntity[packet.Entity]
+
+        if not ClientEntity then
+            return
+        end
+
+        if not World:exists(ClientEntity) then
+            return
+        end
+
+        self._EntityServiceClient:DeleteEntity({
+            Entity = ClientEntity,
+        })
+
+        self._ServerToClientEntity[packet.Entity] = nil
+    end)
+
+    self._EntityNetworkClient.RemoteEvents.EntityUpdated:Connect(function(packet: EntityTypesShared.EntityUpdatedRemotePacket)
         if packet.Action == "Added" then
             local Data = packet.Data
-            World:set(Data.Entity, Data.Component, Data.Value)
+            local ClientEntity = self._ServerToClientEntity[Data.Entity]
+
+            if not ClientEntity then
+                return
+            end
+
+            if World:has(ClientEntity, Data.Component) then
+                return
+            end
+
+            World:set(ClientEntity, Data.Component, Data.Value)
         elseif packet.Action == "Updated" then
             local Data = packet.Data
-            World:set(Data.Entity, Data.Component, Data.Value)
+            local ClientEntity = self._ServerToClientEntity[Data.Entity]
+
+            if not ClientEntity then
+                return
+            end
+
+            if not World:has(ClientEntity, Data.Component) then
+                return
+            end
+
+            World:set(ClientEntity, Data.Component, Data.Value)
         elseif packet.Action == "Removed" then
             local Data = packet.Data
-            if World:has(Data.Entity, Data.Component) then
-                World:remove(Data.Entity, Data.Component)
+            local ClientEntity = self._ServerToClientEntity[Data.Entity]
+
+            if not ClientEntity then
+                return
             end
+
+            if not World:has(ClientEntity, Data.Component) then
+                return
+            end
+
+            World:remove(ClientEntity, Data.Component)
         end
     end)
 end

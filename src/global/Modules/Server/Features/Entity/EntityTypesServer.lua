@@ -25,7 +25,8 @@ export type Tags = {
     Alive: Jecs.Entity,
     Player: Jecs.Entity,
     NPC: Jecs.Entity,
-    Replicated: Jecs.Entity,
+    ReplicatedEntity: Jecs.Entity,
+    ReplicatedComponent: Jecs.Entity,
 }
 export type NameComponent = string
 export type StatsComponent = StatTypes.PlayerStats
@@ -118,10 +119,13 @@ export type EntityCreatedSignalPacket = {
     Entity: Jecs.Entity,
     Tags: { string },
     Components: { [string]: any },
+    Replicated: boolean?,
 }
 
 export type EntityDeletedSignalPacket = {
     Entity: Jecs.Entity,
+    Components: { [string]: any },
+    Replicated: boolean?,
 }
 
 -- [ Private Functions ] --

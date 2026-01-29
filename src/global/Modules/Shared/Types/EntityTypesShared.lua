@@ -51,6 +51,16 @@ export type EntityDeletedRemotePacket = {
     Entity: Jecs.Entity,
 }
 
+export type EntitySyncRemotePacket = {
+    {
+        Entity: Jecs.Entity,
+        Tags: { string },
+        Components: {
+            [string]: any
+        }
+    }
+}
+
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --

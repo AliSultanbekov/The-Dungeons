@@ -61,7 +61,6 @@ function AbilityManager.new(abilityFolder: Folder): Object
 end
 
 function AbilityManager.Get(self: Object, abilityName: string): AbilityModule
-    print(self._Abilties)
     return self._Abilties[abilityName]
 end
 

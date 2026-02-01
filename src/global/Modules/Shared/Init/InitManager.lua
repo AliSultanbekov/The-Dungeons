@@ -45,6 +45,7 @@ function InitControllerClient.Init(self: Module, serviceBag: ServiceBag.ServiceB
     local Modules = InitUtil:GetContextModules(ModulesFolder, PlaceConstants.PlaceIDToPlaceName[game.PlaceId])
 
     for _, module in Modules do
+        print("[InitManager] Loading:", module:GetFullName())
         self._ServiceBag:GetService(module)
     end
 end

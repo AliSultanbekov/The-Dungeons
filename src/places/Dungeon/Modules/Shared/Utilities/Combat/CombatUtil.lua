@@ -11,11 +11,11 @@ local Players = game:GetService("Players")
 local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] -- 
---local CombatTypes = require("CombatTypes")
-local CombatConfig = require("CombatConfig")
 
 -- [ Constants ] --
 local WALKSPEED = 16
+local DISTANCE_TOLERANCE = 4
+local PING_ADDITIONAL_DELAY = 0.05
 
 -- [ Variables ] --
 
@@ -59,7 +59,7 @@ function CombatUtil.ValidateHit(self: Module, context: ValidateHit_Context): boo
         local Delta = attackedCFrame.Position * Vector3.new(1, 0, 1) - attackerCFrame.Position * Vector3.new(1, 0, 1)
 
         local PingTolerance = math.max(0, Ping) * WALKSPEED
-        local MaxReach = HitboxSize.Z + AttackerHitbox.Size.Z/2 + CombatConfig.DistanceTolerance + PingTolerance
+        local MaxReach = HitboxSize.Z + AttackerHitbox.Size.Z/2 + DISTANCE_TOLERANCE + PingTolerance
         local Distance = Delta.Magnitude
 
         if MaxReach < Distance then
@@ -94,7 +94,7 @@ function CombatUtil.ValidateHit(self: Module, context: ValidateHit_Context): boo
             return false
         end
 
-        local Ping = CombatConfig.PingAdditionalDelay + (Player:GetNetworkPing()/2)
+        local Ping = PING_ADDITIONAL_DELAY + (Player:GetNetworkPing()/2)
         
         local ClientAttackerCFrame = context.ClientAttackerCFrame
 

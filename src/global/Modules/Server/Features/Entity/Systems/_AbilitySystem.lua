@@ -31,14 +31,30 @@ function AbilitySystem.Update(self: Module, context: EntityTypesServer.SystemMod
     local World = context.World
     local Tags = context.Tags
     local Components = context.Components
-    for entity, _, currentAbility in World:query(Tags.Alive, Components.CurrentAbility) do
-        if currentAbility.StartTime + currentAbility.Duration < os.clock() then
+    for entity, _, currentAbility: EntityTypesServer.CurrentAbilityComponent in World:query(Tags.Alive, Components.CurrentAbility) do
+        if currentAbility.IsHeld then
+            continue
+        end
+
+        local ServerTime = workspace.DistributedGameTime
+
+        if currentAbility.StartTime + currentAbility.Duration < ServerTime then
             World:set(entity, Components.PreviousAbility, table.clone(currentAbility))
             World:remove(entity, Components.CurrentAbility)
 
             if currentAbility.AbilityName == "Block" then
                 World:remove(entity, Components.Blocking)
             end
+        end
+    end
+
+    for entity, _, character: EntityTypesServer.CharacterComponent in World:query(Tags.Alive, Components.Character) do
+        local IsAbilityActive = World:has(entity, Components.CurrentAbility)
+
+        if IsAbilityActive then
+            character.Humanoid.WalkSpeed = 10
+        else
+            character.Humanoid.WalkSpeed = 16
         end
     end
 end

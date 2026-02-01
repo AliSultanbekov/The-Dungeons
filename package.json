@@ -16,7 +16,8 @@
     "@quenty/counter": "^7.21.3",
     "@quenty/inputkeymaputils": "^14.28.3",
     "@quenty/loader": "^10.9.0",
-    "@quenty/servicebag": "^11.13.6"
+    "@quenty/servicebag": "^11.13.6",
+    "@quenty/time": "^2.4.6"
   },
   "publishConfig": {
     "access": "restricted"

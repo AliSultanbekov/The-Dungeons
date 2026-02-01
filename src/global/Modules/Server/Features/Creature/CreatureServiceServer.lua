@@ -14,6 +14,7 @@ local ServiceBag = require("ServiceBag")
 local EntityTypesServer = require("EntityTypesServer")
 local Maid = require("Maid")
 local Jecs = require("Jecs")
+local CreatureUtil = require("CreatureUtil")
 
 -- [ Constants ] --
 
@@ -42,7 +43,7 @@ function CreatureServiceServer.GetEntityFromCharacter(self: Module, character: M
     return self._CharacterToEntity[character]
 end
 
-function CreatureServiceServer.DamageCreature(self: Module, attacker: Model, attacked: Model, damageCount: number): boolean
+function CreatureServiceServer.DamageCreature(self: Module, attacker: Model, attacked: Model, damageCount: number): string?
     local AttackerEntity = self:GetEntityFromCharacter(attacker)
     local AttackedEntity = self:GetEntityFromCharacter(attacked)
 
@@ -50,59 +51,77 @@ function CreatureServiceServer.DamageCreature(self: Module, attacker: Model, att
     local Tags = self._EntityServiceServer:GetTags()
     local Components = self._EntityServiceServer:GetComponents()
 
-    if not World:has(AttackerEntity, Tags.Alive, Components.Health) then
-        return false
+    local CanDamage = CreatureUtil:CanDamage({
+        AttackerEntity = AttackerEntity,
+        AttackedEntity = AttackedEntity,
+        World = World,
+        Tags = Tags,
+        Components = Components
+    })
+
+    if not CanDamage then
+        return
     end
 
-    if not World:has(AttackedEntity, Tags.Alive, Components.Health) then
-        return false
+    local HitInfo = CreatureUtil:GetHitInfo({
+        AttackerEntity = AttackerEntity,
+        AttackedEntity = AttackedEntity,
+        World = World,
+        Components = Components
+    })
+
+    if not HitInfo then
+        return
     end
 
-    local AttackedHealth = World:get(AttackedEntity, Components.Health) :: EntityTypesServer.HealthComponent
+    local AttackedHealth = World:get(AttackedEntity, Components.Health)
 
-    if AttackedHealth <= 0 then
-        return false
+    if not AttackedHealth then
+        return
     end
 
-    if World:get(AttackerEntity, Components.Stunned) then
-        return false
+    if HitInfo == "Hit" then
+        World:set(AttackedEntity, Components.Health, math.max(0, AttackedHealth - damageCount))
     end
 
-    World:set(AttackedEntity, Components.Health, math.max(0, AttackedHealth - damageCount))
+    return HitInfo
+end
 
-    return true
+function CreatureServiceServer.IsAbilityActive(self: Module, character: Model, abilityName: string?): boolean
+    local Entity = self:GetEntityFromCharacter(character)
+    local World = self._EntityServiceServer:GetWorld()
+    local Components = self._EntityServiceServer:GetComponents()
+
+    return CreatureUtil:IsAbilityActive({
+        Entity = Entity,
+        World = World,
+        Components = Components,
+        AbilityName = abilityName
+    })
 end
 
 function CreatureServiceServer.GetCurrentAbility(self: Module, character: Model): EntityTypesServer.CurrentAbilityComponent?
     local Entity = self:GetEntityFromCharacter(character)
     local World = self._EntityServiceServer:GetWorld()
     local Components = self._EntityServiceServer:GetComponents()
-
-    if not World:has(Entity, Components.CurrentAbility) then
-        return nil
-    end
-
-    return World:get(Entity, Components.CurrentAbility) :: EntityTypesServer.CurrentAbilityComponent
+    
+    return CreatureUtil:GetCurrentAbility({
+        Entity = Entity,
+        World = World,
+        Components = Components
+    }) :: EntityTypesServer.CurrentAbilityComponent
 end
 
 function CreatureServiceServer.GetPreviousAbility(self: Module, character: Model): EntityTypesServer.PreviousAbilityComponent?
     local Entity = self:GetEntityFromCharacter(character)
     local World = self._EntityServiceServer:GetWorld()
     local Components = self._EntityServiceServer:GetComponents()
-
-    if not World:has(Entity, Components.PreviousAbility) then
-        return nil
-    end
-
-    return World:get(Entity, Components.PreviousAbility) :: EntityTypesServer.PreviousAbilityComponent
-end
-
-function CreatureServiceServer.IsStunned(self: Module, character: Model): boolean
-    local Entity = self:GetEntityFromCharacter(character)
-    local World = self._EntityServiceServer:GetWorld()
-    local Components = self._EntityServiceServer:GetComponents()
-
-    return World:has(Entity, Components.Stunned)
+    
+    return CreatureUtil:GetPreviousAbility({
+        Entity = Entity,
+        World = World,
+        Components = Components
+    }) :: EntityTypesServer.PreviousAbilityComponent
 end
 
 function CreatureServiceServer.TryUseAbility(self: Module, character: Model, abilityData: EntityTypesServer.CurrentAbilityComponent): boolean
@@ -110,24 +129,21 @@ function CreatureServiceServer.TryUseAbility(self: Module, character: Model, abi
     local World = self._EntityServiceServer:GetWorld()
     local Components = self._EntityServiceServer:GetComponents()
 
-    if World:has(Entity, Components.Stunned) then
-        return false
-    end
+    local CanUseAbility = CreatureUtil:CanUseAbility({
+        Entity = Entity,
+        World = World,
+        Components = Components,
+        AbilityData = abilityData
+    })
 
-    if World:has(Entity, Components.CurrentAbility) then
-        return false
-    end
-
-    local Ether = World:get(Entity, Components.Ether) :: EntityTypesServer.EtherComponent?
-
-    if not Ether or Ether <= 0 then
+    if not CanUseAbility then
         return false
     end
 
     World:set(Entity, Components.CurrentAbility, abilityData)
 
     if abilityData.AbilityName == "Block" then
-        World:add(Entity, Components.Blocking)
+        World:set(Entity, Components.Blocking, true)
     end
 
     return true
@@ -138,13 +154,20 @@ function CreatureServiceServer.TryEndAbility(self: Module, character: Model, abi
     local World = self._EntityServiceServer:GetWorld()
     local Components = self._EntityServiceServer:GetComponents()
 
-    local CurrentAbility = World:get(Entity, Components.CurrentAbility) :: EntityTypesServer.CurrentAbilityComponent?
+    local CanEndAbility = CreatureUtil:CanEndAbility({
+        Entity = Entity,
+        World = World,
+        Components = Components,
+        AbilityName = abilityName
+    })
 
-    if not CurrentAbility then
+    if not CanEndAbility then
         return false
     end
 
-    if abilityName and CurrentAbility.AbilityName ~= abilityName then
+    local CurrentAbility = World:get(Entity, Components.CurrentAbility) :: EntityTypesServer.CurrentAbilityComponent
+
+    if not CurrentAbility then
         return false
     end
 
@@ -172,7 +195,7 @@ function CreatureServiceServer.RegisterNPC(self: Module, character: Model)
         },
         Components = {
             Name = character.Name,
-            Health = 100,
+            Health = 1000,
             Ether = 100,
             Character = {
                 Character = character,
@@ -204,7 +227,7 @@ function CreatureServiceServer.RegisterPlayer(self: Module, character: Model)
         },
         Components = {
             Name = character.Name,
-            Health = 100,
+            Health = 1000,
             Ether = 100,
             Character = {
                 Character = character,

@@ -154,8 +154,10 @@ function EntityServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBa
         Health = self._World:component(),
         Ether = self._World:component(),
             -- Combat
+        AbilityCooldowns = self._World:component(),
         Blocking = self._World:component(),
         Dodging = self._World:component(),
+        ParryStunned = self._World:component(),
         Stunned = self._World:component(),
         CurrentAbility = self._World:component(),
         PreviousAbility = self._World:component(),
@@ -204,6 +206,7 @@ function EntityServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._World:set(self._Components.InCombat, Jecs.Name, "InCombat")
     self._World:set(self._Components.Blocking, Jecs.Name, "Blocking")
     self._World:set(self._Components.Dodging, Jecs.Name, "Dodging")
+    self._World:set(self._Components.ParryStunned, Jecs.Name, "ParryStunned")
     self._World:set(self._Components.Stunned, Jecs.Name, "Stunned")
     self._World:set(self._Components.CurrentAbility, Jecs.Name, "CurrentAbility")
     self._World:set(self._Components.PreviousAbility, Jecs.Name, "PreviousAbility")
@@ -234,6 +237,7 @@ function EntityServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._World:add(self._Components.Ether, self._Tags.ReplicatedComponent)
     self._World:add(self._Components.Blocking, self._Tags.ReplicatedComponent)
     self._World:add(self._Components.Dodging, self._Tags.ReplicatedComponent)
+    self._World:add(self._Components.ParryStunned, self._Tags.ReplicatedComponent)
     self._World:add(self._Components.Stunned, self._Tags.ReplicatedComponent)
     self._World:add(self._Components.CurrentAbility, self._Tags.ReplicatedComponent)
     self._World:add(self._Components.PreviousAbility, self._Tags.ReplicatedComponent)

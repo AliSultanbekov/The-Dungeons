@@ -328,7 +328,7 @@ function SquadService.Start(self: Module)
 	task.spawn(function()
 		task.wait(1)
 
-		self:InitializeSquad()
+		--[[self:InitializeSquad()
 
 		while true do
 			task.wait(2)
@@ -339,7 +339,7 @@ function SquadService.Start(self: Module)
 				self:MoveTo(target)
 				break
 			end
-		end
+		end]]
 	end)
 end
 

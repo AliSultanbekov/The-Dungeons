@@ -7,9 +7,9 @@ local ContextActionService = game:GetService("ContextActionService")
 local Players = game:GetService("Players")
 
 -- [ Imports ] --
-local Controls = require(Players.LocalPlayer.PlayerScripts.PlayerModule):GetControls() :: any
 
 -- [ Require ] --
+local rbxrequire = require
 local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
@@ -40,9 +40,8 @@ type ActionCacheData = {
 
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
-
+    _Controls: any,
     _Maid: Maid.Maid,
-
     _Actions: { [string]: ActionCacheData }
 }
 
@@ -57,9 +56,9 @@ end
 -- [ Public Functions ] --
 function UserInputManager.ToggleControls(self: Module, toggle: boolean)
     if toggle == true then
-        Controls:Enable()
+        self._Controls:Enable()
     elseif toggle == false then
-        Controls:Disable()
+        self._Controls:Disable()
     end
 end
 
@@ -129,7 +128,9 @@ function UserInputManager.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
 end
 
 function UserInputManager.Start(self: Module)
-
+    task.spawn(function()
+        self._Controls = rbxrequire(Players.LocalPlayer.PlayerScripts:WaitForChild("PlayerModule")):GetControls()
+    end)
 end
 
 return UserInputManager :: Module

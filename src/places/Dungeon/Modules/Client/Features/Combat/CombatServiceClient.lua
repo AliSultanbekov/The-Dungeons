@@ -47,8 +47,8 @@ export type Module = typeof(CombatController) & ModuleData
 -- [ Public Functions ] --
 function CombatController.OnPlayerCharacterAdded(self: Module, maid: Maid.Maid, character: Model)
     local CombatObject = CombatClass.new(character, {
+        ServiceBag = self._ServiceBag,
         AbilityManager = self._AbilityManager,
-        CreatureService = self._CreatureServiceClient,
     })
     CombatObject:AddAbility("DefaultBasicAttack", { 
         ItemData = { Name = "Wooden Sword" },
@@ -73,7 +73,6 @@ function CombatController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     self._PlayerCharacterManager = self._ServiceBag:GetService(require("PlayerCharacterManager"))
     self._UserInputManager = self._ServiceBag:GetService(require("UserInputManager"))
     self._CombatNetworkClient = self._ServiceBag:GetService(require("CombatNetworkClient"))
-    self._CreatureServiceClient = self._ServiceBag:GetService(require("CreatureServiceClient"))
 
     self._AbilityManager = AbilityManager.new(script.Parent.Abilities)
     self._CombatObjects = {}
@@ -114,11 +113,7 @@ function CombatController.Start(self: Module)
         )
     end)
 
-    self._UserInputManager:RegisterKeymapAction(Actions.SPECIAL_ATTACK, KeyMaps[Actions.SPECIAL_ATTACK], function(data)
-        if data.InputState ~= Enum.UserInputState.Begin then
-            return
-        end
-
+    self._UserInputManager:RegisterKeymapAction(Actions.BLOCK, KeyMaps[Actions.BLOCK], function(data)
         local Character = Player.Character
 
         if not Character then
@@ -127,28 +122,32 @@ function CombatController.Start(self: Module)
 
         local CombatObject = self._CombatObjects[Character]
 
-        CombatObject:UseAbility("Block",
-            {
-                Mode = "FromClient",
-                OnUse = function(context: CombatTypes.Context)
-                    self._CombatNetworkClient:UseAbility(context)
-                end,
-                OnEnd = function(context: CombatTypes.Context)
-                    self._CombatNetworkClient:EndAbility(context)
-                end,
-                OnHit = function(context: CombatTypes.Context)
-                    self._CombatNetworkClient:HitAbility(context)
-                end,
-            }
-        )
+        print(data.InputState)
+        
+        if data.InputState == Enum.UserInputState.Begin then
+            CombatObject:UseAbility("Block",
+                {
+                    Mode = "FromClient",
+                    OnUse = function(context: CombatTypes.Context)
+                        self._CombatNetworkClient:UseAbility(context)
+                    end,
+                }
+            )
+            return
+        elseif data.InputState == Enum.UserInputState.End or data.InputState == Enum.UserInputState.Change or data.InputState == Enum.UserInputState.Cancel then
+            CombatObject:EndAbility("Block",
+                {
+                    Mode = "FromClient",
+                    OnEnd = function(context: CombatTypes.Context)
+                        self._CombatNetworkClient:EndAbility(context)
+                    end,
+                }
+            )
+        end
     end)
 
     self._CombatNetworkClient.RemoteEvents.AbilityHit:Connect(function(context: CombatTypes.Context?)
         if not context then
-            return
-        end
-
-        if context.Attacker == Player.Character then
             return
         end
 

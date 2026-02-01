@@ -35,6 +35,9 @@ export type CharacterComponent = {
     Humanoid: Humanoid,
 }
 export type PrefabComponent = Model
+export type AbilityCooldownsComponent = {
+    [string]: number
+}
 export type InCombatComponent = {
     Duration: number,
     CurrentDuration: number,
@@ -43,11 +46,13 @@ export type HealthComponent = number
 export type EtherComponent = number
 export type BlockingComponent = boolean
 export type DodgingComponent = boolean
+export type ParryStunned = boolean
 export type StunnedComponent = boolean
 export type CurrentAbilityComponent = {
     AbilityName: string,
     StartTime: number,
     Duration: number,
+    IsHeld: boolean?,
     [string]: any,
 }
 export type PreviousAbilityComponent = CurrentAbilityComponent
@@ -68,43 +73,38 @@ export type OverTimeEffectComponent = {
     TotalAmount: number,
 }
 export type Components = {
-    Name: Jecs.Id<NameComponent>,
-    Stats: Jecs.Id<StatsComponent>,
-    Character: Jecs.Id<CharacterComponent>,
-    Prefab: Jecs.Id<PrefabComponent>,
-
-    Health: Jecs.Id<HealthComponent>,
-    Ether: Jecs.Id<EtherComponent>,
-
-    InCombat: Jecs.Id<InCombatComponent>,
-
-    Blocking: Jecs.Id<BlockingComponent>,
-    Dodging: Jecs.Id<DodgingComponent>,
-    Stunned: Jecs.Id<StunnedComponent>,
-    CurrentAbility: Jecs.Id<CurrentAbilityComponent>,
-    PreviousAbility: Jecs.Id<PreviousAbilityComponent>,
-
-    HealthBuff: Jecs.Id<HealthBuffComponent>,
-    DamageBuff: Jecs.Id<DamageBuffComponent>,
-    SpeedBuff: Jecs.Id<SpeedBuffComponent>,
-    MitigationBuff: Jecs.Id<MitigationBuffComponent>,
-
-    HealthDebuff: Jecs.Id<HealthDebuffComponent>,
-    DamageDebuff: Jecs.Id<DamageDebuffComponent>,
-    SpeedDebuff: Jecs.Id<SpeedDebuffComponent>,
-    MitigationDebuff: Jecs.Id<MitigationDebuffComponent>,
-
-    DamageOverTimeEffect: Jecs.Id<OverTimeEffectComponent>,
-    HealOverTimeEffect: Jecs.Id<OverTimeEffectComponent>,
-    InvinsibilityEffect: Jecs.Id<OverTimeEffectComponent>,
-    ShieldEffect: Jecs.Id<OverTimeEffectComponent>,
-    InvulnerabilityEffect: Jecs.Id<OverTimeEffectComponent>,
-    LifestealBuff: Jecs.Id<OverTimeEffectComponent>,
-
-    StunEffect: Jecs.Id<OverTimeEffectComponent>,
-    RootEffect: Jecs.Id<OverTimeEffectComponent>,
-    SilenceEffect: Jecs.Id<OverTimeEffectComponent>,
-    FearEffect: Jecs.Id<OverTimeEffectComponent>,
+    Name: Jecs.Entity<NameComponent>,
+    Stats: Jecs.Entity<StatsComponent>,
+    Character: Jecs.Entity<CharacterComponent>,
+    Prefab: Jecs.Entity<PrefabComponent>,
+    Health: Jecs.Entity<HealthComponent>,
+    Ether: Jecs.Entity<EtherComponent>,
+    AbilityCooldowns: Jecs.Entity<AbilityCooldownsComponent>,
+    InCombat: Jecs.Entity<InCombatComponent>,
+    Blocking: Jecs.Entity<BlockingComponent>,
+    Dodging: Jecs.Entity<DodgingComponent>,
+    Stunned: Jecs.Entity<StunnedComponent>,
+    ParryStunned: Jecs.Entity<ParryStunned>,
+    CurrentAbility: Jecs.Entity<CurrentAbilityComponent>,
+    PreviousAbility: Jecs.Entity<PreviousAbilityComponent>,
+    HealthBuff: Jecs.Entity<HealthBuffComponent>,
+    DamageBuff: Jecs.Entity<DamageBuffComponent>,
+    SpeedBuff: Jecs.Entity<SpeedBuffComponent>,
+    MitigationBuff: Jecs.Entity<MitigationBuffComponent>,
+    HealthDebuff: Jecs.Entity<HealthDebuffComponent>,
+    DamageDebuff: Jecs.Entity<DamageDebuffComponent>,
+    SpeedDebuff: Jecs.Entity<SpeedDebuffComponent>,
+    MitigationDebuff: Jecs.Entity<MitigationDebuffComponent>,
+    DamageOverTimeEffect: Jecs.Entity<OverTimeEffectComponent>,
+    HealOverTimeEffect: Jecs.Entity<OverTimeEffectComponent>,
+    InvinsibilityEffect: Jecs.Entity<OverTimeEffectComponent>,
+    ShieldEffect: Jecs.Entity<OverTimeEffectComponent>,
+    InvulnerabilityEffect: Jecs.Entity<OverTimeEffectComponent>,
+    LifestealBuff: Jecs.Entity<OverTimeEffectComponent>,
+    StunEffect: Jecs.Entity<OverTimeEffectComponent>,
+    RootEffect: Jecs.Entity<OverTimeEffectComponent>,
+    SilenceEffect: Jecs.Entity<OverTimeEffectComponent>,
+    FearEffect: Jecs.Entity<OverTimeEffectComponent>,
 }
 export type SystemModuleUpdateContext = {
     World: Jecs.World,

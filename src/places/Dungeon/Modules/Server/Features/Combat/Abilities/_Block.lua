@@ -11,6 +11,7 @@ local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 local ItemTypes = require("ItemTypes")
+local ServiceBag = require("ServiceBag")
 
 -- [ Constants ] --
 
@@ -23,36 +24,17 @@ local Block = {
 Block.__index = Block
 
 -- [ Types ] --
-type AbilityState = {
-    Name: string,
-    StartTime: number,
-    Combo: number,
-    Duration: number,
-}
-type CreatureServiceServer = typeof(require("CreatureServiceServer"))
-type Config = {
-    AbilityName: string,
-    MaxDelay: number,
-    Combo: { 
-        [number]: {
-            Animation: string,
-            Damage: number,
-            Range: Vector3,
-            Angle: number,
-            Time: number
-        }
-    }
-}
 type WeaponItemData = ItemTypes.WeaponItemData
 type New_Context = {
+    ServiceBag: ServiceBag.ServiceBag,
     Attacker: Model,
     ItemData: WeaponItemData,
-    CreatureService: CreatureServiceServer,
 }
 export type ObjectData = {
+    _ServiceBag: ServiceBag.ServiceBag,
+    _CreatureServiceServer: typeof(require("CreatureServiceServer")),
     _Attacker: Model,
     _WeaponData: WeaponItemData,
-    _CreatureServiceServer: CreatureServiceServer
 }
 export type Object = typeof(setmetatable({} :: ObjectData, Block))
 export type Module = typeof(Block)
@@ -63,43 +45,36 @@ export type Module = typeof(Block)
 function Block.new(context: New_Context): Object
     local self = setmetatable({} :: any, Block) :: Object
 
+    self._ServiceBag = context.ServiceBag
+    self._CreatureServiceServer = self._ServiceBag:GetService(require("CreatureServiceServer"))
+
     self._Attacker = context.Attacker
     self._WeaponData = context.ItemData
-    self._CreatureServiceServer = context.CreatureService
 
     return self
 end
 
-function Block.IsActive(self: Object): boolean
-    local CurrentAbility = self._CreatureServiceServer:GetCurrentAbility(self._Attacker) :: AbilityState?
-
-    if not CurrentAbility then
-        return false
-    end
-
-    if CurrentAbility.Name ~= self.AbilityName then
-        return false
-    end
-
-    return true
-end
-
 function Block.Use(self: Object)
-    if self:IsActive() then
+    if self._CreatureServiceServer:IsAbilityActive(self._Attacker) then
         return
     end
+
+    local ServerTime = workspace.DistributedGameTime
     
-    if self._CreatureServiceServer:TryUseAbility(self._Attacker, {
+    self._CreatureServiceServer:TryUseAbility(self._Attacker, {
         AbilityName = "Block",
-        StartTime = os.clock(),
-        Duration = 5,
-    }) then
-        print("Blocked")
-    end
+        StartTime = ServerTime,
+        Duration = math.huge,
+        IsHeld = true,
+    })
 end
 
-function Block.End()
-    
+function Block.End(self: Object)
+    if not self._CreatureServiceServer:IsAbilityActive(self._Attacker, self.AbilityName) then
+        return
+    end
+
+    self._CreatureServiceServer:TryEndAbility(self._Attacker, self.AbilityName)
 end
 
 return Block :: Module

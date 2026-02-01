@@ -5,16 +5,17 @@
 -- [ Roblox Services ] --
 
 -- [ Imports ] --
+local AbilityEffectManager = require("../_AbilityEffectManager")
 
 -- [ Require ] --
 local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
+local ServiceBag = require("ServiceBag")
 local CombatTypes = require("CombatTypes")
 local HitboxClass = require("HitboxClass")
 local ItemTypes = require("ItemTypes")
 local WeaponConfig = require("WeaponConfig")
-local AssetProvider = require("AssetProvider")
 
 -- [ Constants ] --
 
@@ -33,7 +34,6 @@ type AbilityComponent = {
     Combo: number,
     Duration: number,
 }
-type CreatureServiceClient = typeof(require("CreatureServiceClient"))
 type Config = {
     AbilityName: string,
     MaxDelay: number,
@@ -48,9 +48,6 @@ type Config = {
     }
 }
 type WeaponItemData = ItemTypes.WeaponItemData
-type UpdateState_Context = {
-    State: {[string]: any}
-}
 type Use_Context = {
     Attacker: Model,
     Mode: "FromServer" | "FromClient",
@@ -62,15 +59,19 @@ type Use_Context = {
 type Hit_Context = {
     Attacker: Model,
     Attacked: Model,
+    HitInfo: "Hit" | "Blocked" | "Parried" | string,
+    Mode: "FromServer" | "FromClient",
+    OnHit: (context: CombatTypes.Context) -> (),
 }
 type New_Context = {
     Attacker: Model,
     ItemData: WeaponItemData,
-    CreatureService: CreatureServiceClient,
+    ServiceBag: ServiceBag.ServiceBag,
 }
-type AbilityObject = CombatTypes.ClientAbilityObject
 export type ObjectData = {
-    _CreatureServiceClient: CreatureServiceClient,
+    _ServiceBag: ServiceBag.ServiceBag,
+    _CreatureServiceClient: typeof(require("CreatureServiceClient")),
+
     _Attacker: Model,
     _WeaponData: WeaponItemData,
     _Config: Config,
@@ -79,25 +80,12 @@ export type ObjectData = {
 export type Object = typeof(setmetatable({} :: ObjectData, DefaultBasicAttack))
 export type Module = typeof(DefaultBasicAttack)
 
--- [ Private Functions ] --
-function DefaultBasicAttack.IsActive(self: Object): boolean
-    local CurrentAbility = self._CreatureServiceClient:GetCurrentAbility(self._Attacker) :: AbilityComponent?
-
-    if not CurrentAbility then
-        return false
-    end
-
-    if CurrentAbility.AbilityName ~= self.AbilityName then
-        return false
-    end
-
-    return true
-end
 -- [ Public Functions ] --
 function DefaultBasicAttack.new(context: New_Context): Object
     local self = setmetatable({} :: any, DefaultBasicAttack) :: Object
-    
-    self._CreatureServiceClient = context.CreatureService
+
+    self._ServiceBag = context.ServiceBag
+    self._CreatureServiceClient = self._ServiceBag:GetService(require("CreatureServiceClient"))
 
     self._Attacker = context.Attacker
     self._WeaponData = context.ItemData
@@ -130,32 +118,36 @@ function DefaultBasicAttack.Use(self: Object, context: Use_Context)
     end
 
     if context.Mode == "FromClient" then
-        local PreviousAbility = self._CreatureServiceClient:GetPreviousAbility(self._Attacker) :: AbilityComponent?
-
-        if self:IsActive() then
+        if self._CreatureServiceClient:IsAbilityActive(self._Attacker) then
             return
         end
-    
+
+        local PreviousAbility = self._CreatureServiceClient:GetPreviousAbility(self._Attacker) :: AbilityComponent?
+        local ServerTime = workspace.DistributedGameTime
         local Combo = 1
 
         if PreviousAbility 
         and PreviousAbility.AbilityName == self.AbilityName 
-        and PreviousAbility.StartTime + PreviousAbility.Duration + Config.MaxDelay >= os.clock() 
+        and PreviousAbility.StartTime + PreviousAbility.Duration + Config.MaxDelay >= ServerTime
         and PreviousAbility.Combo < #ComboData then
             Combo += PreviousAbility.Combo
-            self._CreatureServiceClient:TryUseAbility(self._Attacker, {
+            if not self._CreatureServiceClient:TryUseAbility(self._Attacker, {
                 AbilityName = self.AbilityName,
-                StartTime = os.clock(),
+                StartTime = ServerTime,
                 Duration = ComboData[Combo].Time,
                 Combo = Combo,
-            })
+            }) then
+                return
+            end
         else
-            self._CreatureServiceClient:TryUseAbility(self._Attacker, {
+            if not self._CreatureServiceClient:TryUseAbility(self._Attacker, {
                 AbilityName = self.AbilityName,
-                StartTime = os.clock(),
+                StartTime = ServerTime,
                 Duration = ComboData[Combo].Time,
                 Combo = Combo,
-            })
+            }) then
+                return
+            end
         end
 
         context.OnUse({
@@ -166,69 +158,88 @@ function DefaultBasicAttack.Use(self: Object, context: Use_Context)
         local AnimationID = CurrentAbilityData.Animation
         local AnimationInstance = Instance.new("Animation"); AnimationInstance.AnimationId = AnimationID
         local Track = Animator:LoadAnimation(AnimationInstance)
-        Track.Priority = Enum.AnimationPriority.Action
-        Track:Play(0, 1, 1)
+
         Track:GetMarkerReachedSignal("Hit"):Connect(function()
-            HitboxClass.new(
-                {
-                    HitboxType = "Box",
-                    GetCFrame = function()
-                        local BaseCF = Attacker:GetPivot()
-                        local LookVec = BaseCF.LookVector
-                        local FlatLooKVec = Vector3.new(LookVec.X, 0, LookVec.Z)
+            HitboxClass.new({
+                HitboxType = "Box",
+                GetCFrame = function()
+                    local BaseCF = Attacker:GetPivot()
+                    local LookVec = BaseCF.LookVector
+                    local FlatLooKVec = Vector3.new(LookVec.X, 0, LookVec.Z)
 
-                        if FlatLooKVec.Magnitude < 1e-6 then
-                            return CFrame.identity
-                        end
-
-                        return CFrame.lookAt(BaseCF.Position, BaseCF.Position + FlatLooKVec) * CFrame.new(0, 0, -(HRP.Size.Z/2 + CurrentAbilityData.Range.Z/2))
-                    end,
-                    Size = CurrentAbilityData.Range,
-                    Length = 4,
-                    Ignore = { self._Attacker },
-                    Visualise = true,
-                    Cb = function(hitCharacter: Model)
-                        context.OnHit({ 
-                            AbilityName = self.AbilityName,
-                            Attacked = hitCharacter, 
-                            AttackerCFrame = Attacker:GetPivot() 
-                        })
-                        
-                        self:Hit({
-                            Attacker = self._Attacker,
-                            Attacked = hitCharacter
-                        })
+                    if FlatLooKVec.Magnitude < 1e-6 then
+                        return CFrame.identity
                     end
-                }
-            ):Trigger()
-        end)
 
-        Track:Play()
+                    return CFrame.lookAt(BaseCF.Position, BaseCF.Position + FlatLooKVec) * CFrame.new(0, 0, -(HRP.Size.Z/2 + CurrentAbilityData.Range.Z/2))
+                end,
+                Size = CurrentAbilityData.Range,
+                Length = 4,
+                Ignore = { self._Attacker },
+                Visualise = true,
+                Cb = function(Attacked: Model)
+                    local HitInfo = self._CreatureServiceClient:DamageCreature(self._Attacker, Attacked)
+
+                    for _, track in Animator:GetPlayingAnimationTracks() do
+                        track:AdjustSpeed(0)
+                    end
+                    
+                    task.delay(0.05, function()
+                        for _, track in Animator:GetPlayingAnimationTracks() do
+                            track:AdjustSpeed(1)
+                        end
+                    end)
+
+                    if not HitInfo then
+                        return
+                    end
+                    
+                    self:Hit({
+                        Attacker = self._Attacker,
+                        Attacked = Attacked,
+                        Mode = "FromClient",
+                        HitInfo = HitInfo,
+                        OnHit = context.OnHit,
+                    })
+                end
+            }):Trigger()
+        end)
 
         task.delay(CurrentAbilityData.Time, function()
-            context.OnEnd({
-                AbilityName = self.AbilityName,
+            self:End({
+                OnEnd = context.OnEnd
             })
-            self:End()
         end)
+
+        Track:Play(0, 1, 1)
     end
 end
 
 function DefaultBasicAttack.End(self: Object, context: any)
+    if not self._CreatureServiceClient:IsAbilityActive(self._Attacker, self.AbilityName) then
+        return
+    end
+
+    context.OnEnd({
+        AbilityName = self.AbilityName,
+    })
+
     self._CreatureServiceClient:TryEndAbility(self._Attacker, "DefaultBasicAttack")
 end
 
 function DefaultBasicAttack.Hit(self: Object, context: Hit_Context)
-    local Sound = AssetProvider:Get(string.format("Sounds/Punches/Punch%d", math.random(1,5))) :: Sound
-    Sound.Parent = workspace
-    Sound:Play()
-    local HitEffectAttachment = context.Attacked:FindFirstChild("HitEffectTest")
-    if HitEffectAttachment then
-        local Effect = HitEffectAttachment:FindFirstChild("Effect") :: ParticleEmitter
-
-        if Effect then
-            Effect:Emit(1)
+    if context.Mode == "FromClient" then
+        if not self._CreatureServiceClient:IsAbilityActive(self._Attacker, self.AbilityName) then
+            return
         end
+
+        context.OnHit({ 
+            AbilityName = self.AbilityName,
+            Attacked = context.Attacked, 
+            AttackerCFrame = context.Attacker:GetPivot() 
+        })
+    elseif context.Mode == "FromServer" then
+        AbilityEffectManager:CreateHitEffect(context.Attacked, context.HitInfo)
     end
 end
 

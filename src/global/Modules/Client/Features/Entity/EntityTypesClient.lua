@@ -41,6 +41,7 @@ export type InCombatComponent = {
 }
 export type BlockingComponent = boolean
 export type DodgingComponent = boolean
+export type ParryStunned = boolean
 export type StunnedComponent = boolean
 export type CurrentAbilityComponent = {
     AbilityName: string,
@@ -59,6 +60,7 @@ export type Components = {
     InCombat: Jecs.Id<InCombatComponent>,
     Blocking: Jecs.Id<BlockingComponent>,
     Dodging: Jecs.Id<DodgingComponent>,
+    ParryStunned: Jecs.Id<ParryStunned>,
     Stunned: Jecs.Id<StunnedComponent>,
     CurrentAbility: Jecs.Id<CurrentAbilityComponent>,
     PreviousAbility: Jecs.Id<PreviousAbilityComponent>,

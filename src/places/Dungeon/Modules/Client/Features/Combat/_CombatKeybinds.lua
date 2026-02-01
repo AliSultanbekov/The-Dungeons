@@ -17,7 +17,7 @@ local InputModeTypes = require("InputModeTypes")
 -- [ Variables ] --
 local Actions = {
     ["BASIC_ATTACK"] = "BASIC_ATTACK",
-    ["SPECIAL_ATTACK"] = "SPECIAL_ATTACK"
+    ["BLOCK"] = "BLOCK"
 }
 
 -- [ Module Table ] --
@@ -36,15 +36,15 @@ local CombatKeyMap = {
                 rebindable = true,
             }
         ),
-        [Actions.SPECIAL_ATTACK] = InputKeyMapList.new(
-            Actions.SPECIAL_ATTACK,
+        [Actions.BLOCK] = InputKeyMapList.new(
+            Actions.BLOCK,
             {
-                InputKeyMap.new(InputModeTypes.Mouse, {
-                    Enum.UserInputType.MouseButton2
+                InputKeyMap.new(InputModeTypes.Keyboard, {
+                    Enum.KeyCode.F
                 })
             },
             {
-                bindingName = "Special Attack",
+                bindingName = "Block",
                 rebindable = true,
             }
         )

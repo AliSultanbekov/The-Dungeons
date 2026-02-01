@@ -5,7 +5,7 @@
 -- [ Roblox Services ] --
 
 -- [ Require ] --
-local require = require(script.Parent.loader).load(script)
+local _require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 
@@ -16,7 +16,8 @@ local require = require(script.Parent.loader).load(script)
 -- [ Module Table ] --
 local AbilityConfig = {
     ["DefaultBasicAttack"] = {
-        Cooldown = 2
+        Cooldown = 2,
+        Weight = 1,
     }
 }
 

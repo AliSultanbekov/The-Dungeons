@@ -10,10 +10,12 @@
 local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] -- 
+local ServiceBag = require("ServiceBag")
 local ItemTypes = require("ItemTypes")
 local WeaponConfig = require("WeaponConfig")
 local CombatUtil = require("CombatUtil")
 local CombatTypes = require("CombatTypes")
+local EntityTypesServer = require("EntityTypesServer")
 
 -- [ Constants ] --
 
@@ -26,14 +28,6 @@ local DefaultBasicAttack = {
 DefaultBasicAttack.__index = DefaultBasicAttack
 
 -- [ Types ] --
-type AbilityComponent = {
-    AbilityName: string,
-    StartTime: number,
-    Combo: number,
-    Duration: number,
-}
-type PositionHistoryService = typeof(require("PositionHistoryService"))
-type CreatureServiceServer = typeof(require("CreatureServiceServer"))
 type Config = {
     AbilityName: string,
     MaxDelay: number,
@@ -48,10 +42,6 @@ type Config = {
     }
 }
 type WeaponItemData = ItemTypes.WeaponItemData
-type Use_Context = {
-}
-type End_Context = {
-}
 type Hit_Context = {
     Mode: "FromServer",
     Attacked: Model,
@@ -63,15 +53,15 @@ type Hit_Context = {
     OnHit: (context: CombatTypes.Context) -> (),
 }
 type New_Context = {
+    ServiceBag: ServiceBag.ServiceBag,
     Attacker: Model,
     ItemData: WeaponItemData,
-    PositionHistoryService: PositionHistoryService,
-    CreatureService: CreatureServiceServer,
 }
-type AbilityObject = CombatTypes.AbilityObject
 export type ObjectData = {
-    _PositionHistoryService: PositionHistoryService,
-    _CreatureServiceServer: CreatureServiceServer,
+    _ServiceBag: ServiceBag.ServiceBag,
+    _PositionHistoryService: typeof(require("PositionHistoryService")),
+    _CreatureServiceServer: typeof(require("CreatureServiceServer")),
+
     _Attacker: Model,
     _WeaponData: WeaponItemData,
     _Config: Config,
@@ -86,8 +76,9 @@ export type Module = typeof(DefaultBasicAttack)
 function DefaultBasicAttack.new(context: New_Context): Object
     local self = setmetatable({} :: any, DefaultBasicAttack) :: Object
 
-    self._PositionHistoryService = context.PositionHistoryService
-    self._CreatureServiceServer = context.CreatureService
+    self._ServiceBag = context.ServiceBag
+    self._PositionHistoryService = self._ServiceBag:GetService(require("PositionHistoryService"))
+    self._CreatureServiceServer = self._ServiceBag:GetService(require("CreatureServiceServer"))
 
     self._Attacker = context.Attacker
     self._WeaponData = context.ItemData
@@ -96,54 +87,40 @@ function DefaultBasicAttack.new(context: New_Context): Object
     return self
 end
 
-function DefaultBasicAttack.IsActive(self: Object): boolean
-    local CurrentAbility = self._CreatureServiceServer:GetCurrentAbility(self._Attacker) :: AbilityComponent?
-
-    if not CurrentAbility then
-        return false
-    end
-
-    if CurrentAbility.AbilityName ~= self.AbilityName then
-        return false
-    end
-
-    return true
-end
-
-function DefaultBasicAttack.Use(self: Object, context: Use_Context)
-    local PreviousAbility = self._CreatureServiceServer:GetPreviousAbility(self._Attacker) :: AbilityComponent?
-
-    if self:IsActive() then
+function DefaultBasicAttack.Use(self: Object)
+    if self._CreatureServiceServer:IsAbilityActive(self._Attacker) then
         return
     end
 
+    local PreviousAbility = self._CreatureServiceServer:GetPreviousAbility(self._Attacker) :: EntityTypesServer.CurrentAbilityComponent?
+    local ServerTime = workspace.DistributedGameTime
     local Config = self._Config
     local ComboData = Config.Combo
     local Combo = 1
     
     if PreviousAbility 
     and PreviousAbility.AbilityName == self.AbilityName 
-    and PreviousAbility.StartTime + PreviousAbility.Duration + Config.MaxDelay >= os.clock() 
+    and PreviousAbility.StartTime + PreviousAbility.Duration + Config.MaxDelay >= ServerTime
     and PreviousAbility.Combo < #ComboData then
         Combo += PreviousAbility.Combo
         self._CreatureServiceServer:TryUseAbility(self._Attacker, {
             AbilityName = self.AbilityName,
-            StartTime = os.clock(),
+            StartTime = ServerTime,
             Duration = ComboData[Combo].Time,
             Combo = Combo,
         })
     else
         self._CreatureServiceServer:TryUseAbility(self._Attacker, {
             AbilityName = self.AbilityName,
-            StartTime = os.clock(),
+            StartTime = ServerTime,
             Duration = ComboData[Combo].Time,
             Combo = Combo,
         })
     end
 end
 
-function DefaultBasicAttack.End(self: Object, context: End_Context)
-    if not self:IsActive() then
+function DefaultBasicAttack.End(self: Object)
+    if not self._CreatureServiceServer:IsAbilityActive(self._Attacker, self.AbilityName) then
         return
     end
 
@@ -151,12 +128,11 @@ function DefaultBasicAttack.End(self: Object, context: End_Context)
 end
 
 function DefaultBasicAttack.Hit(self: Object, context: Hit_Context)
-    local CurrentAbility = self._CreatureServiceServer:GetCurrentAbility(self._Attacker) :: AbilityComponent?
-
-    if not self:IsActive() or not CurrentAbility then
+    if not self._CreatureServiceServer:IsAbilityActive(self._Attacker, self.AbilityName) then
         return
     end
 
+    local CurrentAbility = self._CreatureServiceServer:GetCurrentAbility(self._Attacker) :: EntityTypesServer.CurrentAbilityComponent
     local OnHit:(CombatTypes.Context) -> () = context.OnHit
     local Config = self._Config
     local Combo = CurrentAbility.Combo
@@ -177,14 +153,16 @@ function DefaultBasicAttack.Hit(self: Object, context: Hit_Context)
         
     end
 
-    if not self._CreatureServiceServer:DamageCreature(self._Attacker, context.Attacked, CurrentComboData.Damage) then
-        print("NOOOOO")
+    local Info = self._CreatureServiceServer:DamageCreature(self._Attacker, context.Attacked, CurrentComboData.Damage)
+
+    if not Info then
         return
     end
 
     OnHit({
         Attacker = self._Attacker,
-        Attacked = context.Attacked
+        Attacked = context.Attacked,
+        HitInfo = Info
     })
 end
 

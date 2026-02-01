@@ -11,6 +11,7 @@ local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 local Jecs = require("Jecs")
+local EntityTypesShared = require("EntityTypesShared")
 
 -- [ Constants ] --
 
@@ -19,53 +20,31 @@ local Jecs = require("Jecs")
 -- [ Module Table ] --
 
 -- [ Types ] --
-local StatsTypes = require("StatsTypes")
 
-export type Tags = {
-    Alive: Jecs.Entity,
-    Player: Jecs.Entity,
-    NPC: Jecs.Entity,
-}
+-- Re-export shared types
+export type NameComponent = EntityTypesShared.NameComponent
+export type StatsComponent = EntityTypesShared.StatsComponent
+export type CharacterComponent = EntityTypesShared.CharacterComponent
+export type HealthComponent = EntityTypesShared.HealthComponent
+export type EtherComponent = EntityTypesShared.EtherComponent
+export type AbilityCooldownsComponent = EntityTypesShared.AbilityCooldownsComponent
+export type InCombatComponent = EntityTypesShared.InCombatComponent
+export type BlockingComponent = EntityTypesShared.BlockingComponent
+export type DodgingComponent = EntityTypesShared.DodgingComponent
+export type ParryStunnedComponent = EntityTypesShared.ParryStunnedComponent
+export type StunnedComponent = EntityTypesShared.StunnedComponent
+export type CurrentAbilityComponent = EntityTypesShared.CurrentAbilityComponent
+export type PreviousAbilityComponent = EntityTypesShared.PreviousAbilityComponent
+export type EntityCreatedSignalPacket = EntityTypesShared.EntityCreatedSignalPacket
+export type EntityDeletedSignalPacket = EntityTypesShared.EntityDeletedSignalPacket
 
-export type NameComponent = string
-export type StatsComponent = StatsTypes.PlayerStats
-export type CharacterComponent = {
-    Character: Model,
-    Humanoid: Humanoid,
-}
-export type HealthComponent = number
-export type EtherComponent = number
-export type InCombatComponent = {
-    Duration: number,
-    CurrentDuration: number,
-}
-export type BlockingComponent = boolean
-export type DodgingComponent = boolean
-export type ParryStunned = boolean
-export type StunnedComponent = boolean
-export type CurrentAbilityComponent = {
-    AbilityName: string,
-    StartTime: number,
-    Duration: number,
-    [string]: any,
-}
-export type PreviousAbilityComponent = CurrentAbilityComponent
+-- Client Tags (same as shared for now)
+export type Tags = EntityTypesShared.Tags
 
-export type Components = {
-    Name: Jecs.Id<NameComponent>,
-    Stats: Jecs.Id<StatsComponent>,
-    Character: Jecs.Id<CharacterComponent>,
-    Health: Jecs.Id<HealthComponent>,
-    Ether: Jecs.Id<EtherComponent>,
-    InCombat: Jecs.Id<InCombatComponent>,
-    Blocking: Jecs.Id<BlockingComponent>,
-    Dodging: Jecs.Id<DodgingComponent>,
-    ParryStunned: Jecs.Id<ParryStunned>,
-    Stunned: Jecs.Id<StunnedComponent>,
-    CurrentAbility: Jecs.Id<CurrentAbilityComponent>,
-    PreviousAbility: Jecs.Id<PreviousAbilityComponent>,
-}
+-- Client Components (same as shared for now)
+export type Components = EntityTypesShared.Components
 
+-- System Types
 export type SystemModuleUpdateContext = {
     World: Jecs.World,
     Tags: Tags,
@@ -77,6 +56,7 @@ export type SystemModule = {
     Update: (self: SystemModule, context: SystemModuleUpdateContext) -> (),
 }
 
+-- Client-specific Types
 export type EntityCreationData = {
     Tags: { string },
     Components: { [string]: any },
@@ -84,17 +64,6 @@ export type EntityCreationData = {
 
 export type EntityDeletionData = {
     Entity: Jecs.Entity,
-}
-
-export type EntityCreatedSignalPacket = {
-    Entity: Jecs.Entity,
-    Tags: { string },
-    Components: { [string]: any },
-}
-
-export type EntityDeletedSignalPacket = {
-    Entity: Jecs.Entity,
-    Components: { [string]: any },
 }
 
 -- [ Private Functions ] --

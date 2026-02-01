@@ -155,6 +155,7 @@ function EntityServiceClient.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._World:set(self._Components.Character, Jecs.Name, "Character")
     self._World:set(self._Components.Health, Jecs.Name, "Health")
     self._World:set(self._Components.Ether, Jecs.Name, "Ether")
+    self._World:set(self._Components.AbilityCooldowns, Jecs.Name, "AbilityCooldowns")
     self._World:set(self._Components.InCombat, Jecs.Name, "InCombat")
     self._World:set(self._Components.Blocking, Jecs.Name, "Blocking")
     self._World:set(self._Components.Dodging, Jecs.Name, "Dodging")

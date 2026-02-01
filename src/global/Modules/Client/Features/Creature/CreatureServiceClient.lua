@@ -67,13 +67,37 @@ function CreatureServiceClient.DamageCreature(self: Module, attacker: Model, att
         Components = Components
     })
 
-    print(HitInfo)
-
     if not HitInfo then
         return
     end
 
     return HitInfo
+end
+
+function CreatureServiceClient.IsAbilityOnCooldown(self: Module, character: Model, abilityName: string): boolean
+    local Entity = self:GetEntityFromCharacter(character)
+    local World = self._EntityServiceClient:GetWorld()
+    local Components = self._EntityServiceClient:GetComponents()
+
+    return CreatureUtil:IsAbilityOnCooldown({
+        Entity = Entity,
+        World = World,
+        Components = Components,
+        AbilityName = abilityName
+    })
+end
+
+function CreatureServiceClient.StartAbilityCooldown(self: Module, character: Model, abilityName: string)
+    local Entity = self:GetEntityFromCharacter(character)
+    local World = self._EntityServiceClient:GetWorld()
+    local Components = self._EntityServiceClient:GetComponents()
+
+    CreatureUtil:StartAbilityCooldown({
+        Entity = Entity,
+        World = World,
+        Components = Components,
+        AbilityName = abilityName
+    })
 end
 
 function CreatureServiceClient.IsAbilityActive(self: Module, character: Model, abilityName: string?): boolean

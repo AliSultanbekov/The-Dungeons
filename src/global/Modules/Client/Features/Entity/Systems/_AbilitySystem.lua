@@ -10,7 +10,7 @@
 local require = require(script.Parent.Parent.loader).load(script)
 
 -- [ Imports ] --
-local EntityTypesServer = require("EntityTypesServer")
+local EntityTypesClient = require("EntityTypesClient")
 
 -- [ Constants ] --
 
@@ -27,12 +27,11 @@ export type Module = typeof(AbilitySystem) & ModuleData
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function AbilitySystem.Update(self: Module, context: EntityTypesServer.SystemModuleUpdateContext)
+function AbilitySystem.Update(self: Module, context: EntityTypesClient.SystemModuleUpdateContext)
     local World = context.World
     local Tags = context.Tags
     local Components = context.Components
     
-    -- Cooldowns Handling
     for entity, _, abilityCooldowns in World:query(Tags.Alive, Components.AbilityCooldowns) do
         local Changed = false
         local ServerTime = workspace.DistributedGameTime
@@ -49,15 +48,14 @@ function AbilitySystem.Update(self: Module, context: EntityTypesServer.SystemMod
         end
     end
 
-    -- Ability Handling
-    for entity, _, currentAbility: EntityTypesServer.CurrentAbilityComponent in World:query(Tags.Alive, Components.CurrentAbility) do
+    for entity, _, currentAbility: EntityTypesClient.CurrentAbilityComponent in World:query(Tags.Alive, Components.CurrentAbility) do
         if currentAbility.IsHeld then
             continue
         end
 
         local ServerTime = workspace.DistributedGameTime
 
-        if currentAbility.StartTime + currentAbility.Duration <= ServerTime then
+        if currentAbility.StartTime + currentAbility.Duration + 0.1 <= ServerTime then
             World:set(entity, Components.PreviousAbility, table.clone(currentAbility))
             World:remove(entity, Components.CurrentAbility)
 
@@ -67,8 +65,7 @@ function AbilitySystem.Update(self: Module, context: EntityTypesServer.SystemMod
         end
     end
 
-    -- Movement Handling
-    for entity, _, character: EntityTypesServer.CharacterComponent in World:query(Tags.Alive, Components.Character) do
+    for entity, _, character: EntityTypesClient.CharacterComponent in World:query(Tags.Alive, Components.Character) do
         local IsAbilityActive = World:has(entity, Components.CurrentAbility)
 
         if IsAbilityActive then

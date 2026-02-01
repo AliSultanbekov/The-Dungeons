@@ -15,7 +15,7 @@ local ItemTypes = require("ItemTypes")
 local WeaponConfig = require("WeaponConfig")
 local CombatUtil = require("CombatUtil")
 local CombatTypes = require("CombatTypes")
-local EntityTypesServer = require("EntityTypesServer")
+local EntityTypesShared = require("EntityTypesShared")
 
 -- [ Constants ] --
 
@@ -30,7 +30,7 @@ DefaultBasicAttack.__index = DefaultBasicAttack
 -- [ Types ] --
 type Config = {
     AbilityName: string,
-    MaxDelay: number,
+    ComboTimeout: number,
     Combo: { 
         [number]: {
             Animation: string,
@@ -92,31 +92,28 @@ function DefaultBasicAttack.Use(self: Object)
         return
     end
 
-    local PreviousAbility = self._CreatureServiceServer:GetPreviousAbility(self._Attacker) :: EntityTypesServer.CurrentAbilityComponent?
+    local PreviousAbility = self._CreatureServiceServer:GetPreviousAbility(self._Attacker) :: EntityTypesShared.ComboAbilityComponent
     local ServerTime = workspace.DistributedGameTime
     local Config = self._Config
     local ComboData = Config.Combo
     local Combo = 1
+    local MaxCombo = #ComboData
     
     if PreviousAbility 
     and PreviousAbility.AbilityName == self.AbilityName 
-    and PreviousAbility.StartTime + PreviousAbility.Duration + Config.MaxDelay >= ServerTime
-    and PreviousAbility.Combo < #ComboData then
+    and PreviousAbility.StartTime + PreviousAbility.Duration + Config.ComboTimeout >= ServerTime
+    and PreviousAbility.Combo < MaxCombo then
         Combo += PreviousAbility.Combo
-        self._CreatureServiceServer:TryUseAbility(self._Attacker, {
-            AbilityName = self.AbilityName,
-            StartTime = ServerTime,
-            Duration = ComboData[Combo].Time,
-            Combo = Combo,
-        })
-    else
-        self._CreatureServiceServer:TryUseAbility(self._Attacker, {
-            AbilityName = self.AbilityName,
-            StartTime = ServerTime,
-            Duration = ComboData[Combo].Time,
-            Combo = Combo,
-        })
     end
+
+    self._CreatureServiceServer:TryUseAbility(self._Attacker, {
+        AbilityName = self.AbilityName,
+        StartTime = ServerTime,
+        Duration = ComboData[Combo].Time,
+        Combo = Combo,
+        MaxCombo = MaxCombo,
+        ComboTimeout = Config.ComboTimeout
+    })
 end
 
 function DefaultBasicAttack.End(self: Object)
@@ -132,7 +129,7 @@ function DefaultBasicAttack.Hit(self: Object, context: Hit_Context)
         return
     end
 
-    local CurrentAbility = self._CreatureServiceServer:GetCurrentAbility(self._Attacker) :: EntityTypesServer.CurrentAbilityComponent
+    local CurrentAbility = self._CreatureServiceServer:GetCurrentAbility(self._Attacker) :: EntityTypesShared.ComboAbilityComponent
     local OnHit:(CombatTypes.Context) -> () = context.OnHit
     local Config = self._Config
     local Combo = CurrentAbility.Combo
@@ -149,8 +146,6 @@ function DefaultBasicAttack.Hit(self: Object, context: Hit_Context)
         }) then
             return
         end
-    else
-        
     end
 
     local Info = self._CreatureServiceServer:DamageCreature(self._Attacker, context.Attacked, CurrentComboData.Damage)

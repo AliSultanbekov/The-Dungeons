@@ -49,6 +49,7 @@ end
 
 function EntityReplicationServiceClient.Start(self: Module)
     local World = self._EntityServiceClient:GetWorld()
+    local Components = self._EntityServiceClient:GetComponents()
 
     self._EntityNetworkClient.RemoteEvents.EntitySync:Connect(function(packet: EntityTypesShared.EntitySyncRemotePacket)
         for _, data in packet do
@@ -100,42 +101,57 @@ function EntityReplicationServiceClient.Start(self: Module)
         if packet.Action == "Added" then
             local Data = packet.Data
             local ClientEntity = self._ServerToClientEntity[Data.Entity]
+            local Component = Components[Data.ComponentName]
 
             if not ClientEntity then
                 return
             end
 
-            if World:has(ClientEntity, Data.Component) then
+            if not Component then
                 return
             end
 
-            World:set(ClientEntity, Data.Component, Data.Value)
+            if World:has(ClientEntity, Component) then
+                return
+            end
+
+            World:set(ClientEntity, Component, Data.Value)
         elseif packet.Action == "Updated" then
             local Data = packet.Data
             local ClientEntity = self._ServerToClientEntity[Data.Entity]
+            local Component = Components[Data.ComponentName]
 
             if not ClientEntity then
                 return
             end
 
-            if not World:has(ClientEntity, Data.Component) then
+            if not Component then
                 return
             end
 
-            World:set(ClientEntity, Data.Component, Data.Value)
+            if not World:has(ClientEntity, Component) then
+                return
+            end
+
+            World:set(ClientEntity, Component, Data.Value)
         elseif packet.Action == "Removed" then
             local Data = packet.Data
             local ClientEntity = self._ServerToClientEntity[Data.Entity]
+            local Component = Components[Data.ComponentName]
 
             if not ClientEntity then
                 return
             end
 
-            if not World:has(ClientEntity, Data.Component) then
+            if not Component then
                 return
             end
 
-            World:remove(ClientEntity, Data.Component)
+            if not World:has(ClientEntity, Component) then
+                return
+            end
+
+            World:remove(ClientEntity, Component)
         end
     end)
 end

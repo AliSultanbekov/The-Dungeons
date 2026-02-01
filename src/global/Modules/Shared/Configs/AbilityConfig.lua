@@ -16,8 +16,12 @@ local _require = require(script.Parent.loader).load(script)
 -- [ Module Table ] --
 local AbilityConfig = {
     ["DefaultBasicAttack"] = {
-        Cooldown = 2,
+        CooldownDuration = 0.25,
         Weight = 1,
+    },
+    ["Block"] = {
+        CooldownDuration = 0.5,
+        Weight = 2,
     }
 }
 

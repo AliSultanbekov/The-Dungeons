@@ -40,6 +40,7 @@ type ModuleData = {
     _World: Jecs.World,
     _Tags: EntityTypesServer.Tags,
     _Components: EntityTypesServer.Components,
+    _ComponentToName: { [Jecs.Entity]: string },
     _Systems: { EntityTypesServer.SystemModule },
     PublicSignals: {
         EntityCreated: Signal.Signal<EntityTypesServer.EntityCreatedSignalPacket>,
@@ -188,6 +189,11 @@ function EntityServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBa
         SilenceEffect = self._World:component(),
         FearEffect = self._World:component(),
     }
+    self._ComponentToName = {}
+
+    for componentName, component in pairs(self._Components) do
+        self._ComponentToName[component] = componentName
+    end
 
     -- Tag Names
     self._World:set(self._Tags.Alive, Jecs.Name, "Alive")
@@ -203,6 +209,7 @@ function EntityServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._World:set(self._Components.Prefab, Jecs.Name, "Prefab")
     self._World:set(self._Components.Health, Jecs.Name, "Health")
     self._World:set(self._Components.Ether, Jecs.Name, "Ether")
+    self._World:set(self._Components.AbilityCooldowns, Jecs.Name, "AbilityCooldowns")
     self._World:set(self._Components.InCombat, Jecs.Name, "InCombat")
     self._World:set(self._Components.Blocking, Jecs.Name, "Blocking")
     self._World:set(self._Components.Dodging, Jecs.Name, "Dodging")
@@ -235,6 +242,7 @@ function EntityServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._World:add(self._Components.Character, self._Tags.ReplicatedComponent)
     self._World:add(self._Components.Health, self._Tags.ReplicatedComponent)
     self._World:add(self._Components.Ether, self._Tags.ReplicatedComponent)
+    self._World:add(self._Components.AbilityCooldowns, self._Tags.ReplicatedComponent)
     self._World:add(self._Components.Blocking, self._Tags.ReplicatedComponent)
     self._World:add(self._Components.Dodging, self._Tags.ReplicatedComponent)
     self._World:add(self._Components.ParryStunned, self._Tags.ReplicatedComponent)

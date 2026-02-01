@@ -153,19 +153,18 @@ function EntityReplicationServiceServer.Start(self: Module)
                 Action = "Added",
                 Data = {
                     Entity = e,
-                    Component = component,
+                    ComponentName = self._EntityServiceServer._ComponentToName[component],
                     Value = value
                 }
             })
         end)
 
         World:removed(component, function(e, _)
-            
             self._EntityNetworkServer:EntityUpdated({
                 Action = "Removed",
                 Data = {
                     Entity = e,
-                    Component = component,
+                    ComponentName = self._EntityServiceServer._ComponentToName[component],
                 }
             })
         end)    
@@ -175,7 +174,7 @@ function EntityReplicationServiceServer.Start(self: Module)
                 Action = "Updated",
                 Data = {
                     Entity = e,
-                    Component = component,
+                    ComponentName = self._EntityServiceServer._ComponentToName[component],
                     Value = value
                 }
             })

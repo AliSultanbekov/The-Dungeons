@@ -12,6 +12,7 @@ local require = require(script.Parent.loader).load(script)
 -- [ Imports ] --
 local Jecs = require("Jecs")
 local CombatConfig = require("CombatConfig")
+local AbilityConfig = require("AbilityConfig")
 
 -- [ Constants ] --
 
@@ -33,6 +34,18 @@ type GetHitType_Context = {
     AttackedEntity: Jecs.Entity,
     World: Jecs.World,
     Components: { [string]: Jecs.Entity },
+}
+type IsAbilityOnCooldown_Context = {
+    Entity: Jecs.Entity,
+    World: Jecs.World,
+    Components: { [string]: Jecs.Entity },
+    AbilityName: string,
+}
+type StartAbilityCooldown_Context = {
+    Entity: Jecs.Entity,
+    World: Jecs.World,
+    Components: { [string]: Jecs.Entity },
+    AbilityName: string,
 }
 type GetCurrentAbility_Context = {
     Entity: Jecs.Entity,
@@ -109,10 +122,6 @@ function CreatureUtil.GetHitInfo(self: Module, context: GetHitType_Context): str
 
         local Delta = ServerTime - CurrentAbility.StartTime
 
-        print(Delta)
-        print(ServerTime)
-        print(CurrentAbility.StartTime)
-
         if Delta <= CombatConfig.ParryWindowTime then
             World:set(AttackerEntity, Components.ParryStunned, {
                 StartTime = ServerTime,
@@ -126,6 +135,49 @@ function CreatureUtil.GetHitInfo(self: Module, context: GetHitType_Context): str
     end
 
     return "Hit"
+end
+
+function CreatureUtil.IsAbilityOnCooldown(self: Module, context: IsAbilityOnCooldown_Context): boolean
+    local Entity = context.Entity
+    local World = context.World
+    local Components = context.Components
+    local AbilityName = context.AbilityName
+
+    local AbilityCooldowns = World:get(Entity, Components.AbilityCooldowns)
+
+    if not AbilityCooldowns then
+        return false
+    end
+
+    if AbilityCooldowns[AbilityName] then
+        return true
+    else
+        return false
+    end
+end
+
+function CreatureUtil.StartAbilityCooldown(self: Module, context: StartAbilityCooldown_Context)
+    local Entity = context.Entity
+    local World = context.World
+    local Components = context.Components
+    local AbilityName = context.AbilityName
+
+    local AbilityCooldowns = World:get(Entity, Components.AbilityCooldowns)
+
+    if not AbilityCooldowns then
+        return
+    end
+
+    local AbilityData = AbilityConfig[AbilityName]
+
+    if not AbilityData or not AbilityData.CooldownDuration then
+        return
+    end
+
+    local ServerTime = workspace.DistributedGameTime
+    AbilityCooldowns[AbilityName] = ServerTime + AbilityData.CooldownDuration
+
+    World:set(Entity, Components.AbilityCooldowns, AbilityCooldowns)
 end
 
 function CreatureUtil.GetCurrentAbility(self: Module, context: GetCurrentAbility_Context): any
@@ -175,6 +227,17 @@ function CreatureUtil.CanUseAbility(self: Module, context: CanUseAbility_Context
     local World = context.World
     local Components = context.Components
     local AbilityData = context.AbilityData
+
+    local IsAbilityOnCooldown = self:IsAbilityOnCooldown({
+        Entity = Entity,
+        World = World,
+        Components = Components,
+        AbilityName = AbilityData.AbilityName
+    })
+
+    if IsAbilityOnCooldown then
+        return false
+    end
 
     if World:has(Entity, Components.CurrentAbility) then
         return false

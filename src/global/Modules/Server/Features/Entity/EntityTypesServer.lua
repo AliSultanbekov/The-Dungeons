@@ -11,6 +11,7 @@ local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 local Jecs = require("Jecs")
+local EntityTypesShared = require("EntityTypesShared")
 
 -- [ Constants ] --
 
@@ -19,43 +20,32 @@ local Jecs = require("Jecs")
 -- [ Module Table ] --
 
 -- [ Types ] --
-local StatTypes = require("StatsTypes")
 
-export type Tags = {
-    Alive: Jecs.Entity,
-    Player: Jecs.Entity,
-    NPC: Jecs.Entity,
+-- Re-export shared types
+export type NameComponent = EntityTypesShared.NameComponent
+export type StatsComponent = EntityTypesShared.StatsComponent
+export type CharacterComponent = EntityTypesShared.CharacterComponent
+export type HealthComponent = EntityTypesShared.HealthComponent
+export type EtherComponent = EntityTypesShared.EtherComponent
+export type AbilityCooldownsComponent = EntityTypesShared.AbilityCooldownsComponent
+export type InCombatComponent = EntityTypesShared.InCombatComponent
+export type BlockingComponent = EntityTypesShared.BlockingComponent
+export type DodgingComponent = EntityTypesShared.DodgingComponent
+export type ParryStunnedComponent = EntityTypesShared.ParryStunnedComponent
+export type StunnedComponent = EntityTypesShared.StunnedComponent
+export type CurrentAbilityComponent = EntityTypesShared.CurrentAbilityComponent
+export type PreviousAbilityComponent = EntityTypesShared.PreviousAbilityComponent
+export type EntityCreatedSignalPacket = EntityTypesShared.EntityCreatedSignalPacket
+export type EntityDeletedSignalPacket = EntityTypesShared.EntityDeletedSignalPacket
+
+-- Server-specific Tags
+export type Tags = EntityTypesShared.Tags & {
     ReplicatedEntity: Jecs.Entity,
     ReplicatedComponent: Jecs.Entity,
 }
-export type NameComponent = string
-export type StatsComponent = StatTypes.PlayerStats
-export type CharacterComponent = {
-    Character: Model,
-    Humanoid: Humanoid,
-}
+
+-- Server-specific Component Types
 export type PrefabComponent = Model
-export type AbilityCooldownsComponent = {
-    [string]: number
-}
-export type InCombatComponent = {
-    Duration: number,
-    CurrentDuration: number,
-}
-export type HealthComponent = number
-export type EtherComponent = number
-export type BlockingComponent = boolean
-export type DodgingComponent = boolean
-export type ParryStunned = boolean
-export type StunnedComponent = boolean
-export type CurrentAbilityComponent = {
-    AbilityName: string,
-    StartTime: number,
-    Duration: number,
-    IsHeld: boolean?,
-    [string]: any,
-}
-export type PreviousAbilityComponent = CurrentAbilityComponent
 export type HealthBuffComponent = number
 export type DamageBuffComponent = {
     StartTime: number,
@@ -72,21 +62,10 @@ export type OverTimeEffectComponent = {
     Duration: number,
     TotalAmount: number,
 }
-export type Components = {
-    Name: Jecs.Entity<NameComponent>,
-    Stats: Jecs.Entity<StatsComponent>,
-    Character: Jecs.Entity<CharacterComponent>,
+
+-- Server Components (shared + server-specific)
+export type Components = EntityTypesShared.Components & {
     Prefab: Jecs.Entity<PrefabComponent>,
-    Health: Jecs.Entity<HealthComponent>,
-    Ether: Jecs.Entity<EtherComponent>,
-    AbilityCooldowns: Jecs.Entity<AbilityCooldownsComponent>,
-    InCombat: Jecs.Entity<InCombatComponent>,
-    Blocking: Jecs.Entity<BlockingComponent>,
-    Dodging: Jecs.Entity<DodgingComponent>,
-    Stunned: Jecs.Entity<StunnedComponent>,
-    ParryStunned: Jecs.Entity<ParryStunned>,
-    CurrentAbility: Jecs.Entity<CurrentAbilityComponent>,
-    PreviousAbility: Jecs.Entity<PreviousAbilityComponent>,
     HealthBuff: Jecs.Entity<HealthBuffComponent>,
     DamageBuff: Jecs.Entity<DamageBuffComponent>,
     SpeedBuff: Jecs.Entity<SpeedBuffComponent>,
@@ -106,26 +85,17 @@ export type Components = {
     SilenceEffect: Jecs.Entity<OverTimeEffectComponent>,
     FearEffect: Jecs.Entity<OverTimeEffectComponent>,
 }
+
+-- System Types
 export type SystemModuleUpdateContext = {
     World: Jecs.World,
     Tags: Tags,
     Components: Components,
     Dt: number,
 }
-export type SystemModule = {
-    Update: (self: SystemModule, context: SystemModuleUpdateContext) -> ()
-}
-export type EntityCreatedSignalPacket = {
-    Entity: Jecs.Entity,
-    Tags: { string },
-    Components: { [string]: any },
-    Replicated: boolean?,
-}
 
-export type EntityDeletedSignalPacket = {
-    Entity: Jecs.Entity,
-    Components: { [string]: any },
-    Replicated: boolean?,
+export type SystemModule = {
+    Update: (self: SystemModule, context: SystemModuleUpdateContext) -> (),
 }
 
 -- [ Private Functions ] --

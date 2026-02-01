@@ -16,6 +16,7 @@ local CombatTypes = require("CombatTypes")
 local HitboxClass = require("HitboxClass")
 local ItemTypes = require("ItemTypes")
 local WeaponConfig = require("WeaponConfig")
+local EntityTypesShared = require("EntityTypesShared")
 
 -- [ Constants ] --
 
@@ -28,15 +29,9 @@ local DefaultBasicAttack = {
 DefaultBasicAttack.__index = DefaultBasicAttack
 
 -- [ Types ] --
-type AbilityComponent = {
-    AbilityName: string,
-    StartTime: number,
-    Combo: number,
-    Duration: number,
-}
 type Config = {
     AbilityName: string,
-    MaxDelay: number,
+    ComboTimeout: number,
     Combo: { 
         [number]: {
             Animation: string,
@@ -75,10 +70,23 @@ export type ObjectData = {
     _Attacker: Model,
     _WeaponData: WeaponItemData,
     _Config: Config,
+    _ComboTimeoutThread: thread?,
     AbilityName: string,
 }
 export type Object = typeof(setmetatable({} :: ObjectData, DefaultBasicAttack))
 export type Module = typeof(DefaultBasicAttack)
+
+-- [ Private Functions ] --
+function DefaultBasicAttack._CancelComboTimeoutThread(self: Object)
+    if self._ComboTimeoutThread then
+        task.cancel(self._ComboTimeoutThread)
+        self._ComboTimeoutThread = nil
+    end
+end
+
+function DefaultBasicAttack._StartCooldown(self: Object)
+    self._CreatureServiceClient:StartAbilityCooldown(self._Attacker, self.AbilityName)
+end
 
 -- [ Public Functions ] --
 function DefaultBasicAttack.new(context: New_Context): Object
@@ -90,6 +98,7 @@ function DefaultBasicAttack.new(context: New_Context): Object
     self._Attacker = context.Attacker
     self._WeaponData = context.ItemData
     self._Config = WeaponConfig[self._WeaponData.Name].BasicAttack
+    self._ComboTimeoutThread = nil
     
     return self
 end
@@ -122,32 +131,26 @@ function DefaultBasicAttack.Use(self: Object, context: Use_Context)
             return
         end
 
-        local PreviousAbility = self._CreatureServiceClient:GetPreviousAbility(self._Attacker) :: AbilityComponent?
+        self:_CancelComboTimeoutThread()
+
+        local PreviousAbility = self._CreatureServiceClient:GetPreviousAbility(self._Attacker) :: EntityTypesShared.ComboAbilityComponent
         local ServerTime = workspace.DistributedGameTime
         local Combo = 1
 
         if PreviousAbility 
         and PreviousAbility.AbilityName == self.AbilityName 
-        and PreviousAbility.StartTime + PreviousAbility.Duration + Config.MaxDelay >= ServerTime
+        and PreviousAbility.StartTime + PreviousAbility.Duration + Config.ComboTimeout >= ServerTime
         and PreviousAbility.Combo < #ComboData then
             Combo += PreviousAbility.Combo
-            if not self._CreatureServiceClient:TryUseAbility(self._Attacker, {
-                AbilityName = self.AbilityName,
-                StartTime = ServerTime,
-                Duration = ComboData[Combo].Time,
-                Combo = Combo,
-            }) then
-                return
-            end
-        else
-            if not self._CreatureServiceClient:TryUseAbility(self._Attacker, {
-                AbilityName = self.AbilityName,
-                StartTime = ServerTime,
-                Duration = ComboData[Combo].Time,
-                Combo = Combo,
-            }) then
-                return
-            end
+        end
+
+        if not self._CreatureServiceClient:TryUseAbility(self._Attacker, {
+            AbilityName = self.AbilityName,
+            StartTime = ServerTime,
+            Duration = ComboData[Combo].Time,
+            Combo = Combo,
+        }) then
+            return
         end
 
         context.OnUse({
@@ -180,16 +183,6 @@ function DefaultBasicAttack.Use(self: Object, context: Use_Context)
                 Cb = function(Attacked: Model)
                     local HitInfo = self._CreatureServiceClient:DamageCreature(self._Attacker, Attacked)
 
-                    for _, track in Animator:GetPlayingAnimationTracks() do
-                        track:AdjustSpeed(0)
-                    end
-                    
-                    task.delay(0.05, function()
-                        for _, track in Animator:GetPlayingAnimationTracks() do
-                            track:AdjustSpeed(1)
-                        end
-                    end)
-
                     if not HitInfo then
                         return
                     end
@@ -207,6 +200,7 @@ function DefaultBasicAttack.Use(self: Object, context: Use_Context)
 
         task.delay(CurrentAbilityData.Time, function()
             self:End({
+                Mode = context.Mode,
                 OnEnd = context.OnEnd
             })
         end)
@@ -216,15 +210,35 @@ function DefaultBasicAttack.Use(self: Object, context: Use_Context)
 end
 
 function DefaultBasicAttack.End(self: Object, context: any)
-    if not self._CreatureServiceClient:IsAbilityActive(self._Attacker, self.AbilityName) then
-        return
+    if context.Mode == "FromClient" then
+        if not self._CreatureServiceClient:IsAbilityActive(self._Attacker, self.AbilityName) then
+            return
+        end
+    
+        if not self._CreatureServiceClient:TryEndAbility(self._Attacker, "DefaultBasicAttack") then
+            return
+        end
+
+        context.OnEnd({
+            AbilityName = self.AbilityName,
+        })
+
+        self:_CancelComboTimeoutThread()
+
+        local PreviousAbility = self._CreatureServiceClient:GetPreviousAbility(self._Attacker) :: EntityTypesShared.ComboAbilityComponent
+        local MaxCombo = #self._Config.Combo
+        local PreviousAbilityCombo = PreviousAbility.Combo
+
+        if MaxCombo == PreviousAbilityCombo then
+            self:_StartCooldown()
+        else
+            self._ComboTimeoutThread = task.delay(self._Config.ComboTimeout, function()
+                self:_StartCooldown()
+
+                self._ComboTimeoutThread = nil
+            end)
+        end
     end
-
-    context.OnEnd({
-        AbilityName = self.AbilityName,
-    })
-
-    self._CreatureServiceClient:TryEndAbility(self._Attacker, "DefaultBasicAttack")
 end
 
 function DefaultBasicAttack.Hit(self: Object, context: Hit_Context)

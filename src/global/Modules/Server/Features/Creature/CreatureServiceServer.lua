@@ -87,6 +87,32 @@ function CreatureServiceServer.DamageCreature(self: Module, attacker: Model, att
     return HitInfo
 end
 
+function CreatureServiceServer.IsAbilityOnCooldown(self: Module, character: Model, abilityName: string): boolean
+    local Entity = self:GetEntityFromCharacter(character)
+    local World = self._EntityServiceServer:GetWorld()
+    local Components = self._EntityServiceServer:GetComponents()
+
+    return CreatureUtil:IsAbilityOnCooldown({
+        Entity = Entity,
+        World = World,
+        Components = Components,
+        AbilityName = abilityName
+    })
+end
+
+function CreatureServiceServer.StartAbilityCooldown(self: Module, character: Model, abilityName: string)
+    local Entity = self:GetEntityFromCharacter(character)
+    local World = self._EntityServiceServer:GetWorld()
+    local Components = self._EntityServiceServer:GetComponents()
+
+    CreatureUtil:StartAbilityCooldown({
+        Entity = Entity,
+        World = World,
+        Components = Components,
+        AbilityName = abilityName
+    })
+end
+
 function CreatureServiceServer.IsAbilityActive(self: Module, character: Model, abilityName: string?): boolean
     local Entity = self:GetEntityFromCharacter(character)
     local World = self._EntityServiceServer:GetWorld()
@@ -200,7 +226,8 @@ function CreatureServiceServer.RegisterNPC(self: Module, character: Model)
             Character = {
                 Character = character,
                 Humanoid = Humanoid,
-            }
+            },
+            AbilityCooldowns = {}
         },
         Replicated = true
     })
@@ -232,7 +259,8 @@ function CreatureServiceServer.RegisterPlayer(self: Module, character: Model)
             Character = {
                 Character = character,
                 Humanoid = Humanoid,
-            }
+            },
+            AbilityCooldowns = {}
         },
         Replicated = true
     })

@@ -20,7 +20,7 @@ local WeaponConfig = {
         Rarity = "Celestial",
         BasicAttack = {
             AbilityName = "WoodenSwordBasicAttack",
-            MaxDelay = 1,
+            ComboTimeout = 0.4,
             Combo = {
                 [1] = {
                     Animation = "rbxassetid://99630984913419",
@@ -66,7 +66,7 @@ local WeaponConfig = {
         Rarity: string,
         BasicAttack: {
             AbilityName: string,
-            MaxDelay: number,
+            ComboTimeout: number,
             Combo: { 
                 [number]: {
                     Animation: string,

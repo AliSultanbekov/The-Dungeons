@@ -18,6 +18,7 @@ local AbilityConfig = {
     ["DefaultBasicAttack"] = {
         CooldownDuration = 0.25,
         Weight = 1,
+        
     },
     ["Block"] = {
         CooldownDuration = 0.5,

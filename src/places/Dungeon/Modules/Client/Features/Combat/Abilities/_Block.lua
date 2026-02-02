@@ -84,10 +84,6 @@ function Block.Use(self: Object, context: Use_Context)
     if context.Mode == "FromClient" then
         local ServerTime = workspace.DistributedGameTime
 
-        if self._CreatureServiceClient:IsAbilityActive(self._Attacker) then
-            return
-        end
-
         if not self._CreatureServiceClient:TryUseAbility(self._Attacker, {
             AbilityName = self.AbilityName,
             StartTime = ServerTime,

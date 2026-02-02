@@ -34,6 +34,7 @@ type ModuleData = {
     _UserInputManager: typeof(require("UserInputManager")),
     _CombatNetworkClient: typeof(require("CombatNetworkClient")),
     _CreatureServiceClient: typeof(require("CreatureServiceClient")),
+    _EntityServiceClient: typeof(require("EntityServiceClient")),
     _AbilityManager: AbilityManager.Object,
     _CombatObjects: {
         [Model]: CombatObject
@@ -73,6 +74,7 @@ function CombatController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     self._PlayerCharacterManager = self._ServiceBag:GetService(require("PlayerCharacterManager"))
     self._UserInputManager = self._ServiceBag:GetService(require("UserInputManager"))
     self._CombatNetworkClient = self._ServiceBag:GetService(require("CombatNetworkClient"))
+    self._EntityServiceClient = self._ServiceBag:GetService(require("EntityServiceClient"))
 
     self._AbilityManager = AbilityManager.new(script.Parent.Abilities)
     self._CombatObjects = {}

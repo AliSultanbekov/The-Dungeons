@@ -87,20 +87,24 @@ export type InCombatComponent = {
 }
 export type BlockingComponent = boolean
 export type DodgingComponent = boolean
-export type ParryStunnedComponent = boolean
+export type ParryStunnedComponent = {
+    StartTime: number,
+    Duration: number,
+}
 export type StunnedComponent = boolean
 export type BaseAbilityComponent = {
     AbilityName: string,
     StartTime: number,
     Duration: number,
+    CommitTime: number,
     IsHeld: boolean?,
 }
 export type ComboAbilityComponent = {
     AbilityName: string,
     StartTime: number,
     Duration: number,
+    CommitTime: number,
     Combo: number,
-    ComboTimeout: number,
     IsHeld: boolean?,
 }
 

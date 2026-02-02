@@ -55,10 +55,6 @@ function Block.new(context: New_Context): Object
 end
 
 function Block.Use(self: Object)
-    if self._CreatureServiceServer:IsAbilityActive(self._Attacker) then
-        return
-    end
-
     local ServerTime = workspace.DistributedGameTime
     
     self._CreatureServiceServer:TryUseAbility(self._Attacker, {

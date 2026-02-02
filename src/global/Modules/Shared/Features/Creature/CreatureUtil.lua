@@ -13,6 +13,7 @@ local require = require(script.Parent.loader).load(script)
 local Jecs = require("Jecs")
 local CombatConfig = require("CombatConfig")
 local AbilityConfig = require("AbilityConfig")
+local EntityTypesShared = require("EntityTypesShared")
 
 -- [ Constants ] --
 
@@ -63,6 +64,12 @@ type IsAbilityActive_Context = {
     Components: { [string]: Jecs.Entity },
     AbilityName: string?,
 }
+type CanCancelOrEndAbility_Context = {
+    Entity: Jecs.Entity,
+    World: Jecs.World,
+    Components: { [string]: Jecs.Entity },
+    AbilityData: any,
+}
 type CanUseAbility_Context = {
     Entity: Jecs.Entity,
     World: Jecs.World,
@@ -106,7 +113,7 @@ function CreatureUtil.CanDamage(self: Module, context: CanDamage_Context): boole
 end
 
 function CreatureUtil.GetHitInfo(self: Module, context: GetHitType_Context): string?
-    local AttackerEntity = context.AttackedEntity
+    local AttackerEntity = context.AttackerEntity
     local AttackedEntity = context.AttackedEntity
     local World = context.World
     local Components = context.Components
@@ -222,6 +229,36 @@ function CreatureUtil.IsAbilityActive(self: Module, context: IsAbilityActive_Con
     return true
 end
 
+function CreatureUtil.CanCancelOrEndAbility(self: Module, context: CanUseAbility_Context): string?
+    local Entity = context.Entity
+    local World = context.World
+    local Components = context.Components
+    local AbilityData = context.AbilityData
+
+    local CurrentAbility = World:get(Entity, Components.CurrentAbility) :: EntityTypesShared.BaseAbilityComponent
+
+    if not CurrentAbility then
+        return
+    end
+
+    local NewAbilityName = AbilityData.AbilityName
+    local OldAbilityName = CurrentAbility.AbilityName
+
+    if NewAbilityName == OldAbilityName then
+        return
+    end
+
+    if self:CanEndAbility({
+        Entity = Entity,
+        World = World,
+        Components = Components,
+    }) then
+        return "End"
+    else
+        return "Cancel"
+    end
+end
+
 function CreatureUtil.CanUseAbility(self: Module, context: CanUseAbility_Context)
     local Entity = context.Entity
     local World = context.World
@@ -236,10 +273,6 @@ function CreatureUtil.CanUseAbility(self: Module, context: CanUseAbility_Context
     })
 
     if IsAbilityOnCooldown then
-        return false
-    end
-
-    if World:has(Entity, Components.CurrentAbility) then
         return false
     end
 
@@ -263,13 +296,21 @@ function CreatureUtil.CanEndAbility(self: Module, context: CanEndAbility_Context
     local CurrentAbility = World:get(Entity, Components.CurrentAbility)
 
     if not CurrentAbility then
-        print("22")
         return false
     end
 
-    if AbilityName and CurrentAbility.AbilityName ~= AbilityName then
-        print("333")
+    local ServerTime = workspace.DistributedGameTime
+
+    local DeltaTime = ServerTime - CurrentAbility.StartTime
+
+    if not CurrentAbility.IsHeld and DeltaTime <= CurrentAbility.CommitTime then
         return false
+    end
+
+    if AbilityName then
+        if CurrentAbility.AbilityName ~= AbilityName then
+            return false
+        end
     end
 
     return true

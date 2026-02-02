@@ -37,7 +37,8 @@ type Config = {
             Damage: number,
             Range: Vector3,
             Angle: number,
-            Time: number
+            Duration: number,
+            CommitTime: number
         }
     }
 }
@@ -65,12 +66,23 @@ export type ObjectData = {
     _Attacker: Model,
     _WeaponData: WeaponItemData,
     _Config: Config,
+    _ComboTimeoutThread: thread?,
     AbilityName: string,
 }
 export type Object = typeof(setmetatable({} :: ObjectData, DefaultBasicAttack))
 export type Module = typeof(DefaultBasicAttack)
 
 -- [ Private Functions ] --
+function DefaultBasicAttack._CancelComboTimeoutThread(self: Object)
+    if self._ComboTimeoutThread then
+        task.cancel(self._ComboTimeoutThread)
+        self._ComboTimeoutThread = nil
+    end
+end
+
+function DefaultBasicAttack._StartCooldown(self: Object)
+    self._CreatureServiceServer:StartAbilityCooldown(self._Attacker, self.AbilityName)
+end
 
 -- [ Public Functions ] --
 function DefaultBasicAttack.new(context: New_Context): Object
@@ -83,14 +95,13 @@ function DefaultBasicAttack.new(context: New_Context): Object
     self._Attacker = context.Attacker
     self._WeaponData = context.ItemData
     self._Config = WeaponConfig[self._WeaponData.Name].BasicAttack
+    self._ComboTimeoutThread = nil
 
     return self
 end
 
 function DefaultBasicAttack.Use(self: Object)
-    if self._CreatureServiceServer:IsAbilityActive(self._Attacker) then
-        return
-    end
+    self:_CancelComboTimeoutThread()
 
     local PreviousAbility = self._CreatureServiceServer:GetPreviousAbility(self._Attacker) :: EntityTypesShared.ComboAbilityComponent
     local ServerTime = workspace.DistributedGameTime
@@ -109,10 +120,9 @@ function DefaultBasicAttack.Use(self: Object)
     self._CreatureServiceServer:TryUseAbility(self._Attacker, {
         AbilityName = self.AbilityName,
         StartTime = ServerTime,
-        Duration = ComboData[Combo].Time,
+        Duration = ComboData[Combo].Duration,
+        CommitTime = ComboData[Combo].CommitTime,
         Combo = Combo,
-        MaxCombo = MaxCombo,
-        ComboTimeout = Config.ComboTimeout
     })
 end
 
@@ -122,6 +132,22 @@ function DefaultBasicAttack.End(self: Object)
     end
 
     self._CreatureServiceServer:TryEndAbility(self._Attacker, self.AbilityName)
+
+    self:_CancelComboTimeoutThread()
+
+    local PreviousAbility = self._CreatureServiceServer:GetPreviousAbility(self._Attacker) :: EntityTypesShared.ComboAbilityComponent
+    local MaxCombo = #self._Config.Combo
+    local PreviousAbilityCombo = PreviousAbility.Combo
+
+    if MaxCombo == PreviousAbilityCombo then
+        self:_StartCooldown()
+    else
+        self._ComboTimeoutThread = task.delay(self._Config.ComboTimeout, function()
+            self:_StartCooldown()
+
+            self._ComboTimeoutThread = nil
+        end)
+    end
 end
 
 function DefaultBasicAttack.Hit(self: Object, context: Hit_Context)

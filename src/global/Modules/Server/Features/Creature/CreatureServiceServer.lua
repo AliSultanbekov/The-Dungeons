@@ -155,15 +155,38 @@ function CreatureServiceServer.TryUseAbility(self: Module, character: Model, abi
     local World = self._EntityServiceServer:GetWorld()
     local Components = self._EntityServiceServer:GetComponents()
 
-    local CanUseAbility = CreatureUtil:CanUseAbility({
+    if not CreatureUtil:CanUseAbility({
         Entity = Entity,
         World = World,
         Components = Components,
         AbilityData = abilityData
-    })
-
-    if not CanUseAbility then
+    }) then
         return false
+    end
+
+    local CurrentAbility = World:get(Entity, Components.CurrentAbility)
+
+    if CurrentAbility then
+        local CanCancelOrEnd = CreatureUtil:CanCancelOrEndAbility({
+            Entity = Entity,
+            World = World,
+            Components = Components,
+            AbilityData = abilityData
+        })
+
+        if not CanCancelOrEnd then
+            return false
+        end
+
+        if CanCancelOrEnd == "End" then
+            World:set(Entity, Components.PreviousAbility, table.clone(CurrentAbility))
+        end
+
+        World:remove(Entity, Components.CurrentAbility)
+
+        if CurrentAbility.AbilityName == "Block" then
+            World:remove(Entity, Components.Blocking)
+        end
     end
 
     World:set(Entity, Components.CurrentAbility, abilityData)

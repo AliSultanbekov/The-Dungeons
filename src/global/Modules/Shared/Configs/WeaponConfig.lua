@@ -20,35 +20,39 @@ local WeaponConfig = {
         Rarity = "Celestial",
         BasicAttack = {
             AbilityName = "WoodenSwordBasicAttack",
-            ComboTimeout = 0.4,
+            ComboTimeout = 1,
             Combo = {
                 [1] = {
                     Animation = "rbxassetid://99630984913419",
                     Damage = 20,
                     Range = Vector3.new(3.5,3.5,3.5),
                     Angle = 0.6,
-                    Time = 1,
+                    Duration = 0.7,
+                    CommitTime = 0.2
                 },
                 [2] = {
                     Animation = "rbxassetid://73399443862076",
                     Damage = 20,
                     Range = Vector3.new(3.5,3.5,3.5),
                     Angle = 0.6,
-                    Time = 1,
+                    Duration = 0.7,
+                    CommitTime = 0.2
                 },
                 [3] = {
                     Animation = "rbxassetid://129784332509594",
                     Damage = 20,
                     Range = Vector3.new(3.5,3.5,3.5),
                     Angle = 0.6,
-                    Time = 1,
+                    Duration = 0.7,
+                    CommitTime = 0.2
                 },
                 [4] = {
                     Animation = "rbxassetid://116170208433386",
                     Damage = 20,
                     Range = Vector3.new(3.5,3.5,3.5),
                     Angle = 0.6,
-                    Time = 1,
+                    Duration = 0.7,
+                    CommitTime = 0.2
                 },
             }
         },
@@ -73,7 +77,8 @@ local WeaponConfig = {
                     Damage: number,
                     Range: Vector3,
                     Angle: number,
-                    Time: number
+                    Duration: number,
+                    CommitTime: number,
                 }
             }
         },

@@ -67,6 +67,15 @@ function AbilitySystem.Update(self: Module, context: EntityTypesServer.SystemMod
         end
     end
 
+    -- Parry Stun Handling
+    for entity, _, parryStunned: EntityTypesServer.ParryStunnedComponent in World:query(Tags.Alive, Components.ParryStunned) do
+        local ServerTime = workspace.DistributedGameTime
+
+        if parryStunned.StartTime + parryStunned.Duration < ServerTime then
+            World:remove(entity, Components.ParryStunned)
+        end
+    end
+
     -- Movement Handling
     for entity, _, character: EntityTypesServer.CharacterComponent in World:query(Tags.Alive, Components.Character) do
         local IsAbilityActive = World:has(entity, Components.CurrentAbility)

@@ -38,7 +38,8 @@ type Config = {
             Damage: number,
             Range: Vector3,
             Angle: number,
-            Time: number
+            Duration: number,
+            CommitTime: number
         }
     }
 }
@@ -70,6 +71,8 @@ export type ObjectData = {
     _Attacker: Model,
     _WeaponData: WeaponItemData,
     _Config: Config,
+    _Animations: {},
+    _ActiveTrack: AnimationTrack?,
     _ComboTimeoutThread: thread?,
     AbilityName: string,
 }
@@ -98,6 +101,8 @@ function DefaultBasicAttack.new(context: New_Context): Object
     self._Attacker = context.Attacker
     self._WeaponData = context.ItemData
     self._Config = WeaponConfig[self._WeaponData.Name].BasicAttack
+    self._Animations = {}
+    self._ActiveTrack = nil
     self._ComboTimeoutThread = nil
     
     return self
@@ -127,10 +132,6 @@ function DefaultBasicAttack.Use(self: Object, context: Use_Context)
     end
 
     if context.Mode == "FromClient" then
-        if self._CreatureServiceClient:IsAbilityActive(self._Attacker) then
-            return
-        end
-
         self:_CancelComboTimeoutThread()
 
         local PreviousAbility = self._CreatureServiceClient:GetPreviousAbility(self._Attacker) :: EntityTypesShared.ComboAbilityComponent
@@ -147,7 +148,8 @@ function DefaultBasicAttack.Use(self: Object, context: Use_Context)
         if not self._CreatureServiceClient:TryUseAbility(self._Attacker, {
             AbilityName = self.AbilityName,
             StartTime = ServerTime,
-            Duration = ComboData[Combo].Time,
+            Duration = ComboData[Combo].Duration,
+            CommitTime = ComboData[Combo].CommitTime,
             Combo = Combo,
         }) then
             return
@@ -159,51 +161,64 @@ function DefaultBasicAttack.Use(self: Object, context: Use_Context)
 
         local CurrentAbilityData = ComboData[Combo]
         local AnimationID = CurrentAbilityData.Animation
-        local AnimationInstance = Instance.new("Animation"); AnimationInstance.AnimationId = AnimationID
-        local Track = Animator:LoadAnimation(AnimationInstance)
+        local Track = self._Animations[AnimationID]
 
-        Track:GetMarkerReachedSignal("Hit"):Connect(function()
-            HitboxClass.new({
-                HitboxType = "Box",
-                GetCFrame = function()
-                    local BaseCF = Attacker:GetPivot()
-                    local LookVec = BaseCF.LookVector
-                    local FlatLooKVec = Vector3.new(LookVec.X, 0, LookVec.Z)
+        if not Track then
+            local AnimationInstance = Instance.new("Animation"); AnimationInstance.AnimationId = AnimationID
+            Track = Animator:LoadAnimation(AnimationInstance)
 
-                    if FlatLooKVec.Magnitude < 1e-6 then
-                        return CFrame.identity
+            self._Animations[AnimationID] = Track
+
+            Track:GetMarkerReachedSignal("Hit"):Connect(function()
+                print("hit")
+                HitboxClass.new({
+                    HitboxType = "Box",
+                    GetCFrame = function()
+                        local BaseCF = Attacker:GetPivot()
+                        local LookVec = BaseCF.LookVector
+                        local FlatLooKVec = Vector3.new(LookVec.X, 0, LookVec.Z)
+    
+                        if FlatLooKVec.Magnitude < 1e-6 then
+                            return CFrame.identity
+                        end
+    
+                        return CFrame.lookAt(BaseCF.Position, BaseCF.Position + FlatLooKVec) * CFrame.new(0, 0, -(HRP.Size.Z/2 + CurrentAbilityData.Range.Z/2))
+                    end,
+                    Size = CurrentAbilityData.Range,
+                    Length = 4,
+                    Ignore = { self._Attacker },
+                    Visualise = true,
+                    Cb = function(Attacked: Model)
+                        local HitInfo = self._CreatureServiceClient:DamageCreature(self._Attacker, Attacked)
+    
+                        if not HitInfo then
+                            return
+                        end
+                        
+                        self:Hit({
+                            Attacker = self._Attacker,
+                            Attacked = Attacked,
+                            Mode = "FromClient",
+                            HitInfo = HitInfo,
+                            OnHit = context.OnHit,
+                        })
                     end
+                }):Trigger()
+            end)
+        end
 
-                    return CFrame.lookAt(BaseCF.Position, BaseCF.Position + FlatLooKVec) * CFrame.new(0, 0, -(HRP.Size.Z/2 + CurrentAbilityData.Range.Z/2))
-                end,
-                Size = CurrentAbilityData.Range,
-                Length = 4,
-                Ignore = { self._Attacker },
-                Visualise = true,
-                Cb = function(Attacked: Model)
-                    local HitInfo = self._CreatureServiceClient:DamageCreature(self._Attacker, Attacked)
+        if self._ActiveTrack then
+            self._ActiveTrack:Stop()
+        end
 
-                    if not HitInfo then
-                        return
-                    end
-                    
-                    self:Hit({
-                        Attacker = self._Attacker,
-                        Attacked = Attacked,
-                        Mode = "FromClient",
-                        HitInfo = HitInfo,
-                        OnHit = context.OnHit,
-                    })
-                end
-            }):Trigger()
-        end)
-
-        task.delay(CurrentAbilityData.Time, function()
+        task.delay(CurrentAbilityData.Duration, function()
             self:End({
                 Mode = context.Mode,
                 OnEnd = context.OnEnd
             })
         end)
+
+        self._ActiveTrack = Track
 
         Track:Play(0, 1, 1)
     end
@@ -249,8 +264,8 @@ function DefaultBasicAttack.Hit(self: Object, context: Hit_Context)
 
         context.OnHit({ 
             AbilityName = self.AbilityName,
-            Attacked = context.Attacked, 
-            AttackerCFrame = context.Attacker:GetPivot() 
+            Attacked = context.Attacked,
+            AttackerCFrame = context.Attacker:GetPivot()
         })
     elseif context.Mode == "FromServer" then
         AbilityEffectManager:CreateHitEffect(context.Attacked, context.HitInfo)

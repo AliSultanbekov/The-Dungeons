@@ -47,7 +47,7 @@ function AbilityEfectManager.CreateHitEffect(self: Module, character: Model, eff
         VFXObject:Emit()
 
         SoundUtil:PlaySound(string.format("Punches/Punch%d", math.random(1,5)))
-    elseif effectName == "Blocked" then
+    elseif effectName == "Block" then
         local VFXObject = VFXClass.new(
             {"VFX/Block"},
             VFXContainer:FromAttachment(PrimaryPart, CFrame.new()),
@@ -58,7 +58,7 @@ function AbilityEfectManager.CreateHitEffect(self: Module, character: Model, eff
         VFXObject:Emit()
 
         SoundUtil:PlaySound("Block")
-    elseif effectName == "Parried" then
+    elseif effectName == "Parry" then
         local VFXObject = VFXClass.new(
             {"VFX/Parry"},
             VFXContainer:FromAttachment(PrimaryPart, CFrame.new()),

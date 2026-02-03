@@ -27,11 +27,11 @@ export type Module = typeof(CreatureGeneric) & ModuleData
 
 -- [ Public Functions ] --
 function CreatureGeneric.Init(self: Module)
-    
+
 end
 
 function CreatureGeneric.Start(self: Module)
-    
+
 end
 
 return CreatureGeneric :: Module

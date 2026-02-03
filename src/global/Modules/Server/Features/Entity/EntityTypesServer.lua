@@ -33,8 +33,8 @@ export type BlockingComponent = EntityTypesShared.BlockingComponent
 export type DodgingComponent = EntityTypesShared.DodgingComponent
 export type ParryStunnedComponent = EntityTypesShared.ParryStunnedComponent
 export type StunnedComponent = EntityTypesShared.StunnedComponent
-export type CurrentAbilityComponent = EntityTypesShared.CurrentAbilityComponent
-export type PreviousAbilityComponent = EntityTypesShared.PreviousAbilityComponent
+export type BaseAbilityComponent = EntityTypesShared.BaseAbilityComponent
+export type ComboAbilityComponent = EntityTypesShared.ComboAbilityComponent
 export type EntityCreatedSignalPacket = EntityTypesShared.EntityCreatedSignalPacket
 export type EntityDeletedSignalPacket = EntityTypesShared.EntityDeletedSignalPacket
 

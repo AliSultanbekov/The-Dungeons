@@ -153,6 +153,8 @@ function CombatController.Start(self: Module)
             return
         end
 
+        print(context)
+
         context.Mode = "FromServer"
 
         local Attacker = context.Attacker

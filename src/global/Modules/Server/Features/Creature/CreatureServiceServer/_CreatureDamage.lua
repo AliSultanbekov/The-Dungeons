@@ -1,5 +1,3 @@
-local ServerScriptService = game:GetService("ServerScriptService")
-local Duration = require(ServerScriptService.Game.node_modules["@quentystudios"].Cmdr.BuiltInTypes.Duration)
 --[=[
     @class CreatureDamage
 ]=]
@@ -9,7 +7,7 @@ local Duration = require(ServerScriptService.Game.node_modules["@quentystudios"]
 -- [ Imports ] --
 
 -- [ Require ] --
-local require = require(script.Parent.loader).load(script)
+local require = require(script.Parent.Parent.loader).load(script)
 
 -- [ Imports ] --
 local Jecs = require("Jecs")

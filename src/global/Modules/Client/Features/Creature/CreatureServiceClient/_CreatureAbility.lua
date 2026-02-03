@@ -11,7 +11,7 @@ local require = require(script.Parent.Parent.loader).load(script)
 
 -- [ Imports ] --
 local Jecs = require("Jecs")
-local EntityTypesServer = require("EntityTypesShared")
+local EntityTypesClient = require("EntityTypesClient")
 local AbilityConfig = require("AbilityConfig")
 
 -- [ Constants ] --
@@ -22,10 +22,10 @@ local AbilityConfig = require("AbilityConfig")
 local CreatureAbility = {}
 
 -- [ Types ] --
-type EntityServiceServer = typeof(require("EntityServiceServer"))
+type EntityServiceClient = typeof(require("EntityServiceClient"))
 
 type ModuleData = {
-    _EntityServiceServer: EntityServiceServer
+    _EntityServiceClient: EntityServiceClient
 }
 
 export type Module = typeof(CreatureAbility) & ModuleData
@@ -34,8 +34,8 @@ export type Module = typeof(CreatureAbility) & ModuleData
 
 -- [ Public Functions ] --
 function CreatureAbility.IsAbilityOnCooldown(self: Module, entity: Jecs.Entity, abilityName: string): boolean
-    local World = self._EntityServiceServer:GetWorld()
-    local Components =self._EntityServiceServer:GetComponents()
+    local World = self._EntityServiceClient:GetWorld()
+    local Components = self._EntityServiceClient:GetComponents()
 
     local AbilityCooldowns = World:get(entity, Components.AbilityCooldowns)
 
@@ -51,8 +51,8 @@ function CreatureAbility.IsAbilityOnCooldown(self: Module, entity: Jecs.Entity, 
 end
 
 function CreatureAbility.StartAbilityCooldown(self: Module, entity: Jecs.Entity, abilityName: string)
-    local World = self._EntityServiceServer:GetWorld()
-    local Components =self._EntityServiceServer:GetComponents()
+    local World = self._EntityServiceClient:GetWorld()
+    local Components = self._EntityServiceClient:GetComponents()
 
     local AbilityCooldowns = World:get(entity, Components.AbilityCooldowns)
 
@@ -66,15 +66,15 @@ function CreatureAbility.StartAbilityCooldown(self: Module, entity: Jecs.Entity,
         return
     end
 
-    local ServerTime = workspace.DistributedGameTime
+    local ServerTime = workspace:GetServerTimeNow()
     AbilityCooldowns[abilityName] = ServerTime + AbilityData.CooldownDuration
 
     World:set(entity, Components.AbilityCooldowns, AbilityCooldowns)
 end
 
 function CreatureAbility.IsAbilityActive(self: Module, entity: Jecs.Entity, abilityName: string?): boolean
-    local World = self._EntityServiceServer:GetWorld()
-    local Components =self._EntityServiceServer:GetComponents()
+    local World = self._EntityServiceClient:GetWorld()
+    local Components = self._EntityServiceClient:GetComponents()
 
     local CurrentAbility = World:get(entity, Components.CurrentAbility)
 
@@ -89,9 +89,9 @@ function CreatureAbility.IsAbilityActive(self: Module, entity: Jecs.Entity, abil
     return true
 end
 
-function CreatureAbility.GetCurrentAbility(self: Module, entity: Jecs.Entity): (EntityTypesServer.BaseAbilityComponent | EntityTypesServer.ComboAbilityComponent)?
-    local World = self._EntityServiceServer:GetWorld()
-    local Components =self._EntityServiceServer:GetComponents()
+function CreatureAbility.GetCurrentAbility(self: Module, entity: Jecs.Entity): EntityTypesClient.CurrentAbilityComponent?
+    local World = self._EntityServiceClient:GetWorld()
+    local Components = self._EntityServiceClient:GetComponents()
 
     if not World:has(entity, Components.CurrentAbility) then
         return
@@ -100,9 +100,9 @@ function CreatureAbility.GetCurrentAbility(self: Module, entity: Jecs.Entity): (
     return World:get(entity, Components.CurrentAbility)
 end
 
-function CreatureAbility.GetPreviousAbility(self: Module, entity: Jecs.Entity): (EntityTypesServer.BaseAbilityComponent | EntityTypesServer.ComboAbilityComponent)?
-    local World = self._EntityServiceServer:GetWorld()
-    local Components =self._EntityServiceServer:GetComponents()
+function CreatureAbility.GetPreviousAbility(self: Module, entity: Jecs.Entity): EntityTypesClient.PreviousAbilityComponent?
+    local World = self._EntityServiceClient:GetWorld()
+    local Components = self._EntityServiceClient:GetComponents()
 
     if not World:has(entity, Components.PreviousAbility) then
         return
@@ -111,9 +111,9 @@ function CreatureAbility.GetPreviousAbility(self: Module, entity: Jecs.Entity): 
     return World:get(entity, Components.PreviousAbility)
 end
 
-function CreatureAbility.UseAbility(self: Module, entity: Jecs.Entity, abilityData: EntityTypesServer.BaseAbilityComponent): boolean
-    local World = self._EntityServiceServer:GetWorld()
-    local Components =self._EntityServiceServer:GetComponents()
+function CreatureAbility.UseAbility(self: Module, entity: Jecs.Entity, abilityData: EntityTypesClient.CurrentAbilityComponent): boolean
+    local World = self._EntityServiceClient:GetWorld()
+    local Components = self._EntityServiceClient:GetComponents()
 
     local AbilityCooldowns = World:get(entity, Components.AbilityCooldowns)
 
@@ -151,8 +151,8 @@ function CreatureAbility.UseAbility(self: Module, entity: Jecs.Entity, abilityDa
 end
 
 function CreatureAbility.CancelAbility(self: Module, entity: Jecs.Entity, abilityName: string?): boolean
-    local World = self._EntityServiceServer:GetWorld()
-    local Components =self._EntityServiceServer:GetComponents()
+    local World = self._EntityServiceClient:GetWorld()
+    local Components = self._EntityServiceClient:GetComponents()
 
     local CurrentAbility = World:get(entity, Components.CurrentAbility)
 
@@ -164,7 +164,7 @@ function CreatureAbility.CancelAbility(self: Module, entity: Jecs.Entity, abilit
         return false
     end
 
-    local ServerTime = workspace.DistributedGameTime
+    local ServerTime = workspace:GetServerTimeNow()
     local StartTime = CurrentAbility.StartTime
     local DeltaTime = ServerTime - StartTime
 
@@ -182,8 +182,8 @@ function CreatureAbility.CancelAbility(self: Module, entity: Jecs.Entity, abilit
 end
 
 function CreatureAbility.EndAbility(self: Module, entity: Jecs.Entity, abilityName: string?): boolean
-    local World = self._EntityServiceServer:GetWorld()
-    local Components =self._EntityServiceServer:GetComponents()
+    local World = self._EntityServiceClient:GetWorld()
+    local Components = self._EntityServiceClient:GetComponents()
 
     local CurrentAbility = World:get(entity, Components.CurrentAbility)
 
@@ -195,7 +195,7 @@ function CreatureAbility.EndAbility(self: Module, entity: Jecs.Entity, abilityNa
         return false
     end
 
-    local ServerTime = workspace.DistributedGameTime
+    local ServerTime = workspace:GetServerTimeNow()
     local StartTime = CurrentAbility.StartTime
     local DeltaTime = ServerTime - StartTime
 
@@ -213,12 +213,12 @@ function CreatureAbility.EndAbility(self: Module, entity: Jecs.Entity, abilityNa
     return true
 end
 
-function CreatureAbility.Init(self: Module, entityServiceServer: EntityServiceServer)
-    self._EntityServiceServer = entityServiceServer
+function CreatureAbility.Init(self: Module, entityServiceClient: EntityServiceClient)
+    self._EntityServiceClient = entityServiceClient
 end
 
 function CreatureAbility.Start(self: Module)
-    
+
 end
 
 return CreatureAbility :: Module

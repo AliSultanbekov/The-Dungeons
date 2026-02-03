@@ -58,14 +58,14 @@ end
 
 function CreatureSpawnService.Start(self: Module)
     local Villager = self:SpawnNPC("Villager", Vector3.new(1,1,1))
-    self._CreatureServiceServer:TryUseAbility(Villager, {
+    self._CreatureServiceServer:UseAbility(Villager, {
         AbilityName = "Block",
         StartTime = os.clock(),
         Duration = math.huge,
-        IsHeld = true,  
+        IsHeld = true,
     })
 
-    local Villager2 = self:SpawnNPC("Villager", Vector3.new(1,1,10))
+    local _Villager2 = self:SpawnNPC("Villager", Vector3.new(1,1,10))
 end
 
 return CreatureSpawnService :: Module

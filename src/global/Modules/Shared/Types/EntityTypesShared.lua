@@ -96,15 +96,15 @@ export type BaseAbilityComponent = {
     AbilityName: string,
     StartTime: number,
     Duration: number,
-    CommitTime: number,
+    CommitTime: number?,
     IsHeld: boolean?,
 }
 export type ComboAbilityComponent = {
     AbilityName: string,
     StartTime: number,
     Duration: number,
-    CommitTime: number,
     Combo: number,
+    CommitTime: number?,
     IsHeld: boolean?,
 }
 

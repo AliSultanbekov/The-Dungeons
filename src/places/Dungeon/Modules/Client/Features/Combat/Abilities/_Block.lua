@@ -82,11 +82,9 @@ function Block.Use(self: Object, context: Use_Context)
     end
 
     if context.Mode == "FromClient" then
-        local ServerTime = workspace.DistributedGameTime
-
-        if not self._CreatureServiceClient:TryUseAbility(self._Attacker, {
+        if not self._CreatureServiceClient:UseAbility(self._Attacker, {
             AbilityName = self.AbilityName,
-            StartTime = ServerTime,
+            StartTime = workspace.DistributedGameTime,
             Duration = math.huge,
             IsHeld = true,
         }) then
@@ -127,14 +125,8 @@ function Block.End(self: Object, context: End_Context)
         self._BlockTrack = nil
     end
 
-    if context.Mode == "FromClient" then
-        if not self._CreatureServiceClient:IsAbilityActive(self._Attacker, self.AbilityName) then
-            print("S1")
-            return
-        end
-        
-        if not self._CreatureServiceClient:TryEndAbility(self._Attacker, self.AbilityName) then
-            print("S2")
+    if context.Mode == "FromClient" then        
+        if not self._CreatureServiceClient:EndAbility(self._Attacker, self.AbilityName) then
             return
         end
 

@@ -1,3 +1,4 @@
+-- [[
 --[=[
     @class CreatureUtil
 ]=]
@@ -70,7 +71,7 @@ type CanCancelOrEndAbility_Context = {
     Components: { [string]: Jecs.Entity },
     AbilityData: any,
 }
-type CanUseAbility_Context = {
+type TryUseAbility_Context = {
     Entity: Jecs.Entity,
     World: Jecs.World,
     Components: { [string]: Jecs.Entity },
@@ -229,7 +230,25 @@ function CreatureUtil.IsAbilityActive(self: Module, context: IsAbilityActive_Con
     return true
 end
 
-function CreatureUtil.CanCancelOrEndAbility(self: Module, context: CanUseAbility_Context): string?
+function CreatureUtil.
+
+function CreatureUtil.TryUseAbility(self: Module, context: TryUseAbility_Context)
+    local Entity = context.Entity
+    local World = context.World
+    local Components = context.Components
+    local AbilityData = context.AbilityData
+
+    local CurrentAbility = World:get(Entity, Components.CurrentAbility)
+
+    if not CurrentAbility then
+        
+    else
+        
+    end
+end
+
+--[[
+    function CreatureUtil.CanCancelOrEndAbility(self: Module, context: CanUseAbility_Context): string?
     local Entity = context.Entity
     local World = context.World
     local Components = context.Components
@@ -315,5 +334,6 @@ function CreatureUtil.CanEndAbility(self: Module, context: CanEndAbility_Context
 
     return true
 end
+]]
 
 return CreatureUtil :: Module

@@ -12,6 +12,7 @@ local require = require(script.Parent.loader).load(script)
 -- [ Imports ] --
 local Jecs = require("Jecs")
 local EntityTypesShared = require("EntityTypesShared")
+local Signal = require("Signal")
 
 -- [ Constants ] --
 
@@ -22,6 +23,8 @@ local EntityTypesShared = require("EntityTypesShared")
 -- [ Types ] --
 
 -- Re-export shared types
+export type BaseAbility = EntityTypesShared.BaseAbility
+export type ComboAbility = EntityTypesShared.ComboAbility
 export type NameComponent = EntityTypesShared.NameComponent
 export type StatsComponent = EntityTypesShared.StatsComponent
 export type CharacterComponent = EntityTypesShared.CharacterComponent
@@ -33,10 +36,11 @@ export type BlockingComponent = EntityTypesShared.BlockingComponent
 export type DodgingComponent = EntityTypesShared.DodgingComponent
 export type ParryStunnedComponent = EntityTypesShared.ParryStunnedComponent
 export type StunnedComponent = EntityTypesShared.StunnedComponent
-export type BaseAbilityComponent = EntityTypesShared.BaseAbilityComponent
-export type ComboAbilityComponent = EntityTypesShared.ComboAbilityComponent
+export type CurrentAbilities = EntityTypesShared.CurrentAbilities
+export type PreviousAbilities = EntityTypesShared.PreviousAbilities
 export type EntityCreatedSignalPacket = EntityTypesShared.EntityCreatedSignalPacket
 export type EntityDeletedSignalPacket = EntityTypesShared.EntityDeletedSignalPacket
+export type AbilityExpiredSignalPacket = EntityTypesShared.AbilityExpiredSignalPacket
 
 -- Server-specific Tags
 export type Tags = EntityTypesShared.Tags & {
@@ -87,11 +91,18 @@ export type Components = EntityTypesShared.Components & {
 }
 
 -- System Types
+export type PublicSignals = {
+    EntityCreated: Signal.Signal<EntityCreatedSignalPacket>,
+    EntityDeleted: Signal.Signal<EntityDeletedSignalPacket>,
+    AbilityExpired: Signal.Signal<AbilityExpiredSignalPacket>,
+}
+
 export type SystemModuleUpdateContext = {
     World: Jecs.World,
     Tags: Tags,
     Components: Components,
     Dt: number,
+    PublicSignals: PublicSignals,
 }
 
 export type SystemModule = {

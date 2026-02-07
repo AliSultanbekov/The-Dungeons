@@ -1,5 +1,5 @@
 --[=[
-    @class Block
+    @class Parry
 ]=]
 
 -- [ Roblox Services ] --
@@ -15,18 +15,17 @@ local ItemTypes = require("ItemTypes")
 local ServiceBag = require("ServiceBag")
 local AnimationClass = require("AnimationClass")
 local AbilityConfig = require("AbilityConfig")
-local AnimationConstants = require("AnimationConstants")
 
 -- [ Constants ] --
 
 -- [ Variables ] --
-local BlockConfigData = AbilityConfig.Abilities["Block"]
+local ParryConfigData = AbilityConfig.Abilities["Parry"]
 
 -- [ Module Table ] --
-local Block = {
-    AbilityName = "Block"
+local Parry = {
+    AbilityName = "Parry"
 }
-Block.__index = Block
+Parry.__index = Parry
 
 -- [ Types ] --
 type End_Context = {
@@ -58,19 +57,15 @@ export type ObjectData = {
 
     AbilityName: string
 }
-export type Object = typeof(setmetatable({} :: ObjectData, Block))
-export type Module = typeof(Block)
+
+export type Object = typeof(setmetatable({} :: ObjectData, Parry))
+export type Module = typeof(Parry)
 
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function Block._SetupAnimations(self: Object)
-    local AnimationObject = self._AnimationObject
-    AnimationObject:LoadAnimation(self.AbilityName, BlockConfigData.AnimationID)
-end
-
-function Block.new(context: New_Context): Object
-    local self = setmetatable({} :: any, Block) :: Object
+function Parry.new(context: New_Context): Object
+    local self = setmetatable({} :: any, Parry) :: Object
 
     self._ServiceBag = context.ServiceBag
     self._CreatureServiceClient = self._ServiceBag:GetService(require("CreatureServiceClient"))
@@ -83,20 +78,17 @@ function Block.new(context: New_Context): Object
     self._OnEnd = context.OnEnd
     self._OnHit = context.OnHit
 
-    self:_SetupAnimations()
-
     return self
 end
 
-function Block.Use(self: Object, context: Use_Context)
+function Parry.Use(self: Object, context: Use_Context)
     if context.Mode == "FromClient" then
         local ServerTime = workspace.DistributedGameTime
 
         if not self._CreatureServiceClient:UseAbility(self._Attacker, {
             AbilityName = self.AbilityName,
             StartTime = ServerTime,
-            Duration = BlockConfigData.Duration,
-            IsHeld = true,
+            Duration = ParryConfigData.Duration,
         }) then
             return
         end
@@ -104,12 +96,10 @@ function Block.Use(self: Object, context: Use_Context)
         self._OnUse({
             AbilityName = self.AbilityName
         })
-    
-        self._AnimationObject:PlayAnimation(self.AbilityName, AnimationConstants.CreatureLayers.Combat)
     end
 end
 
-function Block.End(self: Object, context: End_Context)
+function Parry.End(self: Object, context: End_Context)
     if context.Mode == "FromClient" then
         if not self._CreatureServiceClient:EndAbility(self._Attacker, self.AbilityName) then
             return
@@ -119,10 +109,12 @@ function Block.End(self: Object, context: End_Context)
             AbilityName = self.AbilityName
         })
 
-        self._CreatureServiceClient:EndAbility(self._Attacker, self.AbilityName)
-        
-        self._AnimationObject:StopAnimation(self.AbilityName, AnimationConstants.CreatureLayers.Combat)
+        self._CreatureServiceClient:EndAbility(self._Attacker, "Parry")
+        self._CreatureServiceClient:StartAbilityCooldown(self._Attacker, "Parry")
+    elseif context.Mode == "FromECS" then
+        print("wdawdawd")
+        self._CreatureServiceClient:StartAbilityCooldown(self._Attacker, "Parry")
     end
 end
 
-return Block :: Module
+return Parry :: Module

@@ -111,10 +111,6 @@ function EntityReplicationServiceClient.Start(self: Module)
                 return
             end
 
-            if World:has(ClientEntity, Component) then
-                return
-            end
-
             World:set(ClientEntity, Component, Data.Value)
         elseif packet.Action == "Updated" then
             local Data = packet.Data
@@ -126,10 +122,6 @@ function EntityReplicationServiceClient.Start(self: Module)
             end
 
             if not Component then
-                return
-            end
-
-            if not World:has(ClientEntity, Component) then
                 return
             end
 

@@ -5,6 +5,7 @@
 -- [ Roblox Services ] --
 
 -- [ Imports ] --
+local Types = require("../CreatureTypesServer")
 
 -- [ Require ] --
 local require = require(script.Parent.Parent.loader).load(script)
@@ -24,7 +25,8 @@ type EntityServiceServer = typeof(require("EntityServiceServer"))
 
 type ModuleData = {
     _EntityServiceServer: EntityServiceServer,
-    _CharacterToEntity: { [Model]: Jecs.Entity }
+    _CharacterToEntity: { [Model]: Jecs.Entity },
+    PublicSignals: Types.PublicSignals
 }
 
 export type Module = typeof(CreatureRegister) & ModuleData
@@ -41,8 +43,8 @@ function CreatureRegister.RegisterNPC(self: Module, character: Model)
 
     local Entity = self._EntityServiceServer:CreateEntity({
         Tags = {
-            "Alive",
-            "NPC"
+            Creature = true,
+            NPC = true
         },
         Components = {
             Name = character.Name,
@@ -52,6 +54,8 @@ function CreatureRegister.RegisterNPC(self: Module, character: Model)
                 Character = character,
                 Humanoid = Humanoid,
             },
+            CurrentAbilities = {},
+            PreviousAbilities = {},
             AbilityCooldowns = {}
         },
         Replicated = true
@@ -59,9 +63,12 @@ function CreatureRegister.RegisterNPC(self: Module, character: Model)
 
     self._CharacterToEntity[character] = Entity
 
-    character.Destroying:Once(function()  
+    self.PublicSignals.CreatureCreated:Fire(character)
+
+    Humanoid.Died:Once(function()
         self._EntityServiceServer:DeleteEntity({ Entity = Entity, Replicated = true })
         self._CharacterToEntity[character] = nil
+        self.PublicSignals.CreatureDeleted:Fire(character)
     end)
 end
 
@@ -74,8 +81,8 @@ function CreatureRegister.RegisterPlayer(self: Module, character: Model)
 
     local Entity = self._EntityServiceServer:CreateEntity({
         Tags = {
-            "Alive",
-            "Player"
+            Creature = true,
+            Player = true
         },
         Components = {
             Name = character.Name,
@@ -85,6 +92,8 @@ function CreatureRegister.RegisterPlayer(self: Module, character: Model)
                 Character = character,
                 Humanoid = Humanoid,
             },
+            CurrentAbilities = {},
+            PreviousAbilities = {},
             AbilityCooldowns = {}
         },
         Replicated = true
@@ -92,9 +101,12 @@ function CreatureRegister.RegisterPlayer(self: Module, character: Model)
 
     self._CharacterToEntity[character] = Entity
 
-    character.Destroying:Once(function()  
+    self.PublicSignals.CreatureCreated:Fire(character)
+    
+    Humanoid.Died:Once(function()
         self._EntityServiceServer:DeleteEntity({ Entity = Entity, Replicated = true })
         self._CharacterToEntity[character] = nil
+        self.PublicSignals.CreatureDeleted:Fire(character)
     end)
 end
 
@@ -102,9 +114,10 @@ function CreatureRegister.GetEntityFromCharacter(self: Module, character: Model)
     return self._CharacterToEntity[character]
 end
 
-function CreatureRegister.Init(self: Module, entityServiceServer: EntityServiceServer)
-    self._EntityServiceServer = entityServiceServer
+function CreatureRegister.Init(self: Module, context: Types.Init_Context)
+    self._EntityServiceServer = context.EntityServiceServer
     self._CharacterToEntity = {}
+    self.PublicSignals = context.PublicSignals
 end
 
 function CreatureRegister.Start(self: Module)

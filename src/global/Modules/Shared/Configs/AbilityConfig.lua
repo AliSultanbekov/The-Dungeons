@@ -15,14 +15,36 @@ local _require = require(script.Parent.loader).load(script)
 
 -- [ Module Table ] --
 local AbilityConfig = {
-    ["DefaultBasicAttack"] = {
-        CooldownDuration = 0.25,
-        Weight = 1,
-        
+    ConflictRules = {
+        Attack = {"Attack"},
+        Defense = {"Defense"},
     },
-    ["Block"] = {
-        CooldownDuration = 0.5,
-        Weight = 2,
+    InterruptRules = {
+        Defense = {"Attack"},
+        Attack = {"Defense", "SubDefense"},
+    },
+    Abilities = {
+        ["DefaultBasicAttack"] = {
+            Category = "Attack",
+            Weight = 1,
+
+            CooldownDuration = 0.1,
+        },
+        ["Block"] = {
+            Category = "Defense",
+            Weight = 1,
+            Components = {"Blocking"},
+
+            Duration = math.huge,
+            AnimationID = "rbxassetid://87451259660096",
+        },
+        ["Parry"] = {
+            Weight = 1,
+            Components = {"Parrying"},
+
+            Duration = 0.2,
+            CooldownDuration = 0.4,
+        }
     }
 }
 

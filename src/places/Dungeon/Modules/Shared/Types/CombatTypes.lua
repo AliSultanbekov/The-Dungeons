@@ -7,7 +7,7 @@ local require = require(script.Parent.loader).load(script)
 local Jecs = require("Jecs")
 
 -- [ Types ] --
-export type Mode = "FromClient" | "FromServer"
+export type Mode = "FromClient" | "FromServer" | "FromECS"
 
 export type BaseNewContext = {
     [string]: any,

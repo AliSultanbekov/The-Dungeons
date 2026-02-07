@@ -8,6 +8,7 @@
 local CreatureRegister = require("@self/_CreatureRegister")
 local CreatureAbility = require("@self/_CreatureAbility")
 local CreatureGeneric = require("@self/_CreatureGeneric")
+local Types = require("./CreatureTypesClient")
 
 -- [ Require ] --
 local require = require(script.Parent.loader).load(script)
@@ -16,6 +17,8 @@ local require = require(script.Parent.loader).load(script)
 local ServiceBag = require("ServiceBag")
 local Jecs = require("Jecs")
 local EntityTypesClient = require("EntityTypesClient")
+local AnimationClass = require("AnimationClass")
+local Signal = require("Signal")
 
 -- [ Constants ] --
 
@@ -25,10 +28,6 @@ local EntityTypesClient = require("EntityTypesClient")
 local CreatureServiceClient = {}
 
 -- [ Types ] --
-type CreatureModule = {
-    Init: (self: CreatureModule, entityServiceClient: EntityServiceClient) -> (),
-    Start: (self: CreatureModule) -> (),
-}
 type EntityServiceClient = typeof(require("EntityServiceClient"))
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
@@ -37,7 +36,8 @@ type ModuleData = {
         CreatureRegister: CreatureRegister.Module,
         CreatureAbility: CreatureAbility.Module,
         CreatureGeneric: CreatureGeneric.Module
-    }
+    },
+    PublicSignals: Types.PublicSignals
 }
 
 export type Module = typeof(CreatureServiceClient) & ModuleData
@@ -45,6 +45,16 @@ export type Module = typeof(CreatureServiceClient) & ModuleData
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
+function CreatureServiceClient.GetAnimationObject(self: Module, character: Model): AnimationClass.Object
+    local Entity = self:GetEntityFromCharacter(character)
+
+    if not Entity then
+        error("[CreatureServiceClient] No Entity found for character " .. tostring(character))
+    end
+
+    return self._CreatureModules.CreatureGeneric:GetAnimationObject(Entity)
+end
+
 function CreatureServiceClient.IsAbilityOnCooldown(self: Module, character: Model, abilityName: string): boolean
     local Entity = self:GetEntityFromCharacter(character)
 
@@ -55,14 +65,14 @@ function CreatureServiceClient.IsAbilityOnCooldown(self: Module, character: Mode
     return self._CreatureModules.CreatureAbility:IsAbilityOnCooldown(Entity, abilityName)
 end
 
-function CreatureServiceClient.StartAbilityCooldown(self: Module, character: Model, abilityName: string)
+function CreatureServiceClient.StartAbilityCooldown(self: Module, character: Model, abilityName: string, cooldownDuration: number?)
     local Entity = self:GetEntityFromCharacter(character)
 
     if not Entity then
         return
     end
 
-    self._CreatureModules.CreatureAbility:StartAbilityCooldown(Entity, abilityName)
+    self._CreatureModules.CreatureAbility:StartAbilityCooldown(Entity, abilityName, cooldownDuration)
 end
 
 function CreatureServiceClient.IsAbilityActive(self: Module, character: Model, abilityName: string?): boolean
@@ -75,27 +85,27 @@ function CreatureServiceClient.IsAbilityActive(self: Module, character: Model, a
     return self._CreatureModules.CreatureAbility:IsAbilityActive(Entity, abilityName)
 end
 
-function CreatureServiceClient.GetCurrentAbility(self: Module, character: Model): EntityTypesClient.CurrentAbilityComponent?
+function CreatureServiceClient.GetCurrentAbility(self: Module, character: Model, abilityName: string): (EntityTypesClient.BaseAbility | EntityTypesClient.ComboAbility)?
     local Entity = self:GetEntityFromCharacter(character)
 
     if not Entity then
         return
     end
 
-    return self._CreatureModules.CreatureAbility:GetCurrentAbility(Entity)
+    return self._CreatureModules.CreatureAbility:GetCurrentAbility(Entity, abilityName)
 end
 
-function CreatureServiceClient.GetPreviousAbility(self: Module, character: Model): EntityTypesClient.PreviousAbilityComponent?
+function CreatureServiceClient.GetPreviousAbility(self: Module, character: Model, abilityName: string): (EntityTypesClient.BaseAbility | EntityTypesClient.ComboAbility)?
     local Entity = self:GetEntityFromCharacter(character)
 
     if not Entity then
         return
     end
 
-    return self._CreatureModules.CreatureAbility:GetPreviousAbility(Entity)
+    return self._CreatureModules.CreatureAbility:GetPreviousAbility(Entity, abilityName)
 end
 
-function CreatureServiceClient.UseAbility(self: Module, character: Model, abilityData: EntityTypesClient.CurrentAbilityComponent): boolean
+function CreatureServiceClient.UseAbility(self: Module, character: Model, abilityData: EntityTypesClient.BaseAbility | EntityTypesClient.ComboAbility): boolean
     local Entity = self:GetEntityFromCharacter(character)
 
     if not Entity then
@@ -105,7 +115,7 @@ function CreatureServiceClient.UseAbility(self: Module, character: Model, abilit
     return self._CreatureModules.CreatureAbility:UseAbility(Entity, abilityData)
 end
 
-function CreatureServiceClient.CancelAbility(self: Module, character: Model, abilityName: string?): boolean
+function CreatureServiceClient.CancelAbility(self: Module, character: Model, abilityName: string): boolean
     local Entity = self:GetEntityFromCharacter(character)
 
     if not Entity then
@@ -115,7 +125,7 @@ function CreatureServiceClient.CancelAbility(self: Module, character: Model, abi
     return self._CreatureModules.CreatureAbility:CancelAbility(Entity, abilityName)
 end
 
-function CreatureServiceClient.EndAbility(self: Module, character: Model, abilityName: string?): boolean
+function CreatureServiceClient.EndAbility(self: Module, character: Model, abilityName: string): boolean
     local Entity = self:GetEntityFromCharacter(character)
 
     if not Entity then
@@ -142,8 +152,17 @@ function CreatureServiceClient.Init(self: Module, serviceBag: ServiceBag.Service
         CreatureGeneric = CreatureGeneric,
     }
 
+    self.PublicSignals = {
+        CreatureCreated = Signal.new(),
+        CreatureDeleted = Signal.new(),
+        AbilityExpired = Signal.new(),
+    } :: any
+
     for _, creatureModule in pairs(self._CreatureModules) do
-        creatureModule:Init(self._EntityServiceClient)
+        creatureModule:Init({
+            EntityServiceClient = self._EntityServiceClient,
+            PublicSignals = self.PublicSignals
+        })
     end
 end
 

@@ -27,11 +27,21 @@ type AbilityObject = CombatTypes.AbilityObject
 type AbilityModule = CombatTypes.AbilityModule
 type Context = CombatTypes.Context
 
+type New_Context = {
+    ServiceBag: ServiceBag.ServiceBag,
+    AbilityManager: AbilityManager.Object,
+    OnUse: (context: CombatTypes.Context) -> (),
+    OnEnd: (context: CombatTypes.Context) -> (),
+    OnHit: (context: CombatTypes.Context) -> (),
+}
 export type ObjectData = {
     _Character: Model,
     _ServiceBag: ServiceBag.ServiceBag,
     _AbilityManager: AbilityManager.Object,
     _CreatureService: any,
+    _OnUse: (context: CombatTypes.Context) -> (),
+    _OnEnd: (context: CombatTypes.Context) -> (),
+    _OnHit: (context: CombatTypes.Context) -> (),
     _Abilities: {
         [string]: AbilityObject
     }
@@ -42,13 +52,18 @@ export type Module = typeof(CombatClass)
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function CombatClass.new(character: Model, context: {ServiceBag: ServiceBag.ServiceBag, AbilityManager: AbilityManager.Object}): Object
+function CombatClass.new(character: Model, context: New_Context): Object
     local self = setmetatable({} :: any, CombatClass) :: Object
     
     self._Character = character
 
     self._ServiceBag = context.ServiceBag
     self._AbilityManager = context.AbilityManager
+
+    self._OnUse = context.OnUse
+    self._OnEnd = context.OnEnd
+    self._OnHit = context.OnHit
+
     self._Abilities = {}
 
     return self
@@ -59,6 +74,9 @@ function CombatClass.AddAbility(self: Object, abilityName: string, context: Cont
 
     context.Attacker = self._Character
     context.ServiceBag = self._ServiceBag
+    context.OnUse = self._OnUse
+    context.OnEnd = self._OnEnd
+    context.OnHit = self._OnHit
 
     local AbiltyObject = AbilityModule.new(context)
 

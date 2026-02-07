@@ -17,7 +17,8 @@ local InputModeTypes = require("InputModeTypes")
 -- [ Variables ] --
 local Actions = {
     ["BASIC_ATTACK"] = "BASIC_ATTACK",
-    ["BLOCK"] = "BLOCK"
+    ["BLOCK"] = "BLOCK",
+    ["DASH"] = "DASH"
 }
 
 -- [ Module Table ] --
@@ -41,6 +42,18 @@ local CombatKeyMap = {
             {
                 InputKeyMap.new(InputModeTypes.Keyboard, {
                     Enum.KeyCode.F
+                })
+            },
+            {
+                bindingName = "Block",
+                rebindable = true,
+            }
+        ),
+        [Actions.DASH] = InputKeyMapList.new(
+            Actions.DASH,
+            {
+                InputKeyMap.new(InputModeTypes.Keyboard, {
+                    Enum.KeyCode.Q
                 })
             },
             {

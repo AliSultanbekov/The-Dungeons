@@ -11,11 +11,12 @@ local Players = game:GetService("Players")
 local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] -- 
+local GeneralGameConstants = require("GeneralGameConstants")
 
 -- [ Constants ] --
 local WALKSPEED = 16
 local DISTANCE_TOLERANCE = 4
-local PING_ADDITIONAL_DELAY = 0.05
+local PING_ADDITIONAL_DELAY = GeneralGameConstants.ProcessingPingDelay
 
 -- [ Variables ] --
 

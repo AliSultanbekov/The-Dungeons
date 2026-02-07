@@ -33,10 +33,7 @@ type ModuleData = {
     _Tags: EntityTypesClient.Tags,
     _Components: EntityTypesClient.Components,
     _Systems: { EntityTypesClient.SystemModule },
-    PublicSignals: {
-        EntityCreated: Signal.Signal<EntityTypesClient.EntityCreatedSignalPacket>,
-        EntityDeleted: Signal.Signal<EntityTypesClient.EntityDeletedSignalPacket>,
-    }
+    PublicSignals: EntityTypesClient.PublicSignals
 }
 
 export type Module = typeof(EntityServiceClient) & ModuleData
@@ -77,7 +74,7 @@ function EntityServiceClient.CreateEntity(self: Module, entityData: EntityTypesC
     local World = self._World
     local Entity = World:entity()
 
-    for _, tagName in entityData.Tags do
+    for tagName in entityData.Tags do
         World:add(Entity, self._Tags[tagName])
     end
 
@@ -98,7 +95,15 @@ function EntityServiceClient.DeleteEntity(self: Module, entityData: EntityTypesC
     local Entity = entityData.Entity
     local World = self._World
 
+    local Tags = {}
     local Components = {}
+
+    for tagName, tag in pairs(self._Components) do
+        if World:has(Entity, tag) then
+            Tags[tagName] = true
+        end
+    end
+
     for componentName, component in pairs(self._Components) do
         if World:has(Entity, component) then
             Components[componentName] = World:get(Entity, component)
@@ -107,6 +112,7 @@ function EntityServiceClient.DeleteEntity(self: Module, entityData: EntityTypesC
 
     self.PublicSignals.EntityDeleted:Fire({
         Entity = Entity,
+        Tags = Tags,
         Components = Components,
     })
 
@@ -121,7 +127,7 @@ function EntityServiceClient.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._ServiceBag = assert(serviceBag, "No serviceBag")
 
     self._Tags = {
-        Alive = Jecs.tag(),
+        Creature = Jecs.tag(),
         Player = Jecs.tag(),
         NPC = Jecs.tag(),
     }
@@ -135,17 +141,23 @@ function EntityServiceClient.Init(self: Module, serviceBag: ServiceBag.ServiceBa
         Ether = self._World:component(),
             -- Combat
         AbilityCooldowns = self._World:component(),
+        CurrentAbilities = self._World:component(),
+        PreviousAbilities = self._World:component(),
+
         Blocking = self._World:component(),
+        Parrying = self._World:component(),
         Dodging = self._World:component(),
+
         ParryStunned = self._World:component(),
         Stunned = self._World:component(),
-        CurrentAbility = self._World:component(),
-        PreviousAbility = self._World:component(),
+
         InCombat = self._World:component(),
+
+        AnimationObject = self._World:component(),
     }
 
     -- Tag Names
-    self._World:set(self._Tags.Alive, Jecs.Name, "Alive")
+    self._World:set(self._Tags.Creature, Jecs.Name, "Creature")
     self._World:set(self._Tags.Player, Jecs.Name, "Player")
     self._World:set(self._Tags.NPC, Jecs.Name, "NPC")
 
@@ -161,14 +173,16 @@ function EntityServiceClient.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._World:set(self._Components.Dodging, Jecs.Name, "Dodging")
     self._World:set(self._Components.ParryStunned, Jecs.Name, "ParryStunned")
     self._World:set(self._Components.Stunned, Jecs.Name, "Stunned")
-    self._World:set(self._Components.CurrentAbility, Jecs.Name, "CurrentAbility")
-    self._World:set(self._Components.PreviousAbility, Jecs.Name, "PreviousAbility")
+    self._World:set(self._Components.CurrentAbilities, Jecs.Name, "CurrentAbility")
+    self._World:set(self._Components.PreviousAbilities, Jecs.Name, "PreviousAbility")
+    self._World:set(self._Components.AnimationObject, Jecs.Name, "AnimationObject")
 
     self._Systems = self:_GatherAllSystems()
 
     self.PublicSignals = {
         EntityCreated = Signal.new(),
         EntityDeleted = Signal.new(),
+        AbilityExpired = Signal.new(),
     } :: any
 end
 
@@ -179,6 +193,7 @@ function EntityServiceClient.Start(self: Module)
                 World = self._World,
                 Tags = self._Tags,
                 Components = self._Components,
+                PublicSignals = self.PublicSignals,
                 Dt = dt,
             })
         end

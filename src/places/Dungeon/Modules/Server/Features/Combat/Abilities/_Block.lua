@@ -12,10 +12,12 @@ local require = require(script.Parent.loader).load(script)
 -- [ Imports ] --
 local ItemTypes = require("ItemTypes")
 local ServiceBag = require("ServiceBag")
+local AbilityConfig = require("AbilityConfig")
 
 -- [ Constants ] --
 
 -- [ Variables ] --
+local BlockConfigData = AbilityConfig.Abilities["Block"]
 
 -- [ Module Table ] --
 local Block = {
@@ -57,20 +59,19 @@ end
 function Block.Use(self: Object)
     local ServerTime = workspace.DistributedGameTime
     
-    self._CreatureServiceServer:TryUseAbility(self._Attacker, {
-        AbilityName = "Block",
+    if not self._CreatureServiceServer:UseAbility(self._Attacker, {
+        AbilityName = self.AbilityName,
         StartTime = ServerTime,
-        Duration = math.huge,
+        Duration = BlockConfigData.Duration,
         IsHeld = true,
-    })
-end
-
-function Block.End(self: Object)
-    if not self._CreatureServiceServer:IsAbilityActive(self._Attacker, self.AbilityName) then
+    }) then
         return
     end
 
-    self._CreatureServiceServer:TryEndAbility(self._Attacker, self.AbilityName)
+end
+
+function Block.End(self: Object)
+    self._CreatureServiceServer:EndAbility(self._Attacker, self.AbilityName)
 end
 
 return Block :: Module

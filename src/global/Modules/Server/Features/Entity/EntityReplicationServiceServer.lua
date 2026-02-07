@@ -99,7 +99,7 @@ function EntityReplicationServiceServer.GetAllReplicatedEntityData(self: Module)
                 continue
             end
 
-            table.insert(EntityData.Tags, tagName)
+            EntityData.Tags[tagName] = true
         end
 
         table.insert(Data, EntityData)

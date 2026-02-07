@@ -31,7 +31,7 @@ function BlockSystem.Update(self: Module, context: EntityTypesServer.SystemModul
     local World = context.World
     local Tags = context.Tags
     local Components = context.Components
-    for entity in World:query(Tags.Alive, Components.Blocking) do
+    for entity in World:query(Tags.Creature, Components.Blocking) do
         local Ether = World:get(entity, Components.Ether) :: EntityTypesServer.EtherComponent
         if Ether <= 0 then
             World:remove(entity, Components.Blocking)

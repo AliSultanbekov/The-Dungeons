@@ -1,5 +1,5 @@
 --[=[
-    @class Config
+    @class AnimationConstants
 ]=]
 
 -- [ Roblox Services ] --
@@ -16,17 +16,21 @@ local _require = require(script.Parent.loader).load(script)
 -- [ Variables ] --
 
 -- [ Module Table ] --
-local Config = {
-    ParryWindowTime = 0.2
+local AnimationConstants = {
+    CreatureLayers = {
+        Base = 1,
+        Movement = 2,
+        Combat = 3
+    }
 }
 
 -- [ Types ] --
 type ModuleData = {}
 
-export type Module = typeof(Config) & ModuleData
+export type Module = typeof(AnimationConstants) & ModuleData
 
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
 
-return Config :: Module
+return AnimationConstants :: Module

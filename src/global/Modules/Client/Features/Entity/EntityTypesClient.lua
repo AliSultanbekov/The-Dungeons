@@ -12,6 +12,8 @@ local require = require(script.Parent.loader).load(script)
 -- [ Imports ] --
 local Jecs = require("Jecs")
 local EntityTypesShared = require("EntityTypesShared")
+local AnimationClass = require("AnimationClass")
+local Signal = require("Signal")
 
 -- [ Constants ] --
 
@@ -33,23 +35,37 @@ export type BlockingComponent = EntityTypesShared.BlockingComponent
 export type DodgingComponent = EntityTypesShared.DodgingComponent
 export type ParryStunnedComponent = EntityTypesShared.ParryStunnedComponent
 export type StunnedComponent = EntityTypesShared.StunnedComponent
-export type CurrentAbilityComponent = EntityTypesShared.CurrentAbilityComponent
-export type PreviousAbilityComponent = EntityTypesShared.PreviousAbilityComponent
+export type BaseAbility = EntityTypesShared.BaseAbility
+export type ComboAbility = EntityTypesShared.ComboAbility
+export type CurrentAbilities = EntityTypesShared.CurrentAbilities
+export type PreviousAbilities = EntityTypesShared.PreviousAbilities
+export type AnimationObjectComponent = AnimationClass.Object
+
 export type EntityCreatedSignalPacket = EntityTypesShared.EntityCreatedSignalPacket
 export type EntityDeletedSignalPacket = EntityTypesShared.EntityDeletedSignalPacket
+export type AbilityExpiredSignalPacket = EntityTypesShared.AbilityExpiredSignalPacket
 
 -- Client Tags (same as shared for now)
 export type Tags = EntityTypesShared.Tags
 
 -- Client Components (same as shared for now)
-export type Components = EntityTypesShared.Components
+export type Components = EntityTypesShared.Components & {
+    AnimationObject: Jecs.Entity<AnimationObjectComponent>
+}
 
 -- System Types
+export type PublicSignals = {
+    EntityCreated: Signal.Signal<EntityCreatedSignalPacket>,
+    EntityDeleted: Signal.Signal<EntityDeletedSignalPacket>,
+    AbilityExpired: Signal.Signal<AbilityExpiredSignalPacket>,
+}
+
 export type SystemModuleUpdateContext = {
     World: Jecs.World,
     Tags: Tags,
     Components: Components,
     Dt: number,
+    PublicSignals: PublicSignals
 }
 
 export type SystemModule = {
@@ -58,7 +74,7 @@ export type SystemModule = {
 
 -- Client-specific Types
 export type EntityCreationData = {
-    Tags: { string },
+    Tags: { [string]: boolean },
     Components: { [string]: any },
 }
 

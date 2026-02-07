@@ -13,10 +13,10 @@ local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
 local ServiceBag = require("ServiceBag")
-local Maid = require("Maid")
 local AbilityManager = require("AbilityManager")
 local CombatClass = require("CombatClass")
 local CombatTypes = require("CombatTypes")
+local CreatureTypesClient = require("CreatureTypesClient")
 
 -- [ Constants ] --
 
@@ -30,7 +30,6 @@ local CombatController = {}
 type CombatObject = CombatClass.Object
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
-    _PlayerCharacterManager: typeof(require("PlayerCharacterManager")),
     _UserInputManager: typeof(require("UserInputManager")),
     _CombatNetworkClient: typeof(require("CombatNetworkClient")),
     _CreatureServiceClient: typeof(require("CreatureServiceClient")),
@@ -44,45 +43,7 @@ type ModuleData = {
 export type Module = typeof(CombatController) & ModuleData
 
 -- [ Private Functions ] --
-
--- [ Public Functions ] --
-function CombatController.OnPlayerCharacterAdded(self: Module, maid: Maid.Maid, character: Model)
-    local CombatObject = CombatClass.new(character, {
-        ServiceBag = self._ServiceBag,
-        AbilityManager = self._AbilityManager,
-    })
-    CombatObject:AddAbility("DefaultBasicAttack", { 
-        ItemData = { Name = "Wooden Sword" },
-    })
-    CombatObject:AddAbility("Block", { 
-        ItemData = { Name = "Wooden Sword" },
-    })
-
-    self._CombatObjects[character] = CombatObject
-
-    maid:Add(function()
-        self._CombatObjects[character] = nil
-    end)
-end
-
-function CombatController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
-    if self._ServiceBag ~= nil then
-        error("Service already initialized")
-    end
-
-    self._ServiceBag = assert(serviceBag, "No serviceBag")
-    self._PlayerCharacterManager = self._ServiceBag:GetService(require("PlayerCharacterManager"))
-    self._UserInputManager = self._ServiceBag:GetService(require("UserInputManager"))
-    self._CombatNetworkClient = self._ServiceBag:GetService(require("CombatNetworkClient"))
-    self._EntityServiceClient = self._ServiceBag:GetService(require("EntityServiceClient"))
-
-    self._AbilityManager = AbilityManager.new(script.Parent.Abilities)
-    self._CombatObjects = {}
-end
-
-function CombatController.Start(self: Module)
-    self._PlayerCharacterManager:RegisterModule(self)
-    
+function CombatController._SetupKeybinds(self: Module)
     local Actions = CombatKeybinds.Actions
     local KeyMaps = CombatKeybinds.KeyMaps
 
@@ -99,20 +60,7 @@ function CombatController.Start(self: Module)
 
         local CombatObject = self._CombatObjects[Character]
 
-        CombatObject:UseAbility("DefaultBasicAttack",
-            {
-                Mode = "FromClient",
-                OnUse = function(context: CombatTypes.Context)
-                    self._CombatNetworkClient:UseAbility(context)
-                end,
-                OnEnd = function(context: CombatTypes.Context)
-                    self._CombatNetworkClient:EndAbility(context)
-                end,
-                OnHit = function(context: CombatTypes.Context)
-                    self._CombatNetworkClient:HitAbility(context)
-                end,
-            }
-        )
+        CombatObject:UseAbility("DefaultBasicAttack", { Mode = "FromClient" })
     end)
 
     self._UserInputManager:RegisterKeymapAction(Actions.BLOCK, KeyMaps[Actions.BLOCK], function(data)
@@ -123,44 +71,113 @@ function CombatController.Start(self: Module)
         end
 
         local CombatObject = self._CombatObjects[Character]
-
-        print(data.InputState)
         
         if data.InputState == Enum.UserInputState.Begin then
-            CombatObject:UseAbility("Block",
-                {
-                    Mode = "FromClient",
-                    OnUse = function(context: CombatTypes.Context)
-                        self._CombatNetworkClient:UseAbility(context)
-                    end,
-                }
-            )
+            CombatObject:UseAbility("Block", { Mode = "FromClient" })
+            CombatObject:UseAbility("Parry", { Mode = "FromClient" })
             return
         elseif data.InputState == Enum.UserInputState.End or data.InputState == Enum.UserInputState.Change or data.InputState == Enum.UserInputState.Cancel then
-            CombatObject:EndAbility("Block",
-                {
-                    Mode = "FromClient",
-                    OnEnd = function(context: CombatTypes.Context)
-                        self._CombatNetworkClient:EndAbility(context)
-                    end,
-                }
-            )
+            CombatObject:EndAbility("Block", { Mode = "FromClient" })
+            CombatObject:EndAbility("Parry", { Mode = "FromClient" })
         end
     end)
 
+    self._UserInputManager:RegisterKeymapAction(Actions.DASH, KeyMaps[Actions.DASH], function(data)
+        if data.InputState ~= Enum.UserInputState.Begin then
+            return
+        end
+
+        local Character = Player.Character
+
+        if not Character then
+            return
+        end
+
+        local CombatObject = self._CombatObjects[Character]
+
+        CombatObject:UseAbility("Dash", { Mode = "FromClient" })
+    end)
+end
+
+-- [ Public Functions ] --
+
+function CombatController.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
+    if self._ServiceBag ~= nil then
+        error("Service already initialized")
+    end
+
+    self._ServiceBag = assert(serviceBag, "No serviceBag")
+    self._UserInputManager = self._ServiceBag:GetService(require("UserInputManager"))
+    self._CombatNetworkClient = self._ServiceBag:GetService(require("CombatNetworkClient"))
+    self._CreatureServiceClient = self._ServiceBag:GetService(require("CreatureServiceClient"))
+
+    self._AbilityManager = AbilityManager.new(script.Parent.Abilities)
+    self._CombatObjects = {}
+end
+
+function CombatController.Start(self: Module)
     self._CombatNetworkClient.RemoteEvents.AbilityHit:Connect(function(context: CombatTypes.Context?)
         if not context then
             return
         end
 
-        print(context)
+        local Attacker = context.Attacker
+        local CombatObject = self._CombatObjects[Attacker]
 
         context.Mode = "FromServer"
 
-        local Attacker = context.Attacker
-        local CombatObject = self._CombatObjects[Attacker]
         CombatObject:HitAbility("DefaultBasicAttack", context)
     end)
+
+    self._CreatureServiceClient.PublicSignals.CreatureCreated:Connect(function(character: Model)
+        local CombatObject = CombatClass.new(character, {
+            ServiceBag = self._ServiceBag,
+            AbilityManager = self._AbilityManager,
+    
+            OnUse = function(context: CombatTypes.Context)
+                self._CombatNetworkClient:UseAbility(context)
+            end,
+            OnEnd = function(context: CombatTypes.Context)
+                self._CombatNetworkClient:EndAbility(context)
+            end,
+            OnHit = function(context: CombatTypes.Context)
+                self._CombatNetworkClient:HitAbility(context)
+            end,
+        })
+        CombatObject:AddAbility("DefaultBasicAttack", { 
+            ItemData = { Name = "Wooden Sword" },
+        })
+        CombatObject:AddAbility("Block", { 
+            ItemData = { Name = "Wooden Sword" },
+        })
+        CombatObject:AddAbility("Dash", { 
+            ItemData = { Name = "Wooden Sword" },
+        })
+        CombatObject:AddAbility("Parry", { 
+            ItemData = { Name = "Wooden Sword" },
+        })
+    
+        self._CombatObjects[character] = CombatObject
+    end)
+
+    self._CreatureServiceClient.PublicSignals.CreatureDeleted:Connect(function(character: Model)
+        self._CombatObjects[character] = nil
+    end)
+
+    self._CreatureServiceClient.PublicSignals.AbilityExpired:Connect(function(packet: CreatureTypesClient.AbilityExpiredSignalPacket)
+        print("Ssss")
+        local CombatObject = self._CombatObjects[packet.Character]
+
+        if not CombatObject then
+            return
+        end
+
+        CombatObject:EndAbility(packet.AbilityData.AbilityName, {
+            Mode = "FromECS"
+        })
+    end)
+
+    self:_SetupKeybinds()
 end
 
 return CombatController :: Module

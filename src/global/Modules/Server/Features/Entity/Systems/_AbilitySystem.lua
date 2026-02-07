@@ -11,6 +11,7 @@ local require = require(script.Parent.Parent.loader).load(script)
 
 -- [ Imports ] --
 local EntityTypesServer = require("EntityTypesServer")
+local AbilityConfig = require("AbilityConfig")
 
 -- [ Constants ] --
 
@@ -33,7 +34,7 @@ function AbilitySystem.Update(self: Module, context: EntityTypesServer.SystemMod
     local Components = context.Components
     
     -- Cooldowns Handling
-    for entity, _, abilityCooldowns in World:query(Tags.Alive, Components.AbilityCooldowns) do
+    for entity, _, abilityCooldowns in World:query(Tags.Creature, Components.AbilityCooldowns) do
         local Changed = false
         local ServerTime = workspace.DistributedGameTime
 
@@ -49,38 +50,61 @@ function AbilitySystem.Update(self: Module, context: EntityTypesServer.SystemMod
         end
     end
 
-    -- Ability Handling
-    for entity, _, currentAbility: EntityTypesServer.CurrentAbilityComponent in World:query(Tags.Alive, Components.CurrentAbility) do
-        if currentAbility.IsHeld then
+    -- Ability Expiry Handling
+    for entity, _, currentAbilities: EntityTypesServer.CurrentAbilities, previousAbilities: EntityTypesServer.PreviousAbilities in World:query(Tags.Creature, Components.CurrentAbilities, Components.PreviousAbilities) do
+        local ServerTime = workspace.DistributedGameTime
+        local ExpiredAbilities = {}
+
+        for abilityName, abilityData: EntityTypesServer.BaseAbility in currentAbilities do
+            if abilityData.StartTime + abilityData.Duration <= ServerTime then
+                ExpiredAbilities[abilityName] = abilityData
+                previousAbilities[abilityName] = table.clone(abilityData)
+                currentAbilities[abilityName] = nil
+            end
+        end
+
+        if next(ExpiredAbilities) == nil then
             continue
         end
 
-        local ServerTime = workspace.DistributedGameTime
+        World:set(entity, Components.PreviousAbilities, previousAbilities)
+        World:set(entity, Components.CurrentAbilities, currentAbilities)
 
-        if currentAbility.StartTime + currentAbility.Duration <= ServerTime then
-            World:set(entity, Components.PreviousAbility, table.clone(currentAbility))
-            World:remove(entity, Components.CurrentAbility)
+        for _, abilityData in ExpiredAbilities do
+            local AbilityConfigData = AbilityConfig.Abilities[abilityData.AbilityName]
+            local AbilityComponents = AbilityConfigData.Components
 
-            if currentAbility.AbilityName == "Block" then
-                World:remove(entity, Components.Blocking)
+            if AbilityComponents then
+                for _, componentName in AbilityComponents do
+                    World:remove(entity, Components[componentName])
+                end
             end
+
+            context.PublicSignals.AbilityExpired:Fire({
+                Entity = entity,
+                AbilityData = abilityData
+            })
         end
     end
 
     -- Parry Stun Handling
-    for entity, _, parryStunned: EntityTypesServer.ParryStunnedComponent in World:query(Tags.Alive, Components.ParryStunned) do
+    for entity, _, parryStunned: EntityTypesServer.ParryStunnedComponent in World:query(Tags.Creature, Components.ParryStunned) do
         local ServerTime = workspace.DistributedGameTime
 
-        if parryStunned.StartTime + parryStunned.Duration < ServerTime then
+        if parryStunned <= ServerTime then
             World:remove(entity, Components.ParryStunned)
         end
     end
 
     -- Movement Handling
-    for entity, _, character: EntityTypesServer.CharacterComponent in World:query(Tags.Alive, Components.Character) do
-        local IsAbilityActive = World:has(entity, Components.CurrentAbility)
+    for entity, _, character: EntityTypesServer.CharacterComponent in World:query(Tags.Creature, Components.Character) do
+        local CurrentAbilities = World:get(entity, Components.CurrentAbilities)
 
-        if IsAbilityActive then
+        if not CurrentAbilities then
+            continue
+        end
+
+        if next(CurrentAbilities) ~= nil then
             character.Humanoid.WalkSpeed = 10
         else
             character.Humanoid.WalkSpeed = 16

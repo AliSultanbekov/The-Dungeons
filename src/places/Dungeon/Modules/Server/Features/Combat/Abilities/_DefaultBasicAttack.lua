@@ -33,7 +33,7 @@ type Config = {
     ComboTimeout: number,
     Combo: { 
         [number]: {
-            Animation: string,
+            AnimationID: string,
             Damage: number,
             Range: Vector3,
             Angle: number,
@@ -57,6 +57,10 @@ type New_Context = {
     ServiceBag: ServiceBag.ServiceBag,
     Attacker: Model,
     ItemData: WeaponItemData,
+
+    OnUse: (context: CombatTypes.Context) -> (),
+    OnEnd: (context: CombatTypes.Context) -> (),
+    OnHit: (context: CombatTypes.Context) -> (),
 }
 export type ObjectData = {
     _ServiceBag: ServiceBag.ServiceBag,
@@ -66,6 +70,11 @@ export type ObjectData = {
     _Attacker: Model,
     _WeaponData: WeaponItemData,
     _Config: Config,
+
+    _OnUse: (context: CombatTypes.Context) -> (),
+    _OnEnd: (context: CombatTypes.Context) -> (),
+    _OnHit: (context: CombatTypes.Context) -> (),
+
     AbilityName: string,
 }
 export type Object = typeof(setmetatable({} :: ObjectData, DefaultBasicAttack))
@@ -88,11 +97,15 @@ function DefaultBasicAttack.new(context: New_Context): Object
     self._WeaponData = context.ItemData
     self._Config = WeaponConfig[self._WeaponData.Name].BasicAttack
 
+    self._OnUse = context.OnUse
+    self._OnEnd = context.OnEnd
+    self._OnHit = context.OnHit
+
     return self
 end
 
 function DefaultBasicAttack.Use(self: Object)
-    local PreviousAbility = self._CreatureServiceServer:GetPreviousAbility(self._Attacker) :: EntityTypesShared.ComboAbilityComponent
+    local PreviousAbility = self._CreatureServiceServer:GetPreviousAbility(self._Attacker, self.AbilityName) :: EntityTypesShared.ComboAbility
     local ServerTime = workspace.DistributedGameTime
     local Config = self._Config
     local ComboData = Config.Combo
@@ -120,7 +133,7 @@ function DefaultBasicAttack.End(self: Object)
         return
     end
 
-    local PreviousAbility = self._CreatureServiceServer:GetPreviousAbility(self._Attacker) :: EntityTypesShared.ComboAbilityComponent
+    local PreviousAbility = self._CreatureServiceServer:GetPreviousAbility(self._Attacker, self.AbilityName) :: EntityTypesShared.ComboAbility
     local MaxCombo = #self._Config.Combo
     local PreviousAbilityCombo = PreviousAbility.Combo
 
@@ -134,8 +147,7 @@ function DefaultBasicAttack.Hit(self: Object, context: Hit_Context)
         return
     end
 
-    local CurrentAbility = self._CreatureServiceServer:GetCurrentAbility(self._Attacker) :: EntityTypesShared.ComboAbilityComponent
-    local OnHit:(CombatTypes.Context) -> () = context.OnHit
+    local CurrentAbility = self._CreatureServiceServer:GetCurrentAbility(self._Attacker, self.AbilityName) :: EntityTypesShared.ComboAbility
     local Config = self._Config
     local Combo = CurrentAbility.Combo
     local CurrentComboData = Config.Combo[Combo]
@@ -159,7 +171,7 @@ function DefaultBasicAttack.Hit(self: Object, context: Hit_Context)
         return
     end
 
-    OnHit({
+    self._OnHit({
         Attacker = self._Attacker,
         Attacked = context.Attacked,
         HitInfo = Info

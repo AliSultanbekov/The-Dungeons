@@ -31,7 +31,7 @@ function HealthSystem.Update(self: Module, context: EntityTypesServer.SystemModu
     local World = context.World
     local Tags = context.Tags
     local Components = context.Components
-    for entity, _, character, health in World:query(Tags.Alive, Components.Character, Components.Health) do
+    for entity, _, character, health in World:query(Tags.Creature, Components.Character, Components.Health) do
         if character.Humanoid.Health == nil then
             continue
         end

@@ -1,5 +1,5 @@
 --[=[
-    @class CreatureService
+    @class CreatureServiceServer
 ]=]
 
 -- [ Roblox Services ] --
@@ -9,6 +9,7 @@ local CreatureRegister = require("@self/_CreatureRegister")
 local CreatureAbility = require("@self/_CreatureAbility")
 local CreatureDamage = require("@self/_CreatureDamage")
 local CreatureGeneric = require("@self/_CreatureGeneric")
+local Types = require("./CreatureTypesServer")
 
 -- [ Require ] --
 local require = require(script.Parent.loader).load(script)
@@ -18,19 +19,16 @@ local ServiceBag = require("ServiceBag")
 local Jecs = require("Jecs")
 local EntityTypesServer = require("EntityTypesServer")
 local Maid = require("Maid")
+local Signal = require("Signal")
 
 -- [ Constants ] --
 
 -- [ Variables ] --
 
 -- [ Module Table ] --
-local CreatureService = {}
+local CreatureServiceServer = {}
 
 -- [ Types ] --
-type CreatureModule = {
-    Init: (self: CreatureModule, entityServiceServer: EntityServiceServer) -> (),
-    Start: (self: CreatureModule) -> (),
-}
 type EntityServiceServer = typeof(require("EntityServiceServer"))
 type ModuleData = {
     _ServiceBag: ServiceBag.ServiceBag,
@@ -41,15 +39,16 @@ type ModuleData = {
         CreatureAbility: CreatureAbility.Module,
         CreatureDamage: CreatureDamage.Module,
         CreatureGeneric: CreatureGeneric.Module
-    }
+    },
+    PublicSignals: Types.PublicSignals
 }
 
-export type Module = typeof(CreatureService) & ModuleData
+export type Module = typeof(CreatureServiceServer) & ModuleData
 
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function CreatureService.DamageCreature(self: Module, attacker: Model, attacked: Model, damageAmount: number): string?
+function CreatureServiceServer.DamageCreature(self: Module, attacker: Model, attacked: Model, damageAmount: number): string?
     local AttackerEntity = self:GetEntityFromCharacter(attacker)
     local AttackedEntity = self:GetEntityFromCharacter(attacked)
 
@@ -64,7 +63,7 @@ function CreatureService.DamageCreature(self: Module, attacker: Model, attacked:
     return self._CreatureModules.CreatureDamage:DamageCreature(AttackerEntity, AttackedEntity, damageAmount)
 end
 
-function CreatureService.IsAbilityOnCooldown(self: Module, character: Model, abilityName: string): boolean
+function CreatureServiceServer.IsAbilityOnCooldown(self: Module, character: Model, abilityName: string): boolean
     local Entity = self:GetEntityFromCharacter(character)
 
     if not Entity then
@@ -74,17 +73,17 @@ function CreatureService.IsAbilityOnCooldown(self: Module, character: Model, abi
     return self._CreatureModules.CreatureAbility:IsAbilityOnCooldown(Entity, abilityName)
 end
 
-function CreatureService.StartAbilityCooldown(self: Module, character: Model, abilityName: string)
+function CreatureServiceServer.StartAbilityCooldown(self: Module, character: Model, abilityName: string, cooldownDuration: number?)
     local Entity = self:GetEntityFromCharacter(character)
 
     if not Entity then
         return
     end
 
-    self._CreatureModules.CreatureAbility:StartAbilityCooldown(Entity, abilityName)
+    self._CreatureModules.CreatureAbility:StartAbilityCooldown(Entity, abilityName, cooldownDuration)
 end
 
-function CreatureService.IsAbilityActive(self: Module, character: Model, abilityName: string?): boolean
+function CreatureServiceServer.IsAbilityActive(self: Module, character: Model, abilityName: string?): boolean
     local Entity = self:GetEntityFromCharacter(character)
 
     if not Entity then
@@ -94,27 +93,27 @@ function CreatureService.IsAbilityActive(self: Module, character: Model, ability
     return self._CreatureModules.CreatureAbility:IsAbilityActive(Entity, abilityName)
 end
 
-function CreatureService.GetCurrentAbility(self: Module, character: Model): (EntityTypesServer.BaseAbilityComponent | EntityTypesServer.ComboAbilityComponent)?
+function CreatureServiceServer.GetCurrentAbility(self: Module, character: Model, abilityName: string): (EntityTypesServer.BaseAbility | EntityTypesServer.ComboAbility)?
     local Entity = self:GetEntityFromCharacter(character)
 
     if not Entity then
         return
     end
 
-    return self._CreatureModules.CreatureAbility:GetCurrentAbility(Entity)
+    return self._CreatureModules.CreatureAbility:GetCurrentAbility(Entity, abilityName)
 end
 
-function CreatureService.GetPreviousAbility(self: Module, character: Model): (EntityTypesServer.BaseAbilityComponent | EntityTypesServer.ComboAbilityComponent)?
+function CreatureServiceServer.GetPreviousAbility(self: Module, character: Model, abilityName: string): (EntityTypesServer.BaseAbility | EntityTypesServer.ComboAbility)?
     local Entity = self:GetEntityFromCharacter(character)
 
     if not Entity then
         return
     end
 
-    return self._CreatureModules.CreatureAbility:GetPreviousAbility(Entity)
+    return self._CreatureModules.CreatureAbility:GetPreviousAbility(Entity, abilityName)
 end
 
-function CreatureService.UseAbility(self: Module, character: Model, abilityData: EntityTypesServer.BaseAbilityComponent | EntityTypesServer.ComboAbilityComponent): boolean
+function CreatureServiceServer.UseAbility(self: Module, character: Model, abilityData: EntityTypesServer.BaseAbility | EntityTypesServer.ComboAbility): boolean
     local Entity = self:GetEntityFromCharacter(character)
 
     if not Entity then
@@ -124,7 +123,7 @@ function CreatureService.UseAbility(self: Module, character: Model, abilityData:
     return self._CreatureModules.CreatureAbility:UseAbility(Entity, abilityData)
 end
 
-function CreatureService.CancelAbility(self: Module, character: Model, abilityName: string?): boolean
+function CreatureServiceServer.CancelAbility(self: Module, character: Model, abilityName: string): boolean
     local Entity = self:GetEntityFromCharacter(character)
 
     if not Entity then
@@ -134,7 +133,7 @@ function CreatureService.CancelAbility(self: Module, character: Model, abilityNa
     return self._CreatureModules.CreatureAbility:CancelAbility(Entity, abilityName)
 end
 
-function CreatureService.EndAbility(self: Module, character: Model, abilityName: string?): boolean
+function CreatureServiceServer.EndAbility(self: Module, character: Model, abilityName: string): boolean
     local Entity = self:GetEntityFromCharacter(character)
 
     if not Entity then
@@ -144,23 +143,23 @@ function CreatureService.EndAbility(self: Module, character: Model, abilityName:
     return self._CreatureModules.CreatureAbility:EndAbility(Entity, abilityName)
 end
 
-function CreatureService.GetEntityFromCharacter(self: Module, character: Model): Jecs.Entity
+function CreatureServiceServer.GetEntityFromCharacter(self: Module, character: Model): Jecs.Entity
     return self._CreatureModules.CreatureRegister:GetEntityFromCharacter(character)
 end
 
-function CreatureService.RegisterNPC(self: Module, character: Model)
+function CreatureServiceServer.RegisterNPC(self: Module, character: Model)
     self._CreatureModules.CreatureRegister:RegisterNPC(character)
 end
 
-function CreatureService.RegisterPlayer(self: Module, character: Model)
+function CreatureServiceServer.RegisterPlayer(self: Module, character: Model)
     self._CreatureModules.CreatureRegister:RegisterPlayer(character)
 end
 
-function CreatureService.OnPlayerCharacterAdded(self: Module, maid: Maid.Maid, character: Model)
+function CreatureServiceServer.OnPlayerCharacterAdded(self: Module, maid: Maid.Maid, character: Model)
     self:RegisterPlayer(character)
 end
 
-function CreatureService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
+function CreatureServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
     if self._ServiceBag ~= nil then
         error("Service already initialized")
     end
@@ -175,17 +174,26 @@ function CreatureService.Init(self: Module, serviceBag: ServiceBag.ServiceBag)
         CreatureGeneric = CreatureGeneric,
     }
 
-    for _, abilityModule in pairs(self._CreatureModules) do
-        abilityModule:Init(self._EntityServiceServer)
+    self.PublicSignals = {
+        CreatureCreated = Signal.new(),
+        CreatureDeleted = Signal.new(),
+        AbilityExpired = Signal.new(),
+    } :: any
+
+    for _, creatureModule in pairs(self._CreatureModules) do
+        creatureModule:Init({
+            EntityServiceServer = self._EntityServiceServer,
+            PublicSignals = self.PublicSignals
+        })
     end
 end
 
-function CreatureService.Start(self: Module)
+function CreatureServiceServer.Start(self: Module)
     self._PlayerCharacterManager:RegisterModule(self)
 
-    for _, abilityModule in pairs(self._CreatureModules) do
-        abilityModule:Start()
+    for _, creatureModule in pairs(self._CreatureModules) do
+        creatureModule:Start()
     end
 end
 
-return CreatureService :: Module
+return CreatureServiceServer :: Module

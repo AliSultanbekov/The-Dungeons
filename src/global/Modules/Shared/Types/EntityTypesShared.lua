@@ -46,7 +46,7 @@ export type EntityUpdatedRemotePacket = {
 
 export type EntityCreatedRemotePacket = {
     Entity: Jecs.Entity,
-    Tags: { string },
+    Tags: { [string]: boolean },
     Components: { [string]: any },
 }
 
@@ -57,16 +57,28 @@ export type EntityDeletedRemotePacket = {
 export type EntitySyncRemotePacket = {
     {
         Entity: Jecs.Entity,
-        Tags: { string },
+        Tags: { [string]: boolean },
         Components: { [string]: any },
     }
 }
 
 -- Tags
 export type Tags = {
-    Alive: Jecs.Entity,
+    Creature: Jecs.Entity,
     Player: Jecs.Entity,
     NPC: Jecs.Entity,
+}
+
+-- Ability Types
+export type BaseAbility = {
+    AbilityName: string,
+    StartTime: number,
+    Duration: number,
+    CommitTime: number?,
+    IsHeld: boolean?,
+}
+export type ComboAbility = BaseAbility & {
+    Combo: number,
 }
 
 -- Component Types
@@ -87,26 +99,15 @@ export type InCombatComponent = {
 }
 export type BlockingComponent = boolean
 export type DodgingComponent = boolean
-export type ParryStunnedComponent = {
-    StartTime: number,
-    Duration: number,
-}
+export type ParryStunnedComponent = number
 export type StunnedComponent = boolean
-export type BaseAbilityComponent = {
-    AbilityName: string,
-    StartTime: number,
-    Duration: number,
-    CommitTime: number?,
-    IsHeld: boolean?,
+export type CurrentAbilities = {
+    [string]: BaseAbility | ComboAbility,
 }
-export type ComboAbilityComponent = {
-    AbilityName: string,
-    StartTime: number,
-    Duration: number,
-    Combo: number,
-    CommitTime: number?,
-    IsHeld: boolean?,
+export type PreviousAbilities = {
+    [string]: BaseAbility | ComboAbility,
 }
+export type ParryingComponent = boolean
 
 -- Components Map
 export type Components = {
@@ -121,22 +122,29 @@ export type Components = {
     Dodging: Jecs.Entity<DodgingComponent>,
     ParryStunned: Jecs.Entity<ParryStunnedComponent>,
     Stunned: Jecs.Entity<StunnedComponent>,
-    CurrentAbility: Jecs.Entity<BaseAbilityComponent>,
-    PreviousAbility: Jecs.Entity<BaseAbilityComponent>,
+    CurrentAbilities: Jecs.Entity<CurrentAbilities>,
+    PreviousAbilities: Jecs.Entity<PreviousAbilities>,
+    Parrying: Jecs.Entity<ParryingComponent>
 }
 
 -- Signal Packets
 export type EntityCreatedSignalPacket = {
     Entity: Jecs.Entity,
-    Tags: { string },
+    Tags: { [string]: boolean },
     Components: { [string]: any },
     Replicated: boolean?,
 }
 
 export type EntityDeletedSignalPacket = {
     Entity: Jecs.Entity,
+    Tags: { [string]: boolean },
     Components: { [string]: any },
     Replicated: boolean?,
+}
+
+export type AbilityExpiredSignalPacket = {
+    Entity: Jecs.Entity,
+    AbilityData: BaseAbility,
 }
 
 -- [ Private Functions ] --

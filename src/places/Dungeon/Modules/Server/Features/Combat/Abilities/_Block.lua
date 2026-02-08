@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 --[=[
     @class Block
 ]=]
@@ -13,6 +14,7 @@ local require = require(script.Parent.loader).load(script)
 local ItemTypes = require("ItemTypes")
 local ServiceBag = require("ServiceBag")
 local AbilityConfig = require("AbilityConfig")
+local TimeUtil = require("TimeUtil")
 
 -- [ Constants ] --
 
@@ -57,7 +59,7 @@ function Block.new(context: New_Context): Object
 end
 
 function Block.Use(self: Object)
-    local ServerTime = workspace.DistributedGameTime
+    local ServerTime = TimeUtil:GetTime()
     
     if not self._CreatureServiceServer:UseAbility(self._Attacker, {
         AbilityName = self.AbilityName,

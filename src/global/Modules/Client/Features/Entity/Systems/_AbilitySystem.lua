@@ -12,6 +12,7 @@ local require = require(script.Parent.Parent.loader).load(script)
 -- [ Imports ] --
 local EntityTypesClient = require("EntityTypesClient")
 local AbilityConfig = require("AbilityConfig")
+local TimeUtil = require("TimeUtil")
 
 -- [ Constants ] --
 
@@ -36,7 +37,7 @@ function AbilitySystem.Update(self: Module, context: EntityTypesClient.SystemMod
     -- Cooldowns Handling
     for entity, _, abilityCooldowns in World:query(Tags.Creature, Components.AbilityCooldowns) do
         local Changed = false
-        local ServerTime = workspace.DistributedGameTime
+        local ServerTime = TimeUtil:GetTime()
 
         for abilityName, endTime in abilityCooldowns do
             if endTime < ServerTime then
@@ -52,7 +53,7 @@ function AbilitySystem.Update(self: Module, context: EntityTypesClient.SystemMod
 
     -- Ability Expiry Handling
     for entity, _, currentAbilities: EntityTypesClient.CurrentAbilities, previousAbilities: EntityTypesClient.PreviousAbilities in World:query(Tags.Creature, Components.CurrentAbilities, Components.PreviousAbilities) do
-        local ServerTime = workspace.DistributedGameTime
+        local ServerTime = TimeUtil:GetTime()
         local ExpiredAbilities = {}
 
         for abilityName, abilityData: EntityTypesClient.BaseAbility in currentAbilities do
@@ -89,7 +90,7 @@ function AbilitySystem.Update(self: Module, context: EntityTypesClient.SystemMod
 
     -- Parry Stun Handling
     for entity, _, parryStunned: EntityTypesClient.ParryStunnedComponent in World:query(Tags.Creature, Components.ParryStunned) do
-        local ServerTime = workspace.DistributedGameTime
+        local ServerTime = TimeUtil:GetTime()
 
         if parryStunned <= ServerTime then
             World:remove(entity, Components.ParryStunned)

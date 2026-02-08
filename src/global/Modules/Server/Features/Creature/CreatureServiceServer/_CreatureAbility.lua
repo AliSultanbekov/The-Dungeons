@@ -14,6 +14,7 @@ local require = require(script.Parent.Parent.loader).load(script)
 local Jecs = require("Jecs")
 local EntityTypesServer = require("EntityTypesServer")
 local AbilityConfig = require("AbilityConfig")
+local TimeUtil = require("TimeUtil")
 
 -- [ Constants ] --
 
@@ -70,7 +71,7 @@ function CreatureAbility.StartAbilityCooldown(self: Module, entity: Jecs.Entity,
         return
     end
 
-    local ServerTime = workspace.DistributedGameTime
+    local ServerTime = TimeUtil:GetTime()
     AbilityCooldowns[abilityName] = ServerTime + CooldownDuration
 
     World:set(entity, Components.AbilityCooldowns, AbilityCooldowns)
@@ -245,7 +246,7 @@ function CreatureAbility.InterruptAbility(self: Module, entity: Jecs.Entity, cur
         return false
     end
 
-    local ServerTime = workspace.DistributedGameTime
+    local ServerTime = TimeUtil:GetTime()
     local StartTime = CurrentAbility.StartTime
     local CommitTime = CurrentAbility.CommitTime
 
@@ -281,7 +282,7 @@ function CreatureAbility.CancelAbility(self: Module, entity: Jecs.Entity, abilit
         return false
     end
 
-    local ServerTime = workspace.DistributedGameTime
+    local ServerTime = TimeUtil:GetTime()
     local StartTime = CurrentAbility.StartTime
     local DeltaTime = ServerTime - StartTime
 
@@ -324,7 +325,7 @@ function CreatureAbility.EndAbility(self: Module, entity: Jecs.Entity, abilityNa
         return false
     end
 
-    local ServerTime = workspace.DistributedGameTime
+    local ServerTime = TimeUtil:GetTime()
     local StartTime = CurrentAbility.StartTime
     local DeltaTime = ServerTime - StartTime
 

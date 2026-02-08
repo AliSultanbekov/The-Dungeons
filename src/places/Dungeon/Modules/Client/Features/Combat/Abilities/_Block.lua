@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 --[=[
     @class Block
 ]=]
@@ -16,6 +17,7 @@ local ServiceBag = require("ServiceBag")
 local AnimationClass = require("AnimationClass")
 local AbilityConfig = require("AbilityConfig")
 local AnimationConstants = require("AnimationConstants")
+local TimeUtil = require("TimeUtil")
 
 -- [ Constants ] --
 
@@ -90,7 +92,7 @@ end
 
 function Block.Use(self: Object, context: Use_Context)
     if context.Mode == "FromClient" then
-        local ServerTime = workspace.DistributedGameTime
+        local ServerTime = TimeUtil:GetTime()
 
         if not self._CreatureServiceClient:UseAbility(self._Attacker, {
             AbilityName = self.AbilityName,

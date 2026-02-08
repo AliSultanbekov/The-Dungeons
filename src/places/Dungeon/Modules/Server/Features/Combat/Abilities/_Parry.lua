@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 --[=[
     @class Parry
 ]=]
@@ -14,6 +15,7 @@ local ItemTypes = require("ItemTypes")
 local ServiceBag = require("ServiceBag")
 local AbilityConfig = require("AbilityConfig")
 local CombatTypes = require("CombatTypes")
+local TimeUtil = require("TimeUtil")
 
 -- [ Constants ] --
 
@@ -64,7 +66,7 @@ end
 
 function Parry.Use(self: Object, context: Use_Context)
     if context.Mode == "FromClient" then
-        local ServerTime = workspace.DistributedGameTime
+        local ServerTime = TimeUtil:GetTime()
 
         if not self._CreatureServiceServer:UseAbility(self._Attacker, {
             AbilityName = self.AbilityName,

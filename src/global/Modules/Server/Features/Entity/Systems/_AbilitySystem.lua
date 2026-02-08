@@ -12,6 +12,7 @@ local require = require(script.Parent.Parent.loader).load(script)
 -- [ Imports ] --
 local EntityTypesServer = require("EntityTypesServer")
 local AbilityConfig = require("AbilityConfig")
+local TimeUtil = require("TimeUtil")
 
 -- [ Constants ] --
 
@@ -36,7 +37,7 @@ function AbilitySystem.Update(self: Module, context: EntityTypesServer.SystemMod
     -- Cooldowns Handling
     for entity, _, abilityCooldowns in World:query(Tags.Creature, Components.AbilityCooldowns) do
         local Changed = false
-        local ServerTime = workspace.DistributedGameTime
+        local ServerTime = TimeUtil:GetTime()
 
         for abilityName, endTime in abilityCooldowns do
             if endTime < ServerTime then
@@ -52,7 +53,7 @@ function AbilitySystem.Update(self: Module, context: EntityTypesServer.SystemMod
 
     -- Ability Expiry Handling
     for entity, _, currentAbilities: EntityTypesServer.CurrentAbilities, previousAbilities: EntityTypesServer.PreviousAbilities in World:query(Tags.Creature, Components.CurrentAbilities, Components.PreviousAbilities) do
-        local ServerTime = workspace.DistributedGameTime
+        local ServerTime = TimeUtil:GetTime()
         local ExpiredAbilities = {}
 
         for abilityName, abilityData: EntityTypesServer.BaseAbility in currentAbilities do

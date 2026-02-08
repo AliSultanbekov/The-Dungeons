@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 --[=[
     @class DefaultBasicAttack
 ]=]
@@ -11,6 +12,7 @@ local AbilityEffectManager = require("../_AbilityEffectManager")
 local require = require(script.Parent.loader).load(script)
 
 -- [ Imports ] --
+local TimeUtil = require("TimeUtil")
 local ItemTypes = require("ItemTypes")
 local ServiceBag = require("ServiceBag")
 local HitboxClass = require("HitboxClass")
@@ -187,10 +189,11 @@ end
 
 function DefaultBasicAttack.Use(self: Object, context: Use_Context)
     if context.Mode == "FromClient" then
+
         local Config = self._Config
         local ComboData = Config.Combo
         local PreviousAbility = self._CreatureServiceClient:GetPreviousAbility(self._Attacker, self.AbilityName) :: EntityTypesClient.ComboAbility
-        local ServerTime = workspace.DistributedGameTime
+        local ServerTime = TimeUtil:GetTime()
         local Combo = 1
 
         if PreviousAbility 
@@ -209,6 +212,8 @@ function DefaultBasicAttack.Use(self: Object, context: Use_Context)
         }) then
             return
         end
+
+        print(ServerTime)
 
         self._OnUse({
             AbilityName = self.AbilityName

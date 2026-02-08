@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 --[=[
     @class DefaultBasicAttack
 ]=]
@@ -16,6 +17,7 @@ local WeaponConfig = require("WeaponConfig")
 local CombatUtil = require("CombatUtil")
 local CombatTypes = require("CombatTypes")
 local EntityTypesShared = require("EntityTypesShared")
+local TimeUtil = require("TimeUtil")
 
 -- [ Constants ] --
 
@@ -106,7 +108,7 @@ end
 
 function DefaultBasicAttack.Use(self: Object)
     local PreviousAbility = self._CreatureServiceServer:GetPreviousAbility(self._Attacker, self.AbilityName) :: EntityTypesShared.ComboAbility
-    local ServerTime = workspace.DistributedGameTime
+    local ServerTime = TimeUtil:GetTime()
     local Config = self._Config
     local ComboData = Config.Combo
     local Combo = 1
@@ -118,6 +120,8 @@ function DefaultBasicAttack.Use(self: Object)
     and PreviousAbility.Combo < MaxCombo then
         Combo += PreviousAbility.Combo
     end
+
+    print(ServerTime)
 
     self._CreatureServiceServer:UseAbility(self._Attacker, {
         AbilityName = self.AbilityName,

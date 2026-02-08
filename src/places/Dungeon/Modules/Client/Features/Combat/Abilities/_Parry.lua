@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 --[=[
     @class Parry
 ]=]
@@ -15,6 +16,7 @@ local ItemTypes = require("ItemTypes")
 local ServiceBag = require("ServiceBag")
 local AnimationClass = require("AnimationClass")
 local AbilityConfig = require("AbilityConfig")
+local TimeUtil = require("TimeUtil")
 
 -- [ Constants ] --
 
@@ -83,7 +85,7 @@ end
 
 function Parry.Use(self: Object, context: Use_Context)
     if context.Mode == "FromClient" then
-        local ServerTime = workspace.DistributedGameTime
+        local ServerTime = TimeUtil:GetTime()
 
         if not self._CreatureServiceClient:UseAbility(self._Attacker, {
             AbilityName = self.AbilityName,
@@ -112,7 +114,6 @@ function Parry.End(self: Object, context: End_Context)
         self._CreatureServiceClient:EndAbility(self._Attacker, "Parry")
         self._CreatureServiceClient:StartAbilityCooldown(self._Attacker, "Parry")
     elseif context.Mode == "FromECS" then
-        print("wdawdawd")
         self._CreatureServiceClient:StartAbilityCooldown(self._Attacker, "Parry")
     end
 end

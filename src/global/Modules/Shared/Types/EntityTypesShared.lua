@@ -124,7 +124,7 @@ export type Components = {
     Stunned: Jecs.Entity<StunnedComponent>,
     CurrentAbilities: Jecs.Entity<CurrentAbilities>,
     PreviousAbilities: Jecs.Entity<PreviousAbilities>,
-    Parrying: Jecs.Entity<ParryingComponent>
+    Parrying: Jecs.Entity<ParryingComponent>,
 }
 
 -- Signal Packets

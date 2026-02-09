@@ -154,6 +154,7 @@ function EntityServiceClient.Init(self: Module, serviceBag: ServiceBag.ServiceBa
         InCombat = self._World:component(),
 
         AnimationObject = self._World:component(),
+        Velocity = self._World:component()
     }
 
     -- Tag Names
@@ -170,12 +171,14 @@ function EntityServiceClient.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._World:set(self._Components.AbilityCooldowns, Jecs.Name, "AbilityCooldowns")
     self._World:set(self._Components.InCombat, Jecs.Name, "InCombat")
     self._World:set(self._Components.Blocking, Jecs.Name, "Blocking")
+    self._World:set(self._Components.Parrying, Jecs.Name, "Parrying")
     self._World:set(self._Components.Dodging, Jecs.Name, "Dodging")
     self._World:set(self._Components.ParryStunned, Jecs.Name, "ParryStunned")
     self._World:set(self._Components.Stunned, Jecs.Name, "Stunned")
     self._World:set(self._Components.CurrentAbilities, Jecs.Name, "CurrentAbility")
     self._World:set(self._Components.PreviousAbilities, Jecs.Name, "PreviousAbility")
     self._World:set(self._Components.AnimationObject, Jecs.Name, "AnimationObject")
+    self._World:set(self._Components.Velocity, Jecs.Name, "Velocity")
 
     self._Systems = self:_GatherAllSystems()
 

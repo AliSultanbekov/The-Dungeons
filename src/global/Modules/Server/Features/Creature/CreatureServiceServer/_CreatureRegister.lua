@@ -35,7 +35,7 @@ export type Module = typeof(CreatureRegister) & ModuleData
 
 -- [ Public Functions ] --
 function CreatureRegister.RegisterNPC(self: Module, character: Model)
-    local Humanoid = character:FindFirstChildOfClass("Humanoid")
+    local Humanoid = character:WaitForChild("Humanoid", 5) :: Humanoid?
 
     if not Humanoid then
         return
@@ -73,7 +73,7 @@ function CreatureRegister.RegisterNPC(self: Module, character: Model)
 end
 
 function CreatureRegister.RegisterPlayer(self: Module, character: Model)
-    local Humanoid = character:FindFirstChildOfClass("Humanoid")
+    local Humanoid = character:WaitForChild("Humanoid", 5) :: Humanoid?
 
     if not Humanoid then
         return

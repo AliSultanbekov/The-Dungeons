@@ -18,17 +18,19 @@ local AbilityConfig = {
     ConflictRules = {
         Attack = {"Attack"},
         Defense = {"Defense"},
+        Movement = {"Movement"}
     },
     InterruptRules = {
         Defense = {"Attack"},
-        Attack = {"Defense", "SubDefense"},
+        Attack = {"Defense"},
+        Movement = {"Attack", "Defense"},
     },
     Abilities = {
         ["DefaultBasicAttack"] = {
             Category = "Attack",
             Weight = 1,
 
-            CooldownDuration = 0.1,
+            CooldownDuration = 0.2,
         },
         ["Block"] = {
             Category = "Defense",
@@ -42,8 +44,15 @@ local AbilityConfig = {
             Weight = 1,
             Components = {"Parrying"},
 
+            Duration = 0.25,
+            CooldownDuration = 0.3,
+        },
+        ["Dash"] = {
+            Weight = 1,
+            Components = {"Dodging"},
+
             Duration = 0.2,
-            CooldownDuration = 0.4,
+            CooldownDuration = 1,
         }
     }
 }

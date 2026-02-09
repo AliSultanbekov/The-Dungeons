@@ -94,7 +94,7 @@ function CombatController._SetupKeybinds(self: Module)
         end
 
         local CombatObject = self._CombatObjects[Character]
-
+        print("Dashsm")
         CombatObject:UseAbility("Dash", { Mode = "FromClient" })
     end)
 end

@@ -23,6 +23,19 @@ local Signal = require("Signal")
 
 -- [ Types ] --
 
+-- VelocityTypes
+export type LinearVelocityData = {
+    VelocityType: "LinearVelocity",
+    StartTime: number,
+    Mode: Enum.VelocityConstraintMode,
+    PlaneVelocity: Vector2,
+    PrimaryTangentAxis: Vector3,
+    SecondaryTangentAxis: Vector3,
+    StartSpeed: number,
+    Duration: number,
+    Curve: string,
+}
+
 -- Re-export shared types
 export type NameComponent = EntityTypesShared.NameComponent
 export type StatsComponent = EntityTypesShared.StatsComponent
@@ -40,6 +53,7 @@ export type ComboAbility = EntityTypesShared.ComboAbility
 export type CurrentAbilities = EntityTypesShared.CurrentAbilities
 export type PreviousAbilities = EntityTypesShared.PreviousAbilities
 export type AnimationObjectComponent = AnimationClass.Object
+export type VelocityComponent = LinearVelocityData
 
 export type EntityCreatedSignalPacket = EntityTypesShared.EntityCreatedSignalPacket
 export type EntityDeletedSignalPacket = EntityTypesShared.EntityDeletedSignalPacket
@@ -50,7 +64,8 @@ export type Tags = EntityTypesShared.Tags
 
 -- Client Components (same as shared for now)
 export type Components = EntityTypesShared.Components & {
-    AnimationObject: Jecs.Entity<AnimationObjectComponent>
+    AnimationObject: Jecs.Entity<AnimationObjectComponent>,
+    Velocity: Jecs.Entity<VelocityComponent>
 }
 
 -- System Types

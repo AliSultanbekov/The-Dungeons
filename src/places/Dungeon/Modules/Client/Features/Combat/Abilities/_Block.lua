@@ -13,7 +13,7 @@ local require = require(script.Parent.loader).load(script)
 local CombatTypes = require("CombatTypes")
 local ItemTypes = require("ItemTypes")
 local ServiceBag = require("ServiceBag")
-local AnimationClass = require("AnimationClass")
+local AnimatorClass = require("AnimatorClass")
 local AbilityConfig = require("AbilityConfig")
 local AnimationConstants = require("AnimationConstants")
 local TimeUtil = require("TimeUtil")
@@ -51,7 +51,7 @@ export type ObjectData = {
 
     _Attacker: Model,
     _WeaponData: ItemTypes.WeaponItemData,
-    _AnimationObject: AnimationClass.Object,
+    _AnimationObject: AnimatorClass.Object,
 
     _OnUse: (context: CombatTypes.Context) -> (),
     _OnEnd: (context: CombatTypes.Context) -> (),
@@ -105,12 +105,15 @@ function Block.Use(self: Object, context: Use_Context)
         self._OnUse({
             AbilityName = self.AbilityName
         })
-    
-        self._AnimationObject:PlayAnimation(self.AbilityName, AnimationConstants.CreatureLayers.Combat)
     end
+
+    self._AnimationObject:PlayAnimation(self.AbilityName, AnimationConstants.CreatureLayers.Combat)
 end
 
 function Block.End(self: Object, context: End_Context)
+    -- Always stop animation first to prevent stuck state
+    self._AnimationObject:StopAnimation(self.AbilityName, AnimationConstants.CreatureLayers.Combat)
+
     if context.Mode == "FromClient" then
         if not self._CreatureServiceClient:EndAbility(self._Attacker, self.AbilityName) then
             return
@@ -119,10 +122,6 @@ function Block.End(self: Object, context: End_Context)
         self._OnEnd({
             AbilityName = self.AbilityName
         })
-
-        self._CreatureServiceClient:EndAbility(self._Attacker, self.AbilityName)
-        
-        self._AnimationObject:StopAnimation(self.AbilityName, AnimationConstants.CreatureLayers.Combat)
     end
 end
 

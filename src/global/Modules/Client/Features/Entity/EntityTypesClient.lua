@@ -12,7 +12,6 @@ local require = require(script.Parent.loader).load(script)
 -- [ Imports ] --
 local Jecs = require("Jecs")
 local EntityTypesShared = require("EntityTypesShared")
-local AnimationClass = require("AnimationClass")
 local Signal = require("Signal")
 
 -- [ Constants ] --
@@ -25,14 +24,13 @@ local Signal = require("Signal")
 
 -- VelocityTypes
 export type LinearVelocityData = {
-    VelocityType: "LinearVelocity",
+    Mode: "Plane",
+    Instance: LinearVelocity,
+    Attachment0: Attachment,
     StartTime: number,
-    Mode: Enum.VelocityConstraintMode,
-    PlaneVelocity: Vector2,
-    PrimaryTangentAxis: Vector3,
-    SecondaryTangentAxis: Vector3,
     StartSpeed: number,
     Duration: number,
+    GetDirection: () -> Vector2,
     Curve: string,
 }
 
@@ -52,7 +50,6 @@ export type BaseAbility = EntityTypesShared.BaseAbility
 export type ComboAbility = EntityTypesShared.ComboAbility
 export type CurrentAbilities = EntityTypesShared.CurrentAbilities
 export type PreviousAbilities = EntityTypesShared.PreviousAbilities
-export type AnimationObjectComponent = AnimationClass.Object
 export type VelocityComponent = LinearVelocityData
 
 export type EntityCreatedSignalPacket = EntityTypesShared.EntityCreatedSignalPacket
@@ -64,7 +61,6 @@ export type Tags = EntityTypesShared.Tags
 
 -- Client Components (same as shared for now)
 export type Components = EntityTypesShared.Components & {
-    AnimationObject: Jecs.Entity<AnimationObjectComponent>,
     Velocity: Jecs.Entity<VelocityComponent>
 }
 
@@ -75,16 +71,16 @@ export type PublicSignals = {
     AbilityExpired: Signal.Signal<AbilityExpiredSignalPacket>,
 }
 
-export type SystemModuleUpdateContext = {
+export type SystemModule_Init_Context = {
     World: Jecs.World,
     Tags: Tags,
     Components: Components,
-    Dt: number,
-    PublicSignals: PublicSignals
+    Signals: PublicSignals,
 }
 
 export type SystemModule = {
-    Update: (self: SystemModule, context: SystemModuleUpdateContext) -> (),
+    Init: (self: SystemModule, context: SystemModule_Init_Context) -> (),
+    Update: (self: SystemModule, dt: number) -> (),
 }
 
 -- Client-specific Types

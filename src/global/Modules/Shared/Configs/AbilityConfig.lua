@@ -16,14 +16,16 @@ local _require = require(script.Parent.loader).load(script)
 -- [ Module Table ] --
 local AbilityConfig = {
     ConflictRules = {
-        Attack = {"Attack"},
-        Defense = {"Defense"},
-        Movement = {"Movement"}
+        Attack = {"Attack", "Defense", "SubDefense"},
+        Defense = {"Defense", "Attack"},
+        SubDefense = {"SubDefense", "Attack"},
+        Movement = {"Attack", "Defense", "SubDefense"},
     },
     InterruptRules = {
-        Defense = {"Attack"},
-        Attack = {"Defense"},
-        Movement = {"Attack", "Defense"},
+        Defense = {},
+        Attack = {},
+        Movement = {},
+        SubDefense = {},
     },
     Abilities = {
         ["DefaultBasicAttack"] = {
@@ -35,24 +37,34 @@ local AbilityConfig = {
         ["Block"] = {
             Category = "Defense",
             Weight = 1,
+            UsableOnParryStun = true,
             Components = {"Blocking"},
 
             Duration = math.huge,
             AnimationID = "rbxassetid://87451259660096",
         },
         ["Parry"] = {
+            Category = "SubDefense",
             Weight = 1,
+            UsableOnParryStun = true,
             Components = {"Parrying"},
 
-            Duration = 0.25,
-            CooldownDuration = 0.3,
+            Duration = 0.2,
+            CooldownDuration = 0.35,
         },
         ["Dash"] = {
             Weight = 1,
+            Category = "Movement",
+            UsableOnParryStun = true,
             Components = {"Dodging"},
 
-            Duration = 0.2,
-            CooldownDuration = 1,
+            Duration = 0.45,
+            CooldownDuration = 0.8,
+
+            ForwardAnimationID = "rbxassetid://115264084707994",
+            BackwardAnimationID = "rbxassetid://129789334771703",
+            RightAnimationID = "rbxassetid://112182854091549",
+            LeftAnimationID = "rbxassetid://123726272767493",
         }
     }
 }

@@ -1,5 +1,5 @@
 --[=[
-    @class TestSystem
+    @class AbilitySystem
 ]=]
 
 -- [ Roblox Services ] --
@@ -12,6 +12,7 @@ local require = require(script.Parent.Parent.loader).load(script)
 -- [ Imports ] --
 local EntityTypesClient = require("EntityTypesClient")
 local AbilityConfig = require("AbilityConfig")
+local Jecs = require("Jecs")
 local TimeUtil = require("TimeUtil")
 
 -- [ Constants ] --
@@ -22,17 +23,22 @@ local TimeUtil = require("TimeUtil")
 local AbilitySystem = {}
 
 -- [ Types ] --
-type ModuleData = {}
+type ModuleData = {
+    _World: Jecs.World,
+    _Tags: EntityTypesClient.Tags,
+    _Components: EntityTypesClient.Components,
+    _Signals: EntityTypesClient.PublicSignals,
+}
 
 export type Module = typeof(AbilitySystem) & ModuleData
 
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function AbilitySystem.Update(self: Module, context: EntityTypesClient.SystemModuleUpdateContext)
-    local World = context.World
-    local Tags = context.Tags
-    local Components = context.Components
+function AbilitySystem.Update(self: Module, dt: number)
+    local World = self._World
+    local Tags = self._Tags
+    local Components = self._Components
     
     -- Cooldowns Handling
     for entity, _, abilityCooldowns in World:query(Tags.Creature, Components.AbilityCooldowns) do
@@ -81,7 +87,7 @@ function AbilitySystem.Update(self: Module, context: EntityTypesClient.SystemMod
                 end
             end
 
-            context.PublicSignals.AbilityExpired:Fire({
+            self._Signals.AbilityExpired:Fire({
                 Entity = entity,
                 AbilityData = abilityData
             })
@@ -111,6 +117,13 @@ function AbilitySystem.Update(self: Module, context: EntityTypesClient.SystemMod
             character.Humanoid.WalkSpeed = 16
         end
     end
+end
+
+function AbilitySystem.Init(self: Module, context: EntityTypesClient.SystemModule_Init_Context)
+    self._World = context.World
+    self._Tags = context.Tags
+    self._Components = context.Components
+    self._Signals = context.Signals
 end
 
 return AbilitySystem :: Module

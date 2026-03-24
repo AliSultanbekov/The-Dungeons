@@ -5,7 +5,6 @@
 -- [ Roblox Services ] --
 
 -- [ Imports ] --
-local Types = require("../CreatureTypesClient")
 
 -- [ Require ] --
 local require = require(script.Parent.Parent.loader).load(script)
@@ -13,7 +12,7 @@ local require = require(script.Parent.Parent.loader).load(script)
 -- [ Imports ] --
 local Jecs = require("Jecs")
 local EntityTypesClient = require("EntityTypesClient")
-local AnimationClass = require("AnimationClass")
+local CreatureTypesClient = require("CreatureTypesClient")
 
 -- [ Constants ] --
 
@@ -28,7 +27,7 @@ type EntityServiceClient = typeof(require("EntityServiceClient"))
 type ModuleData = {
     _EntityServiceClient: EntityServiceClient,
     _CharacterToEntity: { [Model]: Jecs.Entity },
-    PublicSignals: Types.PublicSignals
+    _Signals: CreatureTypesClient.PublicSignals
 }
 
 export type Module = typeof(CreatureRegister) & ModuleData
@@ -36,21 +35,21 @@ export type Module = typeof(CreatureRegister) & ModuleData
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
+function CreatureRegister.GetAllCreatures(self: Module)
+    return self._CharacterToEntity
+end
+
 function CreatureRegister.GetEntityFromCharacter(self: Module, character: Model): Jecs.Entity
     return self._CharacterToEntity[character]
 end
 
-function CreatureRegister.Init(self: Module, context: Types.Init_Context)
+function CreatureRegister.Init(self: Module, context: CreatureTypesClient.Init_Context)
     self._EntityServiceClient = context.EntityServiceClient
     self._CharacterToEntity = {}
-
-    self.PublicSignals = context.PublicSignals
+    self._Signals = context.Signals
 end
 
 function CreatureRegister.Start(self: Module)
-    local World = self._EntityServiceClient:GetWorld()
-    local Components = self._EntityServiceClient:GetComponents()
-
     self._EntityServiceClient.PublicSignals.EntityCreated:Connect(function(packet: EntityTypesClient.EntityCreatedSignalPacket)
         if not packet.Tags["Creature"] then
             return
@@ -68,11 +67,9 @@ function CreatureRegister.Start(self: Module)
             return
         end
 
-        World:set(packet.Entity, Components.AnimationObject, AnimationClass.new(Character))
-
         self._CharacterToEntity[Character] = packet.Entity
 
-        self.PublicSignals.CreatureCreated:Fire(Character)
+        self._Signals.CreatureCreated:Fire(Character)
     end)
 
     self._EntityServiceClient.PublicSignals.EntityDeleted:Connect(function(packet: EntityTypesClient.EntityDeletedSignalPacket)
@@ -94,7 +91,7 @@ function CreatureRegister.Start(self: Module)
 
         self._CharacterToEntity[Character] = nil
 
-        self.PublicSignals.CreatureDeleted:Fire(Character)
+        self._Signals.CreatureDeleted:Fire(Character)
     end)
 end
 

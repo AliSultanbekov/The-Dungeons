@@ -13,7 +13,7 @@ local require = require(script.Parent.loader).load(script)
 local CombatTypes = require("CombatTypes")
 local ItemTypes = require("ItemTypes")
 local ServiceBag = require("ServiceBag")
-local AnimationClass = require("AnimationClass")
+local AnimatorClass = require("AnimatorClass")
 local AbilityConfig = require("AbilityConfig")
 local TimeUtil = require("TimeUtil")
 
@@ -50,7 +50,7 @@ export type ObjectData = {
 
     _Attacker: Model,
     _WeaponData: ItemTypes.WeaponItemData,
-    _AnimationObject: AnimationClass.Object,
+    _AnimationObject: AnimatorClass.Object,
 
     _OnUse: (context: CombatTypes.Context) -> (),
     _OnEnd: (context: CombatTypes.Context) -> (),
@@ -110,10 +110,9 @@ function Parry.End(self: Object, context: End_Context)
             AbilityName = self.AbilityName
         })
 
-        self._CreatureServiceClient:EndAbility(self._Attacker, "Parry")
-        self._CreatureServiceClient:StartAbilityCooldown(self._Attacker, "Parry")
+        self._CreatureServiceClient:StartAbilityCooldown(self._Attacker, self.AbilityName)
     elseif context.Mode == "FromECS" then
-        self._CreatureServiceClient:StartAbilityCooldown(self._Attacker, "Parry")
+        self._CreatureServiceClient:StartAbilityCooldown(self._Attacker, self.AbilityName)
     end
 end
 

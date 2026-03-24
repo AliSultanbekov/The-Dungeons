@@ -3,12 +3,15 @@
 ]=]
 
 -- [ Roblox Services ] --
+local Players = game:GetService("Players")
 
 -- [ Imports ] --
 local CreatureRegister = require("@self/_CreatureRegister")
 local CreatureAbility = require("@self/_CreatureAbility")
 local CreatureGeneric = require("@self/_CreatureGeneric")
-local Types = require("./CreatureTypesClient")
+local CreatureAnimator = require("@self/_CreatureAnimator")
+local CreatureVelocity = require("@self/_CreatureVelocity")
+local CreatureHealth = require("@self/_CreatureHealth")
 
 -- [ Require ] --
 local require = require(script.Parent.loader).load(script)
@@ -17,7 +20,8 @@ local require = require(script.Parent.loader).load(script)
 local ServiceBag = require("ServiceBag")
 local Jecs = require("Jecs")
 local EntityTypesClient = require("EntityTypesClient")
-local AnimationClass = require("AnimationClass")
+local CreatureTypesClient = require("CreatureTypesClient")
+local AnimatorClass = require("AnimatorClass")
 local Signal = require("Signal")
 
 -- [ Constants ] --
@@ -35,9 +39,12 @@ type ModuleData = {
     _CreatureModules: {
         CreatureRegister: CreatureRegister.Module,
         CreatureAbility: CreatureAbility.Module,
-        CreatureGeneric: CreatureGeneric.Module
+        CreatureGeneric: CreatureGeneric.Module,
+        CreatureAnimator: CreatureAnimator.Module,
+        CreatureVelocity: CreatureVelocity.Module,
+        CreatureHealth: CreatureHealth.Module,
     },
-    PublicSignals: Types.PublicSignals
+    PublicSignals: CreatureTypesClient.PublicSignals
 }
 
 export type Module = typeof(CreatureServiceClient) & ModuleData
@@ -45,14 +52,85 @@ export type Module = typeof(CreatureServiceClient) & ModuleData
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function CreatureServiceClient.GetAnimationObject(self: Module, character: Model): AnimationClass.Object
+function CreatureServiceClient.ObservePlayerCreature(self: Module, player: Player, cb: (character: Model, entity: Jecs.Entity) -> ())
+    local World = self._EntityServiceClient:GetWorld()
+    local Tags = self._EntityServiceClient:GetTags()
+
+    for character, entity in self._CreatureModules.CreatureRegister:GetAllCreatures() do
+        if not World:has(entity, Tags.Player) then
+            continue
+        end
+
+        local Player = Players:GetPlayerFromCharacter(character)
+
+        if not Player then
+            continue
+        end
+
+        if player == Player then
+            cb(character, entity)
+        end
+    end
+
+    return self.PublicSignals.CreatureCreated:Connect(function(packet: CreatureTypesClient.CreatureCreatedSignalPacket)
+        if not World:has(packet.Entity, Tags.Player) then
+            return
+        end
+
+        local Player = Players:GetPlayerFromCharacter(packet.Character)
+
+        if not Player then
+            return
+        end
+
+        if player == Player then
+            cb(packet.Character, packet.Entity)
+        end
+    end)
+end
+
+function CreatureServiceClient.ObserveCreatures(self: Module, cb: (character: Model, entity: Jecs.Entity) -> ())
+    for character, entity in self._CreatureModules.CreatureRegister:GetAllCreatures() do
+        cb(character, entity)
+    end
+
+    return self.PublicSignals.CreatureCreated:Connect(function(packet: CreatureTypesClient.CreatureCreatedSignalPacket)
+        cb(packet.Character, packet.Entity)
+    end)
+end
+
+function CreatureServiceClient.ObserveCreatureHealth(self: Module, character: Model, cb: (newHealth: number) -> ())
     local Entity = self:GetEntityFromCharacter(character)
 
     if not Entity then
-        error("[CreatureServiceClient] No Entity found for character " .. tostring(character))
+        error("Entity not found for given character")
     end
 
-    return self._CreatureModules.CreatureGeneric:GetAnimationObject(Entity)
+    return self._CreatureModules.CreatureHealth:ObserveCreatureHealth(Entity, cb)
+end
+
+function CreatureServiceClient.GetCreatureHealth(self: Module, character: Model): number
+    local Entity = self:GetEntityFromCharacter(character)
+
+    if not Entity then
+        error("Entity not found for given character")
+    end
+
+    return self._CreatureModules.CreatureHealth:GetCreatureHealth(Entity)
+end
+
+function CreatureServiceClient.ApplyLinearVelocityOnCreature(self: Module, character: Model, componentConfig: CreatureTypesClient.ComponentConfig, velocityConfig: CreatureTypesClient.LinearVelocityConfig)
+    local Entity = self:GetEntityFromCharacter(character)
+
+    if not Entity then
+        return 
+    end
+
+    self._CreatureModules.CreatureVelocity:ApplyLinearVelocityOnCreature(Entity, componentConfig, velocityConfig)
+end
+
+function CreatureServiceClient.GetAnimationObject(self: Module, character: Model): AnimatorClass.Object
+    return self._CreatureModules.CreatureAnimator:GetAnimationObject(character)
 end
 
 function CreatureServiceClient.IsAbilityOnCooldown(self: Module, character: Model, abilityName: string): boolean
@@ -150,6 +228,9 @@ function CreatureServiceClient.Init(self: Module, serviceBag: ServiceBag.Service
         CreatureRegister = CreatureRegister,
         CreatureAbility = CreatureAbility,
         CreatureGeneric = CreatureGeneric,
+        CreatureAnimator = CreatureAnimator,
+        CreatureVelocity = CreatureVelocity,
+        CreatureHealth = CreatureHealth,
     }
 
     self.PublicSignals = {
@@ -158,10 +239,11 @@ function CreatureServiceClient.Init(self: Module, serviceBag: ServiceBag.Service
         AbilityExpired = Signal.new(),
     } :: any
 
-    for _, creatureModule in pairs(self._CreatureModules) do
+    for _, creatureModule: CreatureTypesClient.CreatureModule in pairs(self._CreatureModules) do
         creatureModule:Init({
             EntityServiceClient = self._EntityServiceClient,
-            PublicSignals = self.PublicSignals
+            Signals = self.PublicSignals
+
         })
     end
 end

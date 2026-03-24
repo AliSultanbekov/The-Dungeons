@@ -12,6 +12,7 @@ local require = require(script.Parent.Parent.loader).load(script)
 
 -- [ Imports ] --
 local Jecs = require("Jecs")
+local TimeUtil = require("TimeUtil")
 
 -- [ Constants ] --
 
@@ -51,18 +52,18 @@ function CreatureDamage.DamageCreature(self: Module, attackerEntity: Jecs.Entity
         return
     end
 
-    local AttackedCurrentAbilities = World:get(attackedEntity, Components.CurrentAbilities)
-    local AttackedBlockAbility = AttackedCurrentAbilities and AttackedCurrentAbilities["Block"]
+    if World:has(attackedEntity, Components.Parrying) then
+        World:set(attackerEntity, Components.ParryStunned, TimeUtil:GetTime() + 0.5)
+        return "Parry"
+    end
 
-    if AttackedBlockAbility then
-        if World:has(attackedEntity, Components.Parrying) then
-            return "Parry"
-        end
+    if World:has(attackedEntity, Components.Dodging) then
+        return "Dodge"
+    end
 
-        if World:has(attackedEntity, Components.Blocking) then
-            World:set(attackedEntity, Components.Health, math.max(0, AttackedHealth - (damageAmount * 0.6)))
-            return "Block"
-        end
+    if World:has(attackedEntity, Components.Blocking) then
+        World:set(attackedEntity, Components.Health, math.max(0, AttackedHealth - (damageAmount * 0.6)))
+        return "Block"
     end
 
     World:set(attackedEntity, Components.Health, math.max(0, AttackedHealth - damageAmount))

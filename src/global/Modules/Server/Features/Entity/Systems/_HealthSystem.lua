@@ -1,5 +1,5 @@
 --[=[
-    @class TestSystem
+    @class HealthSystem
 ]=]
 
 -- [ Roblox Services ] --
@@ -11,6 +11,7 @@ local require = require(script.Parent.Parent.loader).load(script)
 
 -- [ Imports ] --
 local EntityTypesServer = require("EntityTypesServer")
+local Jecs = require("Jecs")
 
 -- [ Constants ] --
 
@@ -20,17 +21,22 @@ local EntityTypesServer = require("EntityTypesServer")
 local HealthSystem = {}
 
 -- [ Types ] --
-type ModuleData = {}
+type ModuleData = {
+    _World: Jecs.World,
+    _Tags: EntityTypesServer.Tags,
+    _Components: EntityTypesServer.Components,
+    _Signals: EntityTypesServer.PublicSignals,
+}
 
 export type Module = typeof(HealthSystem) & ModuleData
 
 -- [ Private Functions ] --
 
 -- [ Public Functions ] --
-function HealthSystem.Update(self: Module, context: EntityTypesServer.SystemModuleUpdateContext)
-    local World = context.World
-    local Tags = context.Tags
-    local Components = context.Components
+function HealthSystem.Update(self: Module, dt: number)
+    local World = self._World
+    local Tags = self._Tags
+    local Components = self._Components
     for entity, _, character, health in World:query(Tags.Creature, Components.Character, Components.Health) do
         if character.Humanoid.Health == nil then
             continue
@@ -68,6 +74,13 @@ function HealthSystem.Update(self: Module, context: EntityTypesServer.SystemModu
             end
         end
     end)]]
+end
+
+function HealthSystem.Init(self: Module, context: EntityTypesServer.SystemModule_Init_Context)
+    self._World = context.World
+    self._Tags = context.Tags
+    self._Components = context.Components
+    self._Signals = context.Signals
 end
 
 return HealthSystem :: Module

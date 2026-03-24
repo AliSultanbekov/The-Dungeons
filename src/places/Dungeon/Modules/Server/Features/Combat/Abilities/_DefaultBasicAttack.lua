@@ -120,8 +120,6 @@ function DefaultBasicAttack.Use(self: Object)
         Combo += PreviousAbility.Combo
     end
 
-    print(ServerTime)
-
     self._CreatureServiceServer:UseAbility(self._Attacker, {
         AbilityName = self.AbilityName,
         StartTime = ServerTime,

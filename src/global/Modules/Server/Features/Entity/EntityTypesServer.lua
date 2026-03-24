@@ -97,16 +97,16 @@ export type PublicSignals = {
     AbilityExpired: Signal.Signal<AbilityExpiredSignalPacket>,
 }
 
-export type SystemModuleUpdateContext = {
+export type SystemModule_Init_Context = {
     World: Jecs.World,
     Tags: Tags,
     Components: Components,
-    Dt: number,
-    PublicSignals: PublicSignals,
+    Signals: PublicSignals,
 }
 
 export type SystemModule = {
-    Update: (self: SystemModule, context: SystemModuleUpdateContext) -> (),
+    Init: (self: SystemModule, context: SystemModule_Init_Context) -> (),
+    Update: (self: SystemModule, dt: number) -> (),
 }
 
 -- [ Private Functions ] --

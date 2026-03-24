@@ -12,6 +12,7 @@ local require = require(script.Parent.loader).load(script)
 -- [ Imports ] --
 local ServiceBag = require("ServiceBag")
 local AssetProvider = require("AssetProvider")
+local TimeUtil = require("TimeUtil")
 
 -- [ Constants ] --
 
@@ -58,15 +59,23 @@ end
 
 function CreatureSpawnService.Start(self: Module)
     task.spawn(function()
-        local Villager = self:SpawnNPC("Villager", Vector3.new(1,1,1))
+        
+        local Villager = self:SpawnNPC("Villager", Vector3.new(1,10,1))
         self._CreatureServiceServer:UseAbility(Villager, {
             AbilityName = "Block",
             StartTime = os.clock(),
-            Duration = math.huge,
+            Duration = TimeUtil:GetTime(),
             IsHeld = true,
         })
+
+        local Villager2 = self:SpawnNPC("Villager", Vector3.new(1,10,1))
+        self._CreatureServiceServer:UseAbility(Villager2, {
+            AbilityName = "Dash",
+            StartTime = TimeUtil:GetTime(),
+            Duration = math.huge,
+        })
     
-        local _Villager2 = self:SpawnNPC("Villager", Vector3.new(1,1,10))
+        local _Villager3 = self:SpawnNPC("Villager", Vector3.new(1,10,10))
     end)
 end
 

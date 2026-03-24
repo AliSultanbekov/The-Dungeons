@@ -99,12 +99,8 @@ function CombatClass.HitAbility(self: Object, abilityName: string, context: Cont
     self._Abilities[abilityName]:Hit(context)
 end
 
-function CombatClass.UpdateAbilityState(self: Object, abilityName: string, context: Context)
-    self._Abilities[abilityName]:UpdateState(context)
-end
-
-function CombatClass.GetAbilityState(self: Object, abilityName: string): Context
-    return self._Abilities[abilityName]:GetState()
+function CombatClass.ExpireAbility(self: Object, abilityName: string, context: Context)
+    self._Abilities[abilityName]:Expire(context)
 end
 
 return CombatClass :: Module

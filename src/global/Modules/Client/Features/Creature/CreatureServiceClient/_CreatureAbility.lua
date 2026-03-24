@@ -28,7 +28,7 @@ type EntityServiceClient = typeof(require("EntityServiceClient"))
 
 type ModuleData = {
     _EntityServiceClient: EntityServiceClient,
-    PublicSignals: Types.PublicSignals
+    _Signals: Types.PublicSignals
 }
 
 export type Module = typeof(CreatureAbility) & ModuleData
@@ -87,6 +87,8 @@ function CreatureAbility.IsAbilityActive(self: Module, entity: Jecs.Entity, abil
         return false
     end
 
+    print(CurrentAbilities)
+
     if not abilityName and next(CurrentAbilities) ~= nil then
         return true
     else
@@ -140,7 +142,7 @@ end
 
 function CreatureAbility.UseAbility(self: Module, entity: Jecs.Entity, abilityData: EntityTypesClient.BaseAbility): boolean
     local World = self._EntityServiceClient:GetWorld()
-    local Components = self._EntityServiceClient:GetComponents()
+    local Components =self._EntityServiceClient:GetComponents()
 
     local AbilityCooldowns = World:get(entity, Components.AbilityCooldowns)
 
@@ -148,7 +150,13 @@ function CreatureAbility.UseAbility(self: Module, entity: Jecs.Entity, abilityDa
         return false
     end
 
-    if World:has(entity, Components.Stunned) or (World:has(entity, Components.ParryStunned) and abilityData.AbilityName ~= "Block") then
+    local NewAbilityConfigData = AbilityConfig.Abilities[abilityData.AbilityName]
+
+    if not NewAbilityConfigData then
+        return false
+    end
+
+    if World:has(entity, Components.Stunned) or (World:has(entity, Components.ParryStunned) and not NewAbilityConfigData.UsableOnParryStun) then
         return false
     end
 
@@ -163,12 +171,6 @@ function CreatureAbility.UseAbility(self: Module, entity: Jecs.Entity, abilityDa
     end
 
     if next(CurrentAbilities) ~= nil then
-        local NewAbilityConfigData = AbilityConfig.Abilities[abilityData.AbilityName]
-
-        if not NewAbilityConfigData then
-            return false
-        end
-
         local NewAbilityCategory = NewAbilityConfigData.Category or "None"
         local InterruptRules = AbilityConfig.InterruptRules
         local ConflictRules = AbilityConfig.ConflictRules
@@ -191,15 +193,15 @@ function CreatureAbility.UseAbility(self: Module, entity: Jecs.Entity, abilityDa
             if not CurrentAbilityCategory then
                 continue
             end
-
-            -- Abiltiy Confictions
-            for _, conflictedCatergory in ConflictedCategories do
-                if CurrentAbilityCategory == conflictedCatergory then
+            
+            -- Ability Conflicts
+            for _, conflictedCategory in ConflictedCategories do
+                if CurrentAbilityCategory == conflictedCategory then
                     return false
                 end
             end
-            -- Ability Interruptions
 
+            -- Ability Interruptions
             for _, interruptableCategory in InterruptableCategories do
                 if interruptableCategory == CurrentAbilityCategory then
                     table.insert(AbilitiesToInterrupt, currentAbilityData)
@@ -232,7 +234,7 @@ end
 
 function CreatureAbility.InterruptAbility(self: Module, entity: Jecs.Entity, currentAbilityName: string): boolean
     local World = self._EntityServiceClient:GetWorld()
-    local Components = self._EntityServiceClient:GetComponents()
+    local Components =self._EntityServiceClient:GetComponents()
 
     local CurrentAbilities = World:get(entity, Components.CurrentAbilities)
 
@@ -255,7 +257,7 @@ function CreatureAbility.InterruptAbility(self: Module, entity: Jecs.Entity, cur
     else
         if CommitTime then
             if StartTime + CommitTime > ServerTime then
-                return self:CancelAbility(entity, currentAbilityName)
+                return false
             else
                 return self:EndAbility(entity, currentAbilityName)
             end
@@ -364,7 +366,7 @@ end
 
 function CreatureAbility.Init(self: Module, context: Types.Init_Context)
     self._EntityServiceClient = context.EntityServiceClient
-    self.PublicSignals = context.PublicSignals
+    self._Signals = context.Signals
 end
 
 function CreatureAbility.Start(self: Module)
@@ -383,7 +385,7 @@ function CreatureAbility.Start(self: Module)
             return
         end
 
-        self.PublicSignals.AbilityExpired:Fire({
+        self._Signals.AbilityExpired:Fire({
             Character = Character.Character,
             AbilityData = packet.AbilityData
         })

@@ -148,7 +148,13 @@ function CreatureAbility.UseAbility(self: Module, entity: Jecs.Entity, abilityDa
         return false
     end
 
-    if World:has(entity, Components.Stunned) or (World:has(entity, Components.ParryStunned) and abilityData.AbilityName ~= "Block") then
+    local NewAbilityConfigData = AbilityConfig.Abilities[abilityData.AbilityName]
+
+    if not NewAbilityConfigData then
+        return false
+    end
+
+    if World:has(entity, Components.Stunned) or (World:has(entity, Components.ParryStunned) and not NewAbilityConfigData.UsableOnParryStun) then
         return false
     end
 
@@ -163,12 +169,6 @@ function CreatureAbility.UseAbility(self: Module, entity: Jecs.Entity, abilityDa
     end
 
     if next(CurrentAbilities) ~= nil then
-        local NewAbilityConfigData = AbilityConfig.Abilities[abilityData.AbilityName]
-
-        if not NewAbilityConfigData then
-            return false
-        end
-
         local NewAbilityCategory = NewAbilityConfigData.Category or "None"
         local InterruptRules = AbilityConfig.InterruptRules
         local ConflictRules = AbilityConfig.ConflictRules
@@ -192,9 +192,9 @@ function CreatureAbility.UseAbility(self: Module, entity: Jecs.Entity, abilityDa
                 continue
             end
             
-            -- Abiltiy Confictions
-            for _, conflictedCatergory in ConflictedCategories do
-                if CurrentAbilityCategory == conflictedCatergory then
+            -- Ability Conflicts
+            for _, conflictedCategory in ConflictedCategories do
+                if CurrentAbilityCategory == conflictedCategory then
                     return false
                 end
             end
@@ -255,7 +255,7 @@ function CreatureAbility.InterruptAbility(self: Module, entity: Jecs.Entity, cur
     else
         if CommitTime then
             if StartTime + CommitTime > ServerTime then
-                return self:CancelAbility(entity, currentAbilityName)
+                return false
             else
                 return self:EndAbility(entity, currentAbilityName)
             end

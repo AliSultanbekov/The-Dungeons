@@ -17,7 +17,7 @@ local ServiceBag = require("ServiceBag")
 local HitboxClass = require("HitboxClass")
 local CombatTypes = require("CombatTypes")
 local WeaponConfig = require("WeaponConfig")
-local AnimationClass = require("AnimationClass")
+local AnimatorClass = require("AnimatorClass")
 local EntityTypesClient = require("EntityTypesClient")
 local AnimationConstants = require("AnimationConstants")
 local GeneralGameConstants = require("GeneralGameConstants")
@@ -78,7 +78,7 @@ export type ObjectData = {
     _Attacker: Model,
     _WeaponData: ItemTypes.WeaponItemData,
     _Config: Config,
-    _AnimationObject: AnimationClass.Object,
+    _AnimationObject: AnimatorClass.Object,
 
     _OnUse: (context: CombatTypes.Context) -> (),
     _OnEnd: (context: CombatTypes.Context) -> (),
@@ -140,18 +140,18 @@ function DefaultBasicAttack._OnHitMarker(self: Object)
 
             local BaseCF = self._Attacker:GetPivot()
             local LookVec = BaseCF.LookVector
-            local FlatLooKVec = Vector3.new(LookVec.X, 0, LookVec.Z)
+            local FlatLookVec = Vector3.new(LookVec.X, 0, LookVec.Z)
 
-            if FlatLooKVec.Magnitude < 1e-6 then
+            if FlatLookVec.Magnitude < 1e-6 then
                 return CFrame.identity
             end
 
-            return CFrame.lookAt(BaseCF.Position, BaseCF.Position + FlatLooKVec) * CFrame.new(0, 0, -(HRP.Size.Z/2 + ComboData.Range.Z/2))
+            return CFrame.lookAt(BaseCF.Position, BaseCF.Position + FlatLookVec) * CFrame.new(0, 0, -(HRP.Size.Z/2 + ComboData.Range.Z/2))
         end,
         Size = ComboData.Range,
         Length = 4,
         Ignore = { self._Attacker },
-        Visualise = true,
+        Visualise = false,
         Cb = function(Attacked: Model)
             if not self._CreatureServiceClient:IsAbilityActive(self._Attacker) then
                 return
@@ -188,7 +188,6 @@ end
 
 function DefaultBasicAttack.Use(self: Object, context: Use_Context)
     if context.Mode == "FromClient" then
-
         local Config = self._Config
         local ComboData = Config.Combo
         local PreviousAbility = self._CreatureServiceClient:GetPreviousAbility(self._Attacker, self.AbilityName) :: EntityTypesClient.ComboAbility
@@ -212,15 +211,14 @@ function DefaultBasicAttack.Use(self: Object, context: Use_Context)
             return
         end
 
-        print(ServerTime)
-
         self._OnUse({
             AbilityName = self.AbilityName
         })
 
         self._AnimationObject:PlayAnimation(self:_GetAnimationName(Combo), AnimationConstants.CreatureLayers.Combat)
     elseif context.Mode == "FromServer" then
-        
+        local CurrentAbility = self._CreatureServiceClient:GetCurrentAbility(self._Attacker, self.AbilityName) :: EntityTypesClient.ComboAbility
+        self._AnimationObject:PlayAnimation(self:_GetAnimationName(CurrentAbility.Combo), AnimationConstants.CreatureLayers.Combat)
     end
 end
 
@@ -230,10 +228,6 @@ function DefaultBasicAttack.End(self: Object, context: End_Context)
             return
         end
 
-        self._OnEnd({
-            AbilityName = self.AbilityName
-        })
-
         local PreviousAbility = self._CreatureServiceClient:GetPreviousAbility(self._Attacker, self.AbilityName) :: EntityTypesClient.ComboAbility
         local MaxCombo = #self._Config.Combo
         local PreviousAbilityCombo = PreviousAbility.Combo
@@ -241,8 +235,10 @@ function DefaultBasicAttack.End(self: Object, context: End_Context)
         if MaxCombo == PreviousAbilityCombo then
             self:_StartCooldown()
         end
-    elseif context.Mode == "FromServer" then
-        
+
+        self._OnEnd({
+            AbilityName = self.AbilityName
+        })
     end
 end
 
@@ -256,7 +252,7 @@ function DefaultBasicAttack.Hit(self: Object, context: Hit_Context)
             AbilityName = self.AbilityName,
             Attacked = context.Attacked,
             AttackerCFrame = self._Attacker:GetPivot()
-        })
+        })      
     elseif context.Mode == "FromServer" then
         AbilityEffectManager:CreateHitEffect(context.Attacked, context.HitInfo)
     end

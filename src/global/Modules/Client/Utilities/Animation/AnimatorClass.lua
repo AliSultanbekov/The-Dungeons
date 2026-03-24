@@ -1,5 +1,5 @@
 --[=[
-    @class AnimationClass
+    @class AnimatorClass
 ]=]
 
 -- [ Roblox Services ] --
@@ -17,8 +17,8 @@ local _require = require(script.Parent.loader).load(script)
 -- [ Variables ] --
 
 -- [ Module Table ] --
-local AnimationClass = {}
-AnimationClass.__index = AnimationClass
+local AnimatorClass = {}
+AnimatorClass.__index = AnimatorClass
 
 -- [ Types ] -- 
 export type ObjectData = {
@@ -28,29 +28,29 @@ export type ObjectData = {
         [string]: AnimationTrack
     }
 }
-export type Object = typeof(setmetatable({} :: ObjectData, AnimationClass))
-export type Module = typeof(AnimationClass)
+export type Object = typeof(setmetatable({} :: ObjectData, AnimatorClass))
+export type Module = typeof(AnimatorClass)
 
 -- [ Private Functions ] --
-function AnimationClass._FindAnimator(self: Object, character: Model)
+function AnimatorClass._FindAnimator(self: Object, character: Model)
     local Humanoid = character:WaitForChild("Humanoid") :: Humanoid
 
     if not Humanoid then
-        error("[AnimationClass] No Humanoid found in character")
+        error("[AnimatorClass] No Humanoid found in character")
     end
 
     local Animator = Humanoid:WaitForChild("Animator") :: Animator
 
     if not Animator then
-        error("[AnimationClass] No Animator found in character")
+        error("[AnimatorClass] No Animator found in character")
     end
 
     return Animator
 end
 
 -- [ Public Functions ] --
-function AnimationClass.new(character: Model): Object
-    local self = setmetatable({} :: any, AnimationClass) :: Object
+function AnimatorClass.new(character: Model): Object
+    local self = setmetatable({} :: any, AnimatorClass) :: Object
 
     self._Animator = self:_FindAnimator(character)
     self._Tracks = {}
@@ -59,17 +59,17 @@ function AnimationClass.new(character: Model): Object
     return self
 end
 
-function AnimationClass.MarkerReachedSignal(self: Object, animationName: string, eventName: string): RBXScriptSignal<...any>
+function AnimatorClass.MarkerReachedSignal(self: Object, animationName: string, eventName: string): RBXScriptSignal<...any>
     local Track = self._Tracks[animationName]
 
     if not Track then
-        error(("[AnimationClass] No animation track found for name '%s'"):format(animationName))
+        error(("[AnimatorClass] No animation track found for name '%s'"):format(animationName))
     end
 
     return Track:GetMarkerReachedSignal(eventName)
 end
 
-function AnimationClass.UnloadAnimation(self: Object, animationName: string)
+function AnimatorClass.UnloadAnimation(self: Object, animationName: string)
     local Track = self._Tracks[animationName]
 
     if not Track then
@@ -87,7 +87,7 @@ function AnimationClass.UnloadAnimation(self: Object, animationName: string)
     Track:Destroy()
 end
 
-function AnimationClass.LoadAnimation(self: Object, animationName: string, animationID: string)
+function AnimatorClass.LoadAnimation(self: Object, animationName: string, animationID: string)
     local Animation = Instance.new("Animation")
     Animation.AnimationId = animationID
 
@@ -96,7 +96,7 @@ function AnimationClass.LoadAnimation(self: Object, animationName: string, anima
     self._Tracks[animationName] = Track
 end
 
-function AnimationClass.PlayAnimation(self: Object, animationName: string, animationLayer: number)
+function AnimatorClass.PlayAnimation(self: Object, animationName: string, animationLayer: number)
     local OldTrack = self._ActiveLayers[animationLayer]
 
     if OldTrack then
@@ -109,7 +109,7 @@ function AnimationClass.PlayAnimation(self: Object, animationName: string, anima
     self._ActiveLayers[animationLayer] = NewTrack
 end
 
-function AnimationClass.StopAnimation(self: Object, animationName: string, animationLayer: number)
+function AnimatorClass.StopAnimation(self: Object, animationName: string, animationLayer: number)
     local Track = self._Tracks[animationName]
 
     if not Track then
@@ -125,4 +125,4 @@ function AnimationClass.StopAnimation(self: Object, animationName: string, anima
     ActiveTrack:Stop()
 end
 
-return AnimationClass :: Module
+return AnimatorClass :: Module

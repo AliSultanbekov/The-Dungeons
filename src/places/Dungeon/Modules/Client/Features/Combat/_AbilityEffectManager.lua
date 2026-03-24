@@ -56,7 +56,6 @@ function AbilityEfectManager.CreateHitEffect(self: Module, character: Model, eff
             }
         )
         VFXObject:Emit()
-
         SoundUtil:PlaySound("Block")
     elseif effectName == "Parry" then
         local VFXObject = VFXClass.new(
@@ -68,6 +67,15 @@ function AbilityEfectManager.CreateHitEffect(self: Module, character: Model, eff
         )
         VFXObject:Emit()
         SoundUtil:PlaySound("Parry")
+    elseif effectName == "Dodge" then
+        local VFXObject = VFXClass.new(
+            {"VFX/Dodge"},
+            PrimaryPart,
+            {
+                Cleanup = 3
+            }
+        )
+        VFXObject:Emit()
     end
 end
 

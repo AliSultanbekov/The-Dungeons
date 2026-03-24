@@ -21,61 +21,61 @@ local TimeUtil = require("TimeUtil")
 -- [ Module Table ] --
 local VelocitySystem = {}
 
-VelocitySystem._ActiveInstances = {} :: {
-    [Jecs.Entity]: {
-        Velocity: LinearVelocity,
-        Attachment: Attachment,
+-- [ Types ] --
+type ModuleData = {
+    _World: Jecs.World,
+    _Tags: EntityTypesClient.Tags,
+    _Components: EntityTypesClient.Components,
+    _Signals: EntityTypesClient.PublicSignals,
+    _ActiveInstances: {
+        [Jecs.Entity]: {
+            Velocity: LinearVelocity,
+            Attachment: Attachment,
+        }
     }
 }
-
--- [ Types ] --
-type ModuleData = {}
 
 export type Module = typeof(VelocitySystem) & ModuleData
 
 -- [ Private Functions ] --
+function VelocitySystem._HandleLinearVelocity(self: Module, humnaoidRootPart: BasePart, velocity: EntityTypesClient.VelocityComponent)
+
+end
 
 -- [ Public Functions ] --
-function VelocitySystem.Update(self: Module, context: EntityTypesClient.SystemModuleUpdateContext)
-    local World = context.World
-    local Components = context.Components
+function VelocitySystem.Update(self: Module, dt: number)
+    local World = self._World
+    local Components = self._Components
 
     for entity, character: EntityTypesClient.CharacterComponent, velocity: EntityTypesClient.VelocityComponent in World:query(Components.Character, Components.Velocity) do
-        local HumanoidRootPart = character.Character:FindFirstChild("HumanoidRootPart")
+        local Elapsed = TimeUtil:GetTime() - velocity.StartTime
 
-        if not HumanoidRootPart then
-            return
-        end
+        local _Alpha = math.clamp(Elapsed/velocity.Duration,0,1)
+        local SpeedMul = 1
 
-        local ActiveInstances = self._ActiveInstances[entity]
+        if velocity.Mode == "Plane" then
+            if velocity.Curve == "Linear" then
+                SpeedMul = 1
+            end
 
-        if not ActiveInstances then
-            local Attachment = Instance.new("Attachment") :: Attachment
-            Attachment.Parent = HumanoidRootPart
-
-            local Velocity = Instance.new(velocity.VelocityType) :: LinearVelocity
-            Velocity.VelocityConstraintMode = velocity.Mode
-            Velocity.PlaneVelocity = velocity.PlaneVelocity * velocity.StartSpeed
-            Velocity.PrimaryTangentAxis = velocity.PrimaryTangentAxis
-            Velocity.SecondaryTangentAxis = velocity.SecondaryTangentAxis
-            Velocity.Attachment0 = Attachment
-            Velocity.Parent = HumanoidRootPart
-            Velocity.MaxForce = math.huge
-
-            self._ActiveInstances[entity] = {
-                Velocity = Velocity,
-                Attachment = Attachment
-            }
+            velocity.Instance.PlaneVelocity = velocity.GetDirection() * (velocity.StartSpeed * SpeedMul)
         end
 
         if velocity.StartTime + velocity.Duration < TimeUtil:GetTime() then
-            self._ActiveInstances[entity].Attachment:Destroy()
-            self._ActiveInstances[entity].Velocity:Destroy()
-            self._ActiveInstances[entity] = nil
+            velocity.Attachment0:Destroy()
+            velocity.Instance:Destroy()
 
             World:remove(entity, Components.Velocity)
         end
     end
+end
+
+function VelocitySystem.Init(self: Module, context: EntityTypesClient.SystemModule_Init_Context)
+    self._World = context.World
+    self._Tags = context.Tags
+    self._Components = context.Components
+    self._Signals = context.Signals
+    self._ActiveInstances = {}
 end
 
 return VelocitySystem :: Module

@@ -153,7 +153,6 @@ function EntityServiceClient.Init(self: Module, serviceBag: ServiceBag.ServiceBa
 
         InCombat = self._World:component(),
 
-        AnimationObject = self._World:component(),
         Velocity = self._World:component()
     }
 
@@ -177,7 +176,6 @@ function EntityServiceClient.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._World:set(self._Components.Stunned, Jecs.Name, "Stunned")
     self._World:set(self._Components.CurrentAbilities, Jecs.Name, "CurrentAbility")
     self._World:set(self._Components.PreviousAbilities, Jecs.Name, "PreviousAbility")
-    self._World:set(self._Components.AnimationObject, Jecs.Name, "AnimationObject")
     self._World:set(self._Components.Velocity, Jecs.Name, "Velocity")
 
     self._Systems = self:_GatherAllSystems()
@@ -187,18 +185,21 @@ function EntityServiceClient.Init(self: Module, serviceBag: ServiceBag.ServiceBa
         EntityDeleted = Signal.new(),
         AbilityExpired = Signal.new(),
     } :: any
+
+    for _, system in self._Systems do
+        system:Init({
+            World = self._World,
+            Tags = self._Tags,
+            Components = self._Components,
+            Signals = self.PublicSignals,
+        })
+    end
 end
 
 function EntityServiceClient.Start(self: Module)
     RunService.RenderStepped:Connect(function(dt: number)
         for _, systemModule in self._Systems do
-            systemModule:Update({
-                World = self._World,
-                Tags = self._Tags,
-                Components = self._Components,
-                PublicSignals = self.PublicSignals,
-                Dt = dt,
-            })
+            systemModule:Update(dt)
         end
     end)
 

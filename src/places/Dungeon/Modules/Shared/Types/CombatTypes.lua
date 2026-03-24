@@ -20,9 +20,7 @@ export type AbilityObject = {
     Use: (self: AbilityObject, context: Context) -> (),
     End: (self: AbilityObject, context: Context) -> (),
     Hit: (self: AbilityObject, context: Context) -> (),
-    UpdateState: (self: AbilityObject, context: Context) -> (),
-    GetState: (self: AbilityObject) -> Context,
-    IsActive: (self: AbilityObject) -> boolean,
+    Expire: (self: AbilityObject, context: Context) -> (),
 }
 
 export type ClientAbilityObject = {

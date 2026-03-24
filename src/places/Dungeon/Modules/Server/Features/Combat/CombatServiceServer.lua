@@ -123,6 +123,9 @@ function CombatServiceServer.Start(self: Module)
         CombatObject:AddAbility("DefaultBasicAttack", { 
             ItemData = { Name = "Wooden Sword" },
         })
+        CombatObject:AddAbility("Dash", { 
+            ItemData = { Name = "Wooden Sword" },
+        })
         CombatObject:AddAbility("Block", { 
             ItemData = { Name = "Wooden Sword" },
         })

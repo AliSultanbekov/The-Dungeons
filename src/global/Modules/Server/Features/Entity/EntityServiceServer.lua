@@ -261,7 +261,6 @@ function EntityServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBa
     self._World:add(self._Components.CurrentAbilities, self._Tags.ReplicatedComponent)
     self._World:add(self._Components.PreviousAbilities, self._Tags.ReplicatedComponent)
     self._World:add(self._Components.InCombat, self._Tags.ReplicatedComponent)
-    self._World:add(self._Components.InCombat, self._Tags.ReplicatedComponent)
 
     self._Systems = self:_GatherAllSystems()
 
@@ -270,18 +269,21 @@ function EntityServiceServer.Init(self: Module, serviceBag: ServiceBag.ServiceBa
         EntityDeleted = Signal.new(),
         AbilityExpired = Signal.new(),
     } :: any
+
+    for _, system in self._Systems do
+        system:Init({
+            World = self._World,
+            Tags = self._Tags,
+            Components = self._Components,
+            Signals = self.PublicSignals,
+        })
+    end
 end
 
 function EntityServiceServer.Start(self: Module)
     RunService.Heartbeat:Connect(function(dt: number)
         for _, systemModule in self._Systems do
-            systemModule:Update({
-                World = self._World,
-                Tags = self._Tags,
-                Components = self._Components,
-                PublicSignals = self.PublicSignals,
-                Dt = dt,
-            })
+            systemModule:Update(dt)
         end
     end)
 

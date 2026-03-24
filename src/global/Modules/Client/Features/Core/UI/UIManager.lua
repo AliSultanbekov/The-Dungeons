@@ -6,7 +6,7 @@
 local Players = game:GetService("Players")
 
 -- [ Imports ] --
-local UIConstants = require("./Constants/_UIConstants")
+local UIConstants = require("./_UIConstants")
 
 -- [ Require ] --
 local require = require(script.Parent.loader).load(script)

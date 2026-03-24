@@ -44,6 +44,10 @@ function InitUtil.GetContextModules(self: Module, modulesFolder: any, placeName:
             return
         end
 
+        if instance.Name == "loader" then
+            return
+        end
+
         if instance.Name:lower():find("initmanager") then
             return
         end
